@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <defs>
+    <linearGradient id="vane" x1="0.15" y1="0.85" x2="0.95" y2="0.05">
+      <stop offset="0" stop-color="#ff3d7f"/>
+      <stop offset="0.25" stop-color="#ffb627"/>
+      <stop offset="0.5" stop-color="#3ddc84"/>
+      <stop offset="0.75" stop-color="#34c3ff"/>
+      <stop offset="1" stop-color="#b46bff"/>
+    </linearGradient>
+  </defs>
+  <path d="M38 2 C 27 3 17 9 12 19 C 9 25 8.5 29 9.5 30.5 C 11 31.5 15 31 21 28 C 31 23 37 13 38 2 Z" fill="url(#vane)" stroke="#2a1036" stroke-width="1"/>
+  <path d="M15 22 L20 17 M18 25 L24 19 M14 18 L18 14 M22 22 L28 15 M19 13 L24 9" stroke="#ffffff" stroke-opacity="0.55" stroke-width="0.8" stroke-linecap="round"/>
+  <path d="M38 2 L3 37" stroke="#fff3c4" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M38 2 L3 37" stroke="#2a1036" stroke-width="0.5" stroke-opacity="0.6" stroke-linecap="round"/>
+</svg>
