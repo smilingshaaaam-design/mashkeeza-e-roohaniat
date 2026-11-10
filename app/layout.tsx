@@ -1,3 +1,4 @@
+
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Gulzar, Noto_Nastaliq_Urdu } from 'next/font/google'
@@ -18,16 +19,39 @@ const gulzar = Gulzar({
 
 export const metadata: Metadata = {
   title: 'مشکیزہ روحانیت | علم و معرفت کا روحانی مرکز',
+
   description:
     'مشکیزہ روحانیت — اسم اعظم، علم جفر، علم الاعداد، تعویذات، طلسمات اور ورد و وظائف کا روحانی مرکز۔',
-  generator: 'v0.app',
+
   icons: {
-    icon: [
-      { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
-      { url: '/icon-dark-32x32.png', media: '(prefers-color-scheme: dark)' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
+    icon: '/mashkeeza-logo.png',
+    shortcut: '/mashkeeza-logo.png',
+    apple: '/mashkeeza-logo.png',
+  },
+
+  openGraph: {
+    title: 'مشکیزہ روحانیت | علم و معرفت کا روحانی مرکز',
+    description:
+      'اسم اعظم، علم جفر، علم الاعداد، تعویذات، طلسمات اور روحانی رہنمائی کا مرکز۔',
+    url: 'https://mashkeeza.pages.dev/',
+    siteName: 'مشکیزہ روحانیت',
+    images: [
+      {
+        url: 'https://mashkeeza.pages.dev/mashkeeza-logo.png',
+        width: 512,
+        height: 512,
+        alt: 'مشکیزہ روحانیت',
+      },
     ],
-    apple: '/apple-icon.png',
+    locale: 'ur_PK',
+    type: 'website',
+  },
+
+  twitter: {
+    card: 'summary_large_image',
+    title: 'مشکیزہ روحانیت',
+    description: 'علم و معرفت کا روحانی مرکز',
+    images: ['https://mashkeeza.pages.dev/mashkeeza-logo.png'],
   },
 }
 
@@ -42,7 +66,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="ur" dir="rtl" className={`${nastaliq.variable} ${gulzar.variable} bg-night`}>
+    <html
+      lang="ur"
+      dir="rtl"
+      className={`${nastaliq.variable} ${gulzar.variable} bg-night`}
+    >
       <body className="font-urdu antialiased bg-night text-gold-light">
         {children}
         <SparkleCursor />

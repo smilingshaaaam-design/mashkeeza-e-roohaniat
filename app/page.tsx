@@ -1,3 +1,4 @@
+
 import Image from 'next/image'
 import { SiteHeader } from '@/components/site-header'
 import { FeatureCard, type Feature } from '@/components/feature-card'
@@ -74,13 +75,18 @@ const secondaryFeatures: Feature[] = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-night">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-night">
       <SiteHeader />
 
-      <main>
+      <PaintedSmoke anchorSelector="#hero-stage" zIndex={10} menuHeight={90} />
+
+      <main className="flex-1">
         <section aria-label="روحانی منظر" className="relative -mt-2">
           <div className="relative aspect-[16/10] w-full overflow-hidden md:aspect-[16/8]">
-            <div className="absolute inset-y-0 left-1/2 aspect-[1584/672] h-full -translate-x-1/2 [container-type:inline-size]">
+            <div
+              id="hero-stage"
+              className="absolute inset-y-0 left-1/2 aspect-[1584/672] h-full -translate-x-1/2 [container-type:inline-size]"
+            >
               <Image
                 src="/images/desert-scene.png"
                 alt="صحرا میں روشن قدیم کتابیں، جادوئی چراغ اور سنہری روشنی کا دریا"
@@ -90,7 +96,6 @@ export default function HomePage() {
               />
               <Starfield count={90} seed={11} className="inset-x-0 top-0 h-[38%]" />
               <Mashk />
-              <PaintedSmoke />
             </div>
             <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-night/60 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-night to-transparent" />
@@ -99,11 +104,12 @@ export default function HomePage() {
 
         <section
           aria-labelledby="services-heading"
-          className="relative mx-auto -mt-16 max-w-7xl px-4 pb-12 md:-mt-28"
+          className="relative mx-auto mt-10 max-w-7xl px-4 pb-20 md:mt-14"
         >
           <h2 id="services-heading" className="sr-only">
             ہماری روحانی خدمات
           </h2>
+
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-6">
             {primaryFeatures.map((feature) => (
               <FeatureCard key={feature.id} feature={feature} />
