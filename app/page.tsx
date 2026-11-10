@@ -6,6 +6,7 @@ import { SiteFooter } from '@/components/site-footer'
 import { Starfield } from '@/components/magic/starfield'
 import { Mashk } from '@/components/magic/mashk'
 import { PaintedSmoke } from '@/components/magic/painted-smoke'
+import PublishedContent from '@/components/published-content'
 
 const primaryFeatures: Feature[] = [
   {
@@ -122,6 +123,9 @@ export default function HomePage() {
             ))}
           </div>
         </section>
+
+        {/* Published CMS Articles and Pages */}
+        <PublishedContent />
       </main>
 
       <SiteFooter />
