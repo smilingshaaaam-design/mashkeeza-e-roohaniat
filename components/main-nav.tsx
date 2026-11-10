@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronLeft, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useVisualCms } from '@/components/visual-cms'
 
 const CMS_API =
   'https://mashkeeza-cms-api.smilingshaaaam.workers.dev'
@@ -17,7 +18,7 @@ export type NavItem = {
   openInNewTab?: boolean
 }
 
-const defaultNavItems: NavItem[] = [
+export const defaultNavItems: NavItem[] = [
   {
     id: 'home',
     label: 'صفحۂ اول',
@@ -264,6 +265,8 @@ type MenuEntryProps = {
   expanded: Set<string>
   toggle: (id: string) => void
   closeAll: () => void
+  editing?: boolean
+  onEdit?: (id: string) => void
 }
 
 function MenuEntry({
@@ -273,6 +276,8 @@ function MenuEntry({
   expanded,
   toggle,
   closeAll,
+  editing = false,
+  onEdit,
 }: MenuEntryProps) {
   const children = item.children || []
   const hasChildren = children.length > 0
@@ -302,7 +307,7 @@ function MenuEntry({
               ? 'noopener noreferrer'
               : undefined
           }
-          onClick={closeAll}
+          onClick={e => { if (editing) { e.preventDefault(); onEdit?.(item.id) } else closeAll() }}
           className={cn(
             'flex min-w-0 items-center gap-1',
             'text-gold-light transition-colors',
@@ -399,6 +404,8 @@ function MenuEntry({
               expanded={expanded}
               toggle={toggle}
               closeAll={closeAll}
+              editing={editing}
+              onEdit={onEdit}
             />
           ))}
         </ul>
@@ -408,11 +415,16 @@ function MenuEntry({
 }
 
 export function MainNav() {
+  const cms = useVisualCms()
   const [navItems, setNavItems] =
     useState<NavItem[]>(defaultNavItems)
 
   const [expanded, setExpanded] =
     useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    cms?.initMenus(defaultNavItems)
+  }, [cms?.authenticated])
 
   useEffect(() => {
     let active = true
@@ -435,9 +447,7 @@ export function MainNav() {
           active &&
           Array.isArray(data.items)
         ) {
-          setNavItems(
-            cleanNavItems(data.items)
-          )
+          if (data.items.length > 0) setNavItems(cleanNavItems(data.items))
         }
       } catch {
         // CMS navigation API may not be
@@ -478,7 +488,7 @@ export function MainNav() {
     >
       <div className="gold-frame-strong mx-auto max-w-7xl rounded-md bg-gradient-to-b from-[#1a1206] via-[#0b0904] to-[#1a1206]">
         <ul className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1 px-2 py-2">
-          {navItems.map((item, index) => (
+          {(cms?.menus ?? navItems).filter(item => item.visible !== false).map((item, index) => (
             <MenuEntry
               key={item.id}
               item={item}
@@ -487,6 +497,8 @@ export function MainNav() {
               expanded={expanded}
               toggle={toggle}
               closeAll={closeAll}
+              editing={cms?.editing}
+              onEdit={cms?.selectMenu}
             />
           ))}
         </ul>
