@@ -7,6 +7,7 @@ import { Starfield } from '@/components/magic/starfield'
 import { Mashk } from '@/components/magic/mashk'
 import { PaintedSmoke } from '@/components/magic/painted-smoke'
 import PublishedContent from '@/components/published-content'
+import { RightSidebar } from '@/components/right-sidebar'
 
 export default function HomePage() {
   return (
@@ -15,8 +16,11 @@ export default function HomePage() {
         <SiteHeader />
         <PaintedSmoke anchorSelector="#hero-stage" zIndex={10} menuHeight={90} />
         <main className="flex-1">
-          {/* Published articles immediately below the navigation. */}
-          <PublishedContent />
+          {/* Urdu RTL content layout: sidebar on the right, articles on the left. */}
+          <div dir="rtl" className="relative mx-auto grid w-full max-w-7xl grid-cols-1 gap-6 px-4 pt-8 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
+            <RightSidebar />
+            <div className="min-w-0"><PublishedContent /></div>
+          </div>
           <section aria-label="روحانی منظر" className="relative -mt-2">
             <div className="relative aspect-[16/10] w-full overflow-hidden md:aspect-[16/8]">
               <div
