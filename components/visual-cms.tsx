@@ -71,6 +71,14 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const [publishedMenus, setPublishedMenus] = useState<MenuItem[] | null>(null)
   const [publishedCards, setPublishedCards] = useState<CardItem[] | null>(null)
 
+  // Pause decorative effects only while an authenticated editor is actively editing.
+  // Preview and logout restore the visitor's normal experience.
+  useEffect(() => {
+    const active = editing && authenticated && !preview
+    document.documentElement.classList.toggle('mashkeeza-editing', active)
+    return () => document.documentElement.classList.remove('mashkeeza-editing')
+  }, [editing, authenticated, preview])
+
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('edit') !== '1') return
     setEditing(true)
@@ -154,6 +162,17 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const field = (label: string, value: string, update: (v: string) => void) => <label className="flex flex-col gap-1 text-sm text-amber-200">{label}<input dir="auto" className="rounded border border-amber-700 bg-black p-2 text-white" value={value} onChange={e => update(e.target.value)} /></label>
   return <Context.Provider value={ctx}>
     {children}
+    <style>{`html.mashkeeza-editing *, html.mashkeeza-editing *::before, html.mashkeeza-editing *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+      cursor: auto !important;
+    }
+    html.mashkeeza-editing a, html.mashkeeza-editing button, html.mashkeeza-editing [role="button"] { cursor: pointer !important; }
+    html.mashkeeza-editing input, html.mashkeeza-editing textarea, html.mashkeeza-editing [contenteditable="true"] { cursor: text !important; }
+    html.mashkeeza-editing canvas, html.mashkeeza-editing video { visibility: hidden !important; }
+    html.mashkeeza-editing { scroll-behavior: auto !important; }
+    `}</style>
     {editing && !authenticated && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4" dir="ltr"><form onSubmit={login} className="flex w-full max-w-sm flex-col gap-3 rounded-xl border border-amber-600 bg-[#130e07] p-6 text-amber-100"><strong>مشکیزہ روحانیت — Editor Login</strong><input required type="email" placeholder="Email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className="rounded bg-white p-2 text-black"/><input required type="password" placeholder="Password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} className="rounded bg-white p-2 text-black"/><button disabled={busy} className="rounded bg-amber-600 p-2 font-bold text-black">Login</button>{message && <p role="alert">{message}</p>}<button type="button" onClick={() => { setEditing(false); window.history.replaceState({}, '', window.location.pathname) }}>Cancel</button></form></div>}
     {editing && authenticated && <>
       <div className="fixed bottom-3 left-1/2 z-[9998] flex max-w-[96vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-xl border border-amber-600 bg-black/95 p-3 text-xs text-amber-100 shadow-2xl" dir="ltr">
