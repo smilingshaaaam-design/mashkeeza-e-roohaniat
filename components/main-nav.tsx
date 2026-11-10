@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronLeft, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useVisualCms } from '@/components/visual-cms'
@@ -290,13 +290,35 @@ function MenuEntry({
   const isExpanded = expanded.has(item.id)
   const isRoot = depth === 0
   const [hovered, setHovered] = useState(false)
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (leaveTimer.current !== null) clearTimeout(leaveTimer.current)
+  }, [])
+
+  function enterMenu() {
+    if (leaveTimer.current !== null) {
+      clearTimeout(leaveTimer.current)
+      leaveTimer.current = null
+    }
+    setHovered(true)
+  }
+
+  function leaveMenu() {
+    if (leaveTimer.current !== null) clearTimeout(leaveTimer.current)
+    // Give the pointer time to cross from the parent to its dropdown.
+    leaveTimer.current = setTimeout(() => {
+      setHovered(false)
+      leaveTimer.current = null
+    }, 450)
+  }
   const selected = editing && selectedMenuId === item.id
   const showChildren = hasChildren && (hovered || isExpanded || (editing && !!selectedMenuId && containsMenu(item, selectedMenuId)))
 
   return (
     <li
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={enterMenu}
+      onMouseLeave={leaveMenu}
       className={cn(
         'group/menu relative',
         isRoot ? 'shrink-0' : 'w-full'
