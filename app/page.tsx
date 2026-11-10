@@ -15,34 +15,19 @@ export default function HomePage() {
         <SiteHeader />
         <PaintedSmoke anchorSelector="#hero-stage" zIndex={10} menuHeight={90} />
         <main className="flex-1">
-          <div className="relative isolate">
-            {/* Original hero image and animations remain in their original stage. */}
-            <section aria-label="روحانی منظر" className="relative -mt-2">
-              <div className="relative aspect-[16/10] w-full overflow-hidden md:aspect-[16/8]">
-                <div
-                  id="hero-stage"
-                  className="absolute inset-y-0 left-1/2 aspect-[1584/672] h-full -translate-x-1/2 [container-type:inline-size]"
-                >
-                  <Image
-                    src="/images/desert-scene.png"
-                    alt="صحرا میں روشن قدیم کتابیں، جادوئی چراغ اور سنہری روشنی کا دریا"
-                    fill
-                    sizes="(min-width: 768px) 118vw, 148vw"
-                    className="object-cover"
-                  />
-                  <Starfield count={90} seed={11} className="inset-x-0 top-0 h-[38%]" />
-                  <Mashk />
-                </div>
-                <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-night/60 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-night to-transparent" />
+          <section aria-label="روحانی منظر" className="relative -mt-2">
+            <div className="relative aspect-[16/10] w-full overflow-hidden md:aspect-[16/8]">
+              <div id="hero-stage" className="absolute inset-y-0 left-1/2 aspect-[1584/672] h-full -translate-x-1/2 [container-type:inline-size]">
+                <Image src="/images/desert-scene.png" alt="صحرا میں روشن قدیم کتابیں، جادوئی چراغ اور سنہری روشنی کا دریا" fill sizes="(min-width: 768px) 118vw, 148vw" className="object-cover" />
+                <Starfield count={90} seed={11} className="inset-x-0 top-0 h-[38%]" />
+                <Mashk />
               </div>
-            </section>
-            {/* Reuse the original desert image behind the article list, without opaque panels. */}
-            <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 top-[35%] -z-10 opacity-50">
-              <Image src="/images/desert-scene.png" alt="" fill sizes="100vw" className="object-cover object-center" />
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-night/60 to-transparent" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-night to-transparent" />
+              {/* Article navigation overlays the original desert scene instead of pushing it down. */}
+              <ArticleBrowser />
             </div>
-            <ArticleBrowser />
-          </div>
+          </section>
           <HomepageCards />
         </main>
         <SiteFooter />
