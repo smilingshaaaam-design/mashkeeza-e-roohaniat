@@ -5,9 +5,11 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 export const CMS_API = 'https://mashkeeza-cms-api.smilingshaaaam.workers.dev'
 export type MenuItem = { id: string; label: string; href: string; visible?: boolean; openInNewTab?: boolean; children?: MenuItem[] }
 export type CardItem = { id: string; title: string; description: string; image: string; href: string; card_group: 'primary' | 'secondary'; visible?: boolean; openInNewTab?: boolean }
+export type SidebarLink = { id: string; title: string; href: string }
+export type SidebarGroup = { id: string; title: string; links: SidebarLink[] }
 type CmsContext = {
-  editing: boolean; authenticated: boolean; menus: MenuItem[] | null; cards: CardItem[] | null;
-  setMenus: (v: MenuItem[]) => void; setCards: (v: CardItem[]) => void;
+  editing: boolean; authenticated: boolean; menus: MenuItem[] | null; cards: CardItem[] | null; sidebar: SidebarGroup[] | null;
+  setMenus: (v: MenuItem[]) => void; setCards: (v: CardItem[]) => void; setSidebar: (v: SidebarGroup[]) => void; initSidebar: (v: SidebarGroup[]) => void;
   initMenus: (v: MenuItem[]) => void; initCards: (v: CardItem[]) => void;
   selectMenu: (id: string) => void; selectCard: (id: string) => void;
 }
@@ -29,6 +31,9 @@ function validateMenus(items: MenuItem[]): boolean {
     return true
   }
   return walk(items, 0)
+}
+function validateSidebar(groups: SidebarGroup[] | null): boolean {
+  return Array.isArray(groups) && groups.length <= 30 && groups.every(g => typeof g.title === 'string' && g.title.trim().length > 0 && g.title.length <= 150 && Array.isArray(g.links) && g.links.length <= 100 && g.links.every(l => typeof l.title === 'string' && l.title.trim().length > 0 && l.title.length <= 180 && typeof l.href === 'string' && safeLink(l.href)))
 }
 function findMenu(items: MenuItem[], id: string): MenuItem | undefined {
   for (const item of items) {
@@ -55,10 +60,13 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const [loginPassword, setLoginPassword] = useState('')
   const [menus, setMenusState] = useState<MenuItem[] | null>(null)
   const [cards, setCardsState] = useState<CardItem[] | null>(null)
+  const [sidebar, setSidebarState] = useState<SidebarGroup[] | null>(null)
+  const [publishedSidebar, setPublishedSidebar] = useState<SidebarGroup[] | null>(null)
+  const [designOther, setDesignOther] = useState<Record<string, unknown>>({})
   const [selected, setSelected] = useState<{ type: 'menu' | 'card'; id: string } | null>(null)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
-  const [history, setHistory] = useState<Array<{ menus: MenuItem[] | null; cards: CardItem[] | null }>>([])
+  const [history, setHistory] = useState<Array<{ menus: MenuItem[] | null; cards: CardItem[] | null; sidebar: SidebarGroup[] | null }>>([])
   const [preview, setPreview] = useState(false)
   const [publishedMenus, setPublishedMenus] = useState<MenuItem[] | null>(null)
   const [publishedCards, setPublishedCards] = useState<CardItem[] | null>(null)
@@ -70,7 +78,12 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   }, [])
   useEffect(() => {
     if (!editing || !authenticated) return
-    Promise.all([api('/cms/navigation'), api('/cms/cards')]).then(([nav, card]) => {
+    Promise.all([api('/cms/navigation'), api('/cms/cards'), api('/cms/design')]).then(([nav, card, design]) => {
+      const pubDesign = design.published?.settings?.published_appearance || {}
+      const draftDesign = design.draft || pubDesign
+      setDesignOther(draftDesign)
+      if (Array.isArray(pubDesign.sidebar)) setPublishedSidebar(pubDesign.sidebar)
+      if (Array.isArray(draftDesign.sidebar)) setSidebarState(draftDesign.sidebar)
       setPublishedMenus(nav.published?.items?.length ? nav.published.items : null)
       setPublishedCards(card.published?.items?.length ? card.published.items : null)
       if (nav.draft?.items) setMenusState(nav.draft.items)
@@ -80,12 +93,14 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
     }).catch(e => setMessage(e.message))
   }, [editing, authenticated])
 
-  function snapshot() { setHistory(prev => [...prev.slice(-29), { menus: clone(menus), cards: clone(cards) }]) }
+  function snapshot() { setHistory(prev => [...prev.slice(-29), { menus: clone(menus), cards: clone(cards), sidebar: clone(sidebar) }]) }
   function setMenus(v: MenuItem[]) { snapshot(); setMenusState(v) }
   function setCards(v: CardItem[]) { snapshot(); setCardsState(v) }
+  function setSidebar(v: SidebarGroup[]) { snapshot(); setSidebarState(v) }
   const activeMenus = preview ? publishedMenus : menus
   const activeCards = preview ? publishedCards : cards
-  const ctx = useMemo<CmsContext>(() => ({ editing: editing && authenticated && !preview, authenticated, menus: activeMenus, cards: activeCards, setMenus, setCards, initMenus: v => setMenusState(prev => prev ?? v), initCards: v => setCardsState(prev => prev ?? v), selectMenu: id => setSelected({ type: 'menu', id }), selectCard: id => setSelected({ type: 'card', id }) }), [editing, authenticated, preview, activeMenus, activeCards, history])
+  const activeSidebar = preview ? publishedSidebar : sidebar
+  const ctx = useMemo<CmsContext>(() => ({ editing: editing && authenticated && !preview, authenticated, menus: activeMenus, cards: activeCards, sidebar: activeSidebar, setMenus, setCards, setSidebar, initSidebar: v => setSidebarState(prev => prev ?? v), initMenus: v => setMenusState(prev => prev ?? v), initCards: v => setCardsState(prev => prev ?? v), selectMenu: id => setSelected({ type: 'menu', id }), selectCard: id => setSelected({ type: 'card', id }) }), [editing, authenticated, preview, activeMenus, activeCards, activeSidebar, history])
 
   async function login(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setMessage('')
@@ -95,18 +110,19 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   async function save() {
     if (!menus || !cards) { setMessage('Pehle menu aur cards load honay dein.'); return }
     if (!validateMenus(menus)) { setMessage('Menu mein invalid ya duplicate ID/link hai.'); return }
+    if (!validateSidebar(sidebar)) { setMessage('Sidebar ke title ya links invalid hain.'); return }
     setBusy(true); setMessage('')
-    try { await api('/cms/navigation/draft', 'PUT', { items: menus }); await api('/cms/cards/draft', 'PUT', { items: cards }); setMessage('Draft save ho gaya.') }
+    try { await api('/cms/navigation/draft', 'PUT', { items: menus }); await api('/cms/cards/draft', 'PUT', { items: cards }); await api('/cms/design/draft', 'PUT', { ...designOther, sidebar }); setMessage('Draft save ho gaya.') }
     catch (e) { setMessage((e as Error).message) } finally { setBusy(false) }
   }
   async function publish() {
     if (!menus || !cards || !window.confirm('Menus aur cards ko public website par publish karna hai?')) return
-    if (!validateMenus(menus)) { setMessage('Menu validation fail hui.'); return }
+    if (!validateMenus(menus) || !validateSidebar(sidebar)) { setMessage('Menu ya sidebar validation fail hui.'); return }
     setBusy(true); setMessage('')
     try {
-      await api('/cms/navigation/draft', 'PUT', { items: menus }); await api('/cms/cards/draft', 'PUT', { items: cards })
-      await api('/cms/navigation/publish', 'POST'); await api('/cms/cards/publish', 'POST')
-      setPublishedMenus(clone(menus)); setPublishedCards(clone(cards)); setMessage('Published. Visitors ko refresh par changes nazar aayenge.')
+      await api('/cms/navigation/draft', 'PUT', { items: menus }); await api('/cms/cards/draft', 'PUT', { items: cards }); await api('/cms/design/draft', 'PUT', { ...designOther, sidebar })
+      await api('/cms/navigation/publish', 'POST'); await api('/cms/cards/publish', 'POST'); await api('/cms/design/publish', 'POST')
+      setPublishedMenus(clone(menus)); setPublishedCards(clone(cards)); setPublishedSidebar(clone(sidebar)); setMessage('Published. Visitors ko refresh par changes nazar aayenge.')
     } catch (e) { setMessage((e as Error).message) } finally { setBusy(false) }
   }
   function changeMenu(id: string, patch: Partial<MenuItem>) {
@@ -143,7 +159,7 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
       <div className="fixed bottom-3 left-1/2 z-[9998] flex max-w-[96vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-xl border border-amber-600 bg-black/95 p-3 text-xs text-amber-100 shadow-2xl" dir="ltr">
         <strong>Live Editor</strong>
         <button className="rounded border border-amber-600 px-2 py-1" onClick={() => setPreview(!preview)}>{preview ? 'Edit mode' : 'Preview published'}</button>
-        {!preview && <><button className="rounded border border-amber-600 px-2 py-1" onClick={() => addMenu()}>+ Menu</button><button className="rounded border border-amber-600 px-2 py-1" onClick={() => { const next = [...(cards || []), { id: newId(), title: 'نیا کارڈ', description: '', image: '/images/icon-scroll.png', href: '#', card_group: 'primary' as const }]; setCards(next); setSelected({ type: 'card', id: next[next.length - 1].id }) }}>+ Card</button><button disabled={!history.length} className="rounded border border-amber-600 px-2 py-1 disabled:opacity-40" onClick={() => { const old = history[history.length - 1]; if (old) { setMenusState(old.menus); setCardsState(old.cards); setHistory(history.slice(0, -1)) } }}>Undo</button><button disabled={busy} className="rounded bg-amber-700 px-2 py-1" onClick={save}>Save draft</button><button disabled={busy} className="rounded bg-amber-500 px-2 py-1 font-bold text-black" onClick={publish}>Publish</button></>}
+        {!preview && <><button className="rounded border border-amber-600 px-2 py-1" onClick={() => addMenu()}>+ Menu</button><button className="rounded border border-amber-600 px-2 py-1" onClick={() => { const next = [...(cards || []), { id: newId(), title: 'نیا کارڈ', description: '', image: '/images/icon-scroll.png', href: '#', card_group: 'primary' as const }]; setCards(next); setSelected({ type: 'card', id: next[next.length - 1].id }) }}>+ Card</button><button disabled={!history.length} className="rounded border border-amber-600 px-2 py-1 disabled:opacity-40" onClick={() => { const old = history[history.length - 1]; if (old) { setMenusState(old.menus); setCardsState(old.cards); setSidebarState(old.sidebar); setHistory(history.slice(0, -1)) } }}>Undo</button><button disabled={busy} className="rounded bg-amber-700 px-2 py-1" onClick={save}>Save draft</button><button disabled={busy} className="rounded bg-amber-500 px-2 py-1 font-bold text-black" onClick={publish}>Publish</button></>}
         <button className="rounded border border-amber-600 px-2 py-1" onClick={async () => { try { await api('/auth/logout', 'POST') } catch {} window.location.assign(window.location.pathname) }}>Logout</button>
         {message && <span role="status" className="w-full text-center">{message}</span>}
       </div>
