@@ -258,6 +258,10 @@ function cleanNavItems(
     }))
 }
 
+function containsMenu(item: NavItem, id: string): boolean {
+  return item.id === id || (item.children || []).some(child => containsMenu(child, id))
+}
+
 type MenuEntryProps = {
   item: NavItem
   depth: number
@@ -267,6 +271,7 @@ type MenuEntryProps = {
   closeAll: () => void
   editing?: boolean
   onEdit?: (id: string) => void
+  selectedMenuId?: string | null
 }
 
 function MenuEntry({
@@ -278,14 +283,20 @@ function MenuEntry({
   closeAll,
   editing = false,
   onEdit,
+  selectedMenuId,
 }: MenuEntryProps) {
   const children = item.children || []
   const hasChildren = children.length > 0
   const isExpanded = expanded.has(item.id)
   const isRoot = depth === 0
+  const [hovered, setHovered] = useState(false)
+  const selected = editing && selectedMenuId === item.id
+  const showChildren = hasChildren && (hovered || isExpanded || (editing && !!selectedMenuId && containsMenu(item, selectedMenuId)))
 
   return (
     <li
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       className={cn(
         'group/menu relative',
         isRoot ? 'shrink-0' : 'w-full'
@@ -311,7 +322,8 @@ function MenuEntry({
           className={cn(
             'flex min-w-0 items-center gap-1',
             'text-gold-light transition-colors',
-            'hover:bg-gold/10 hover:text-gold',
+            'hover:bg-gold/20 hover:text-gold focus:bg-gold/20 focus:text-gold',
+            selected && 'bg-gold/25 text-gold outline outline-2 outline-offset-[-2px] outline-amber-400',
             'focus-visible:outline-2',
             'focus-visible:outline-gold',
             isRoot
@@ -377,23 +389,13 @@ function MenuEntry({
             'max-h-[75vh] overflow-y-auto',
             'shadow-[0_10px_30px_rgba(0,0,0,0.65)]',
             'lg:overflow-visible',
-            'lg:invisible lg:absolute lg:z-50',
-            'lg:opacity-0 lg:transition-opacity',
-            'lg:group-hover/menu:visible',
-            'lg:group-hover/menu:opacity-100',
-            'lg:group-focus-within/menu:visible',
-            'lg:group-focus-within/menu:opacity-100',
+            'lg:absolute lg:z-50',
             isRoot
               ? 'lg:right-0 lg:top-full lg:min-w-56'
               : 'lg:right-full lg:top-0 lg:min-w-56',
-            isExpanded
-              ? cn(
-                  'absolute z-50 block min-w-48',
-                  isRoot
-                    ? 'right-0 top-full'
-                    : 'right-full top-0'
-                )
-              : 'hidden lg:block'
+            showChildren
+              ? cn('absolute z-50 block min-w-48 visible opacity-100', isRoot ? 'right-0 top-full' : 'right-full top-0')
+              : 'hidden' 
           )}
         >
           {children.map(child => (
@@ -406,6 +408,7 @@ function MenuEntry({
               closeAll={closeAll}
               editing={editing}
               onEdit={onEdit}
+              selectedMenuId={selectedMenuId}
             />
           ))}
         </ul>

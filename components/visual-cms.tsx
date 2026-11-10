@@ -11,7 +11,7 @@ type CmsContext = {
   editing: boolean; authenticated: boolean; menus: MenuItem[] | null; cards: CardItem[] | null; sidebar: SidebarGroup[] | null;
   setMenus: (v: MenuItem[]) => void; setCards: (v: CardItem[]) => void; setSidebar: (v: SidebarGroup[]) => void; initSidebar: (v: SidebarGroup[]) => void;
   initMenus: (v: MenuItem[]) => void; initCards: (v: CardItem[]) => void;
-  selectMenu: (id: string) => void; selectCard: (id: string) => void;
+  selectedMenuId: string | null; selectMenu: (id: string) => void; selectCard: (id: string) => void;
 }
 const Context = createContext<CmsContext | null>(null)
 export const useVisualCms = () => useContext(Context)
@@ -108,7 +108,7 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const activeMenus = preview ? publishedMenus : menus
   const activeCards = preview ? publishedCards : cards
   const activeSidebar = preview ? publishedSidebar : sidebar
-  const ctx = useMemo<CmsContext>(() => ({ editing: editing && authenticated && !preview, authenticated, menus: activeMenus, cards: activeCards, sidebar: activeSidebar, setMenus, setCards, setSidebar, initSidebar: v => setSidebarState(prev => prev ?? v), initMenus: v => setMenusState(prev => prev ?? v), initCards: v => setCardsState(prev => prev ?? v), selectMenu: id => setSelected({ type: 'menu', id }), selectCard: id => setSelected({ type: 'card', id }) }), [editing, authenticated, preview, activeMenus, activeCards, activeSidebar, history])
+  const ctx = useMemo<CmsContext>(() => ({ editing: editing && authenticated && !preview, authenticated, menus: activeMenus, cards: activeCards, sidebar: activeSidebar, setMenus, setCards, setSidebar, initSidebar: v => setSidebarState(prev => prev ?? v), initMenus: v => setMenusState(prev => prev ?? v), initCards: v => setCardsState(prev => prev ?? v), selectedMenuId: selected?.type === 'menu' ? selected.id : null, selectMenu: id => setSelected({ type: 'menu', id }), selectCard: id => setSelected({ type: 'card', id }) }), [editing, authenticated, preview, activeMenus, activeCards, activeSidebar, history, selected])
 
   async function login(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setMessage('')
