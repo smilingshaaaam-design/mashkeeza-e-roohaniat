@@ -1,5 +1,6 @@
 
 import Image from 'next/image'
+import CmsText from '@/components/cms-text'
 
 export function SiteFooter() {
   return (
@@ -26,7 +27,10 @@ export function SiteFooter() {
           />
 
           <p className="gold-text text-lg leading-[2.2] md:text-2xl">
-            مشکیزہ روحانیت — التماس دعا سید شاہ
+            <CmsText
+              settingKey="site_footer"
+              fallback="مشکیزہ روحانیت — التماس دعا سید شاہ"
+            />
           </p>
         </div>
       </div>
