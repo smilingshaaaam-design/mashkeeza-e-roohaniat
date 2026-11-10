@@ -411,7 +411,7 @@ function MenuEntry({
             'max-h-[75vh] overflow-y-auto',
             'shadow-[0_10px_30px_rgba(0,0,0,0.65)]',
             'lg:overflow-visible',
-            'lg:absolute lg:z-50',
+            'lg:absolute lg:z-[120]',
             isRoot
               ? 'lg:right-0 lg:top-full lg:min-w-56'
               : 'lg:right-full lg:top-0 lg:min-w-56',
@@ -509,7 +509,7 @@ export function MainNav() {
     <nav
       aria-label="مرکزی مینو"
       dir="rtl"
-      className="relative z-30 px-2 md:px-4"
+      className="relative z-[110] px-2 md:px-4"
     >
       <div className="gold-frame-strong mx-auto max-w-7xl rounded-md bg-gradient-to-b from-[#1a1206] via-[#0b0904] to-[#1a1206]">
         <ul className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1 px-2 py-2">
