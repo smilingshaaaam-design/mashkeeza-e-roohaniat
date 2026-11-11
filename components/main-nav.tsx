@@ -472,7 +472,7 @@ export function MainNav() {
           active &&
           Array.isArray(data.items)
         ) {
-          if (data.items.length > 0) setNavItems(cleanNavItems(data.items))
+          if (data.items.length >= 3) setNavItems(cleanNavItems(data.items))
         }
       } catch {
         // CMS navigation API may not be
