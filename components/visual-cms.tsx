@@ -73,6 +73,8 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const [publishedCards, setPublishedCards] = useState<CardItem[] | null>(null)
   const [pageOptions, setPageOptions] = useState<Array<{id:string;title:string;slug:string}>>([])
   const [menuPanelOpen, setMenuPanelOpen] = useState(false)
+  const [menuSearch, setMenuSearch] = useState('')
+  const [collapsedMenus, setCollapsedMenus] = useState<string[]>([])
   const [contentPanelOpen, setContentPanelOpen] = useState(false)
   const [dragId, setDragId] = useState<string | null>(null)
   const [recoveryWarning, setRecoveryWarning] = useState(false)
@@ -156,6 +158,25 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
     else next.push(item)
     setMenus(next); setSelected({ type: 'menu', id: item.id })
   }
+  function duplicateMenu(id: string) {
+    if (!menus) return
+    const next = clone(menus)
+    const original = findMenu(next, id)
+    if (!original) return
+    function copyWithNewIds(item: MenuItem): MenuItem {
+      return { ...item, id: newId(), label: item.label + ' (copy)', children: (item.children || []).map(copyWithNewIds) }
+    }
+    const copy = copyWithNewIds(original)
+    function insertAfter(list: MenuItem[]): boolean {
+      const index = list.findIndex(item => item.id === id)
+      if (index >= 0) { list.splice(index + 1, 0, copy); return true }
+      return list.some(item => insertAfter(item.children || []))
+    }
+    if (insertAfter(next)) { setMenus(next); setSelected({ type: 'menu', id: copy.id }) }
+  }
+  function toggleMenuCollapsed(id: string) {
+    setCollapsedMenus(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
   function moveMenu(id: string, direction: -1 | 1) {
     const next = clone(menus || [])
     function move(list: MenuItem[]): boolean {
@@ -208,20 +229,29 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
     return () => controller.abort()
   }, [editing,authenticated])
   function menuTree(items: MenuItem[], depth = 0): React.ReactNode {
-    return items.map(item => <div key={item.id} className="mb-1" style={{paddingLeft:Math.min(depth,8)*14}}>
-      <div draggable onDragStart={e => { e.dataTransfer.setData('text/plain',item.id); e.dataTransfer.effectAllowed='move'; setDragId(item.id) }}
-        onDragEnd={() => setDragId(null)} onDragOver={e => e.preventDefault()}
-        onDrop={e => {e.preventDefault(); const id=e.dataTransfer.getData('text/plain') || dragId; if(id) relocateMenu(id,item.id,e.shiftKey ? 'inside' : 'after');setDragId(null)}}
-        className={`flex items-center gap-1 rounded border p-1 ${selected?.id===item.id?'border-amber-400 bg-amber-900/60':'border-amber-800/60 bg-[#21190f]'}`}>
-        <span title="Drag to reorder; hold Shift to nest" className="cursor-grab select-none text-amber-400">⠿</span>
-        <button type="button" className="min-w-0 flex-1 truncate text-left text-amber-100" onClick={() => setSelected({type:'menu',id:item.id})}>{item.label}</button>
-        <button type="button" title="Move up" onClick={() => moveMenu(item.id,-1)}>↑</button>
-        <button type="button" title="Move down" onClick={() => moveMenu(item.id,1)}>↓</button>
-        <button type="button" title="Make root menu" onClick={() => relocateMenu(item.id,null)}>↖</button>
-        <button type="button" title="Add submenu" onClick={() => addMenu(item.id)}>＋</button>
+    const search = menuSearch.trim().toLocaleLowerCase()
+    return items.filter(item => !search || item.label.toLocaleLowerCase().includes(search) || item.href.toLocaleLowerCase().includes(search) || hasMenuMatch(item.children || [], search)).map(item => {
+      const hasChildren = !!item.children?.length
+      const collapsed = !search && collapsedMenus.includes(item.id)
+      return <div key={item.id} className="mb-1" style={{paddingLeft:Math.min(depth,8)*14}}>
+        <div draggable={!search} onDragStart={e => { e.dataTransfer.setData('text/plain',item.id); e.dataTransfer.effectAllowed='move'; setDragId(item.id) }}
+          onDragEnd={() => setDragId(null)} onDragOver={e => {if (!search) e.preventDefault()}}
+          onDrop={e => {e.preventDefault(); if (search) return; const id=e.dataTransfer.getData('text/plain') || dragId; if(id) relocateMenu(id,item.id,e.shiftKey ? 'inside' : 'after');setDragId(null)}}
+          className={`flex items-center gap-1 rounded border p-1 ${selected?.id===item.id?'border-amber-400 bg-amber-900/60':'border-amber-800/60 bg-[#21190f]'}`}>
+          <button type="button" aria-label={collapsed ? 'Expand submenu' : 'Collapse submenu'} disabled={!hasChildren} className="w-5 disabled:opacity-30" onClick={() => toggleMenuCollapsed(item.id)}>{collapsed ? '▸' : '▾'}</button>
+          <span title="Drag to reorder; hold Shift to nest" className="cursor-grab select-none text-amber-400">⠿</span>
+          <button type="button" className="min-w-0 flex-1 truncate text-left text-amber-100" onClick={() => setSelected({type:'menu',id:item.id})}>{item.label}</button>
+          <button type="button" title="Move up" onClick={() => moveMenu(item.id,-1)}>↑</button>
+          <button type="button" title="Move down" onClick={() => moveMenu(item.id,1)}>↓</button>
+          <button type="button" title="Make root menu" onClick={() => relocateMenu(item.id,null)}>↖</button>
+          <button type="button" title="Add submenu" onClick={() => addMenu(item.id)}>＋</button>
+        </div>
+        {!collapsed && menuTree(item.children || [],depth+1)}
       </div>
-      {menuTree(item.children || [],depth+1)}
-    </div>)
+    })
+  }
+  function hasMenuMatch(items: MenuItem[], search: string): boolean {
+    return items.some(item => item.label.toLocaleLowerCase().includes(search) || item.href.toLocaleLowerCase().includes(search) || hasMenuMatch(item.children || [], search))
   }
   function changeCard(id: string, patch: Partial<CardItem>) {
     if (!cards) return
@@ -271,11 +301,13 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
       {!preview && menuPanelOpen && <aside className="fixed left-0 top-14 bottom-0 z-[9997] flex w-[min(340px,94vw)] flex-col rounded-r-xl border border-amber-600 bg-black/95 p-3 text-xs text-amber-100 shadow-2xl" dir="ltr">
         <div className="mb-2 flex items-center justify-between"><strong>Visual Menu Structure</strong><button onClick={() => setMenuPanelOpen(false)}>✕</button></div>
         <p className="mb-2 text-amber-200">Drag onto a row to move after it. Hold Shift while dropping to make it a submenu. Select a row to edit its label and page link.</p>
+        <input aria-label="Search menus" placeholder="Search menu label or URL..." value={menuSearch} onChange={e => setMenuSearch(e.target.value)} className="mb-2 w-full rounded border border-amber-700 bg-[#21190f] p-2 text-amber-100" />
+        <div className="mb-2 flex gap-2"><button className="rounded border border-amber-700 px-2 py-1" onClick={() => setCollapsedMenus([])}>Expand all</button><button className="rounded border border-amber-700 px-2 py-1" onClick={() => setCollapsedMenus((menus || []).flatMap(function collect(item): string[] { return [item.id, ...(item.children || []).flatMap(collect)] }))}>Collapse all</button>{menuSearch && <button className="rounded border border-amber-700 px-2 py-1" onClick={() => setMenuSearch('')}>Clear search</button>}</div>
         <div className="min-h-0 flex-1 overflow-y-auto">{menuTree(menus || [])}</div>
         <div className="mt-2 flex gap-2"><button className="rounded border border-amber-600 p-2" onClick={() => addMenu()}>+ Main menu</button><button className="rounded border border-amber-600 p-2" onClick={() => {if(selected?.type==='menu')addMenu(selected.id)}}>+ Submenu</button></div>
       </aside>}
       {!preview && (menu || card) && <aside className="fixed right-0 top-14 bottom-0 z-[9997] flex w-[min(340px,94vw)] flex-col gap-3 overflow-auto rounded-xl border border-amber-600 bg-black/95 p-4 text-amber-100 shadow-2xl" dir="ltr"><div className="flex justify-between"><strong>{menu ? 'Edit Menu' : 'Edit Card'}</strong><button onClick={() => setSelected(null)}>✕</button></div>
-        {menu && <>{field('Label', menu.label, v => changeMenu(menu.id, { label: v }))}{field('Link / URL', menu.href, v => changeMenu(menu.id, { href: v }))}<label className="flex flex-col gap-1 text-sm text-amber-200">Link to published Page<select className="rounded border border-amber-700 bg-black p-2 text-white" value={pageOptions.find(p => menu.href === `/pages/?slug=${encodeURIComponent(p.slug)}`)?.id || ''} onChange={e => {const page=pageOptions.find(p => p.id===e.target.value);if(page)changeMenu(menu.id,{href:`/pages/?slug=${encodeURIComponent(page.slug)}`,openInNewTab:false})}}><option value="">Select published Page...</option>{pageOptions.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label><label><input type="checkbox" checked={menu.visible !== false} onChange={e => changeMenu(menu.id, { visible: e.target.checked })}/> Visible</label><label><input type="checkbox" checked={!!menu.openInNewTab} onChange={e => changeMenu(menu.id, { openInNewTab: e.target.checked })}/> Open in new tab</label><div className="flex flex-wrap gap-2"><button onClick={() => addMenu(menu.id)}>+ Submenu</button><button onClick={() => moveMenu(menu.id, -1)}>↑</button><button onClick={() => moveMenu(menu.id, 1)}>↓</button><button className="text-red-300" onClick={() => { if (window.confirm('Delete menu and its submenus?')) { setMenus(removeMenu(menus || [], menu.id)); setSelected(null) } }}>Delete</button></div></>}
+        {menu && <>{field('Label', menu.label, v => changeMenu(menu.id, { label: v }))}{field('Link / URL', menu.href, v => changeMenu(menu.id, { href: v }))}<label className="flex flex-col gap-1 text-sm text-amber-200">Link to published Page<select className="rounded border border-amber-700 bg-black p-2 text-white" value={pageOptions.find(p => menu.href === `/pages/?slug=${encodeURIComponent(p.slug)}`)?.id || ''} onChange={e => {const page=pageOptions.find(p => p.id===e.target.value);if(page)changeMenu(menu.id,{href:`/pages/?slug=${encodeURIComponent(page.slug)}`,openInNewTab:false})}}><option value="">Select published Page...</option>{pageOptions.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label><label><input type="checkbox" checked={menu.visible !== false} onChange={e => changeMenu(menu.id, { visible: e.target.checked })}/> Visible</label><label><input type="checkbox" checked={!!menu.openInNewTab} onChange={e => changeMenu(menu.id, { openInNewTab: e.target.checked })}/> Open in new tab</label><div className="flex flex-wrap gap-2"><button onClick={() => addMenu(menu.id)}>+ Submenu</button><button onClick={() => moveMenu(menu.id, -1)}>↑</button><button onClick={() => moveMenu(menu.id, 1)}>↓</button><button onClick={() => duplicateMenu(menu.id)}>Duplicate</button><button onClick={() => relocateMenu(menu.id, null)}>Move to root</button><button className="text-red-300" onClick={() => { if (window.confirm('Delete menu and its submenus?')) { setMenus(removeMenu(menus || [], menu.id)); setSelected(null) } }}>Delete</button></div></>}
         {card && <>{field('Title', card.title, v => changeCard(card.id, { title: v }))}{field('Description', card.description, v => changeCard(card.id, { description: v }))}{field('Image URL', card.image, v => changeCard(card.id, { image: v }))}{field('Link / URL', card.href, v => changeCard(card.id, { href: v }))}<label>Group <select className="bg-black" value={card.card_group} onChange={e => changeCard(card.id, { card_group: e.target.value as 'primary' | 'secondary' })}><option value="primary">Primary</option><option value="secondary">Secondary</option></select></label><label><input type="checkbox" checked={card.visible !== false} onChange={e => changeCard(card.id, { visible: e.target.checked })}/> Visible</label><label><input type="checkbox" checked={!!card.openInNewTab} onChange={e => changeCard(card.id, { openInNewTab: e.target.checked })}/> New tab</label><button className="text-red-300" onClick={() => { if (window.confirm('Delete card?')) { setCards((cards || []).filter(c => c.id !== card.id)); setSelected(null) } }}>Delete card</button></>}
       </aside>}
     </>}
