@@ -5,6 +5,7 @@ import { defaultNavItems } from '@/components/main-nav'
 
 export const CMS_API = 'https://mashkeeza-cms-api.smilingshaaaam.workers.dev'
 export type MenuItem = { id: string; label: string; href: string; visible?: boolean; openInNewTab?: boolean; children?: MenuItem[] }
+export type CardStyle = { background?: string; border?: string; titleColor?: string; descriptionColor?: string; titleSize?: number; descriptionSize?: number; padding?: number; radius?: number; iconSize?: number }
 export type CardItem = { id: string; title: string; description: string; image: string; href: string; card_group: 'primary' | 'secondary'; visible?: boolean; openInNewTab?: boolean }
 export type SidebarLink = { id: string; title: string; href: string }
 export type SidebarGroup = { id: string; title: string; links: SidebarLink[] }
@@ -12,7 +13,7 @@ type CmsContext = {
   editing: boolean; authenticated: boolean; menus: MenuItem[] | null; cards: CardItem[] | null; sidebar: SidebarGroup[] | null;
   setMenus: (v: MenuItem[]) => void; setCards: (v: CardItem[]) => void; setSidebar: (v: SidebarGroup[]) => void; initSidebar: (v: SidebarGroup[]) => void;
   initMenus: (v: MenuItem[]) => void; initCards: (v: CardItem[]) => void;
-  selectedMenuId: string | null; selectMenu: (id: string) => void; selectCard: (id: string) => void;
+  cardStyles: Record<string, CardStyle>; selectedMenuId: string | null; selectMenu: (id: string) => void; selectCard: (id: string) => void;
 }
 const Context = createContext<CmsContext | null>(null)
 export const useVisualCms = () => useContext(Context)
@@ -64,6 +65,8 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const [sidebar, setSidebarState] = useState<SidebarGroup[] | null>(null)
   const [publishedSidebar, setPublishedSidebar] = useState<SidebarGroup[] | null>(null)
   const [designOther, setDesignOther] = useState<Record<string, unknown>>({})
+  const [cardStyles, setCardStyles] = useState<Record<string, CardStyle>>({})
+  const [publishedCardStyles, setPublishedCardStyles] = useState<Record<string, CardStyle>>({})
   const [selected, setSelected] = useState<{ type: 'menu' | 'card'; id: string } | null>(null)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
@@ -100,7 +103,9 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
     Promise.all([api('/cms/navigation'), api('/cms/cards'), api('/cms/design')]).then(([nav, card, design]) => {
       const pubDesign = design.published?.settings?.published_appearance || {}
       const draftDesign = design.draft || pubDesign
+      setPublishedCardStyles(pubDesign.cardStyles && typeof pubDesign.cardStyles === 'object' ? pubDesign.cardStyles : {})
       setDesignOther(draftDesign)
+      setCardStyles(draftDesign.cardStyles && typeof draftDesign.cardStyles === 'object' ? draftDesign.cardStyles : {})
       if (Array.isArray(pubDesign.sidebar)) setPublishedSidebar(pubDesign.sidebar)
       setSidebarState(Array.isArray(draftDesign.sidebar) ? draftDesign.sidebar : [])
       setPublishedMenus(nav.published?.items?.length >= 3 ? nav.published.items : clone(defaultNavItems))
@@ -124,7 +129,7 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const activeMenus = preview ? publishedMenus : menus
   const activeCards = preview ? publishedCards : cards
   const activeSidebar = preview ? publishedSidebar : sidebar
-  const ctx = useMemo<CmsContext>(() => ({ editing: editing && authenticated && !preview, authenticated, menus: activeMenus, cards: activeCards, sidebar: activeSidebar, setMenus, setCards, setSidebar, initSidebar: v => setSidebarState(prev => prev ?? v), initMenus: v => setMenusState(prev => prev && prev.length >= 3 ? prev : clone(v)), initCards: v => setCardsState(prev => prev ?? v), selectedMenuId: selected?.type === 'menu' ? selected.id : null, selectMenu: id => setSelected({ type: 'menu', id }), selectCard: id => setSelected({ type: 'card', id }) }), [editing, authenticated, preview, activeMenus, activeCards, activeSidebar, history, selected])
+  const ctx = useMemo<CmsContext>(() => ({ editing: editing && authenticated && !preview, authenticated, menus: activeMenus, cards: activeCards, sidebar: activeSidebar, setMenus, setCards, setSidebar, initSidebar: v => setSidebarState(prev => prev ?? v), initMenus: v => setMenusState(prev => prev && prev.length >= 3 ? prev : clone(v)), initCards: v => setCardsState(prev => prev ?? v), cardStyles: preview ? publishedCardStyles : cardStyles, selectedMenuId: selected?.type === 'menu' ? selected.id : null, selectMenu: id => setSelected({ type: 'menu', id }), selectCard: id => setSelected({ type: 'card', id }) }), [editing, authenticated, preview, activeMenus, activeCards, activeSidebar, history, selected, cardStyles, publishedCardStyles])
 
   async function login(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setMessage('')
@@ -136,7 +141,7 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
     if (!validateMenus(menus)) { setMessage('Menu mein invalid ya duplicate ID/link hai.'); return }
     if (!validateSidebar(sidebar)) { setMessage('Sidebar ke title ya links invalid hain.'); return }
     setBusy(true); setMessage('')
-    try { await api('/cms/navigation/draft', 'PUT', { items: menus }); await api('/cms/cards/draft', 'PUT', { items: cards }); await api('/cms/design/draft', 'PUT', { ...designOther, sidebar }); setMessage('Draft save ho gaya.') }
+    try { await api('/cms/navigation/draft', 'PUT', { items: menus }); await api('/cms/cards/draft', 'PUT', { items: cards }); await api('/cms/design/draft', 'PUT', { ...designOther, cardStyles, sidebar }); setMessage('Draft save ho gaya.') }
     catch (e) { setMessage((e as Error).message) } finally { setBusy(false) }
   }
   async function publish() {
@@ -144,9 +149,9 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
     if (!validateMenus(menus) || !validateSidebar(sidebar)) { setMessage('Menu ya sidebar validation fail hui.'); return }
     setBusy(true); setMessage('')
     try {
-      await api('/cms/navigation/draft', 'PUT', { items: menus }); await api('/cms/cards/draft', 'PUT', { items: cards }); await api('/cms/design/draft', 'PUT', { ...designOther, sidebar })
+      await api('/cms/navigation/draft', 'PUT', { items: menus }); await api('/cms/cards/draft', 'PUT', { items: cards }); await api('/cms/design/draft', 'PUT', { ...designOther, cardStyles, sidebar })
       await api('/cms/navigation/publish', 'POST'); await api('/cms/cards/publish', 'POST'); await api('/cms/design/publish', 'POST')
-      setPublishedMenus(clone(menus)); setPublishedCards(clone(cards)); setPublishedSidebar(clone(sidebar)); setMessage('Published. Visitors ko refresh par changes nazar aayenge.')
+      setPublishedMenus(clone(menus)); setPublishedCards(clone(cards)); setPublishedSidebar(clone(sidebar)); setPublishedCardStyles(clone(cardStyles)); setMessage('Published. Visitors ko refresh par changes nazar aayenge.')
     } catch (e) { setMessage((e as Error).message) } finally { setBusy(false) }
   }
   function changeMenu(id: string, patch: Partial<MenuItem>) {
@@ -255,6 +260,10 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   function hasMenuMatch(items: MenuItem[], search: string): boolean {
     return items.some(item => item.label.toLocaleLowerCase().includes(search) || item.href.toLocaleLowerCase().includes(search) || hasMenuMatch(item.children || [], search))
   }
+  function changeCardStyle(id: string, patch: Partial<CardStyle>) {
+    setCardStyles(prev => ({ ...prev, [id]: { ...(prev[id] || {}), ...patch } }))
+  }
+  function resetCardStyle(id: string) { setCardStyles(prev => { const next = { ...prev }; delete next[id]; return next }) }
   function changeCard(id: string, patch: Partial<CardItem>) {
     if (!cards) return
     setCards(cards.map(card => card.id === id ? { ...card, ...patch } : card))
@@ -280,6 +289,7 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
     const next = clone(cards)
     next.splice(index + 1, 0, item)
     setCards(next)
+    if (cardStyles[id]) setCardStyles(prev => ({ ...prev, [item.id]: { ...prev[id] } }))
     setSelected({ type: 'card', id: item.id })
   }
   function moveCardToGroup(id: string, group: 'primary' | 'secondary') {
@@ -295,6 +305,9 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   }
   const menu = selected?.type === 'menu' ? findMenu(menus || [], selected.id) : undefined
   const card = selected?.type === 'card' ? cards?.find(c => c.id === selected.id) : undefined
+  const cardStyle = card ? (cardStyles[card.id] || {}) : {}
+  const colorControl = (label: string, key: keyof CardStyle, fallback: string) => <label className="flex items-center justify-between gap-2 text-sm text-amber-200">{label}<input aria-label={label} type="color" className="h-9 w-14 rounded border border-amber-700 bg-black p-1" value={String(cardStyle[key] || fallback)} onChange={e => card && changeCardStyle(card.id, { [key]: e.target.value })}/></label>
+  const rangeControl = (label: string, key: keyof CardStyle, min: number, max: number, fallback: number) => <label className="flex flex-col gap-1 text-sm text-amber-200"><span>{label}: {Number(cardStyle[key] ?? fallback)}px</span><input aria-label={label} type="range" min={min} max={max} value={Number(cardStyle[key] ?? fallback)} onChange={e => card && changeCardStyle(card.id, { [key]: Number(e.target.value) })}/></label>
   const field = (label: string, value: string, update: (v: string) => void) => <label className="flex flex-col gap-1 text-sm text-amber-200">{label}<input dir="auto" className="rounded border border-amber-700 bg-black p-2 text-white" value={value} onChange={e => update(e.target.value)} /></label>
   return <Context.Provider value={ctx}>
     {children}
@@ -360,7 +373,7 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
       </aside>}
       {!preview && (menu || card) && <aside className="fixed right-0 top-14 bottom-0 z-[9997] flex w-[min(340px,94vw)] flex-col gap-3 overflow-auto rounded-xl border border-amber-600 bg-black/95 p-4 text-amber-100 shadow-2xl" dir="ltr"><div className="flex justify-between"><strong>{menu ? 'Edit Menu' : 'Edit Card'}</strong><button onClick={() => setSelected(null)}>✕</button></div>
         {menu && <>{field('Label', menu.label, v => changeMenu(menu.id, { label: v }))}{field('Link / URL', menu.href, v => changeMenu(menu.id, { href: v }))}<label className="flex flex-col gap-1 text-sm text-amber-200">Link to published Page<select className="rounded border border-amber-700 bg-black p-2 text-white" value={pageOptions.find(p => menu.href === `/pages/?slug=${encodeURIComponent(p.slug)}`)?.id || ''} onChange={e => {const page=pageOptions.find(p => p.id===e.target.value);if(page)changeMenu(menu.id,{href:`/pages/?slug=${encodeURIComponent(page.slug)}`,openInNewTab:false})}}><option value="">Select published Page...</option>{pageOptions.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label><label><input type="checkbox" checked={menu.visible !== false} onChange={e => changeMenu(menu.id, { visible: e.target.checked })}/> Visible</label><label><input type="checkbox" checked={!!menu.openInNewTab} onChange={e => changeMenu(menu.id, { openInNewTab: e.target.checked })}/> Open in new tab</label><div className="flex flex-wrap gap-2"><button onClick={() => addMenu(menu.id)}>+ Submenu</button><button onClick={() => moveMenu(menu.id, -1)}>↑</button><button onClick={() => moveMenu(menu.id, 1)}>↓</button><button onClick={() => duplicateMenu(menu.id)}>Duplicate</button><button onClick={() => relocateMenu(menu.id, null)}>Move to root</button><button className="text-red-300" onClick={() => { if (window.confirm('Delete menu and its submenus?')) { setMenus(removeMenu(menus || [], menu.id)); setSelected(null) } }}>Delete</button></div></>}
-        {card && <>{field('Title', card.title, v => changeCard(card.id, { title: v }))}{field('Description', card.description, v => changeCard(card.id, { description: v }))}{field('Image URL', card.image, v => changeCard(card.id, { image: v }))}{field('Link / URL', card.href, v => changeCard(card.id, { href: v }))}<label className="flex flex-col gap-1 text-sm text-amber-200">Link to published Page<select className="rounded border border-amber-700 bg-black p-2 text-white" value={pageOptions.find(p => card.href === `/pages/?slug=${encodeURIComponent(p.slug)}`)?.id || ''} onChange={e => { const page = pageOptions.find(p => p.id === e.target.value); if (page) changeCard(card.id, { href: `/pages/?slug=${encodeURIComponent(page.slug)}`, openInNewTab: false }) }}><option value="">Select published Page...</option>{pageOptions.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label><label>Group <select className="bg-black" value={card.card_group} onChange={e => moveCardToGroup(card.id, e.target.value as 'primary' | 'secondary')}><option value="primary">Primary</option><option value="secondary">Secondary</option></select></label><label><input type="checkbox" checked={card.visible !== false} onChange={e => changeCard(card.id, { visible: e.target.checked })}/> Visible</label><label><input type="checkbox" checked={!!card.openInNewTab} onChange={e => changeCard(card.id, { openInNewTab: e.target.checked })}/> New tab</label><div className="flex flex-wrap gap-2"><button type="button" onClick={() => moveCard(card.id, -1)}>↑ Move up</button><button type="button" onClick={() => moveCard(card.id, 1)}>↓ Move down</button><button type="button" onClick={() => duplicateCard(card.id)}>Duplicate</button></div><button className="text-red-300" onClick={() => { if (window.confirm('Delete card?')) { setCards((cards || []).filter(c => c.id !== card.id)); setSelected(null) } }}>Delete card</button></>}
+        {card && <>{field('Title', card.title, v => changeCard(card.id, { title: v }))}{field('Description', card.description, v => changeCard(card.id, { description: v }))}{field('Image URL', card.image, v => changeCard(card.id, { image: v }))}{field('Link / URL', card.href, v => changeCard(card.id, { href: v }))}<label className="flex flex-col gap-1 text-sm text-amber-200">Link to published Page<select className="rounded border border-amber-700 bg-black p-2 text-white" value={pageOptions.find(p => card.href === `/pages/?slug=${encodeURIComponent(p.slug)}`)?.id || ''} onChange={e => { const page = pageOptions.find(p => p.id === e.target.value); if (page) changeCard(card.id, { href: `/pages/?slug=${encodeURIComponent(page.slug)}`, openInNewTab: false }) }}><option value="">Select published Page...</option>{pageOptions.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label><label>Group <select className="bg-black" value={card.card_group} onChange={e => moveCardToGroup(card.id, e.target.value as 'primary' | 'secondary')}><option value="primary">Primary</option><option value="secondary">Secondary</option></select></label><label><input type="checkbox" checked={card.visible !== false} onChange={e => changeCard(card.id, { visible: e.target.checked })}/> Visible</label><label><input type="checkbox" checked={!!card.openInNewTab} onChange={e => changeCard(card.id, { openInNewTab: e.target.checked })}/> New tab</label><div className="flex flex-wrap gap-2"><button type="button" onClick={() => moveCard(card.id, -1)}>↑ Move up</button><button type="button" onClick={() => moveCard(card.id, 1)}>↓ Move down</button><button type="button" onClick={() => duplicateCard(card.id)}>Duplicate</button></div><div className="mt-3 flex flex-col gap-3 rounded-lg border border-amber-700/70 p-3"><strong className="text-amber-300">Card Design — Live Preview</strong>{colorControl('Background', 'background', '#120c03')}{colorControl('Border', 'border', '#f5c25b')}{colorControl('Title color', 'titleColor', '#f5c25b')}{colorControl('Description color', 'descriptionColor', '#f5dfac')}{rangeControl('Title size', 'titleSize', 12, 36, 20)}{rangeControl('Description size', 'descriptionSize', 10, 24, 12)}{rangeControl('Padding', 'padding', 4, 48, 20)}{rangeControl('Border radius', 'radius', 0, 60, 40)}{rangeControl('Icon size', 'iconSize', 32, 160, 96)}<button type="button" className="rounded border border-amber-600 p-2" onClick={() => resetCardStyle(card.id)}>Restore original design</button><p className="text-xs text-amber-300">Upar Save draft / Publish se design bhi save hoga.</p></div><button className="text-red-300" onClick={() => { if (window.confirm('Delete card?')) { setCards((cards || []).filter(c => c.id !== card.id)); setSelected(null) } }}>Delete card</button></>}
       </aside>}
     </>}
   </Context.Provider>
