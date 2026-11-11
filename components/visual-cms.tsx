@@ -73,6 +73,8 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const [publishedCards, setPublishedCards] = useState<CardItem[] | null>(null)
   const [pageOptions, setPageOptions] = useState<Array<{id:string;title:string;slug:string}>>([])
   const [menuPanelOpen, setMenuPanelOpen] = useState(false)
+  const [cardPanelOpen, setCardPanelOpen] = useState(false)
+  const [cardSearch, setCardSearch] = useState('')
   const [menuSearch, setMenuSearch] = useState('')
   const [collapsedMenus, setCollapsedMenus] = useState<string[]>([])
   const [contentPanelOpen, setContentPanelOpen] = useState(false)
@@ -257,6 +259,40 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
     if (!cards) return
     setCards(cards.map(card => card.id === id ? { ...card, ...patch } : card))
   }
+  function moveCard(id: string, direction: -1 | 1) {
+    if (!cards) return
+    const next = clone(cards)
+    const current = next.findIndex(x => x.id === id)
+    if (current < 0) return
+    const group = next[current].card_group
+    const peers = next.map((x, i) => x.card_group === group ? i : -1).filter(i => i >= 0)
+    const position = peers.indexOf(current)
+    const target = peers[position + direction]
+    if (target === undefined) return
+    ;[next[current], next[target]] = [next[target], next[current]]
+    setCards(next)
+  }
+  function duplicateCard(id: string) {
+    if (!cards) return
+    const index = cards.findIndex(x => x.id === id)
+    if (index < 0) return
+    const item = { ...clone(cards[index]), id: newId(), title: cards[index].title + ' — Copy' }
+    const next = clone(cards)
+    next.splice(index + 1, 0, item)
+    setCards(next)
+    setSelected({ type: 'card', id: item.id })
+  }
+  function moveCardToGroup(id: string, group: 'primary' | 'secondary') {
+    if (!cards) return
+    const next = clone(cards)
+    const index = next.findIndex(x => x.id === id)
+    if (index < 0) return
+    const [item] = next.splice(index, 1)
+    item.card_group = group
+    const last = next.reduce((n, x, i) => x.card_group === group ? i : n, -1)
+    next.splice(last + 1, 0, item)
+    setCards(next)
+  }
   const menu = selected?.type === 'menu' ? findMenu(menus || [], selected.id) : undefined
   const card = selected?.type === 'card' ? cards?.find(c => c.id === selected.id) : undefined
   const field = (label: string, value: string, update: (v: string) => void) => <label className="flex flex-col gap-1 text-sm text-amber-200">{label}<input dir="auto" className="rounded border border-amber-700 bg-black p-2 text-white" value={value} onChange={e => update(e.target.value)} /></label>
@@ -281,6 +317,7 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
         <strong>مشکیزہ • Visual Builder</strong>
         <button type="button" aria-expanded={contentPanelOpen} aria-controls="mashkeeza-content-panel" className="rounded border border-amber-600 px-2 py-1" onClick={() => setContentPanelOpen(v => !v)}>Content Management</button>
         <button className="rounded border border-amber-600 px-2 py-1" onClick={() => setMenuPanelOpen(!menuPanelOpen)}>{menuPanelOpen ? 'Hide menu tree' : 'Menu builder'}</button>
+        <button type="button" className="rounded border border-amber-600 px-2 py-1" onClick={() => setCardPanelOpen(v => !v)}>{cardPanelOpen ? 'Hide cards' : 'Cards builder'}</button>
         <button className="rounded border border-amber-600 px-2 py-1" onClick={() => setPreview(!preview)}>{preview ? 'Edit mode' : 'Preview published'}</button>
         {!preview && <><button className="rounded border border-amber-600 px-2 py-1" onClick={() => addMenu()}>+ Menu</button><button className="rounded border border-amber-600 px-2 py-1" onClick={() => { const next = [...(cards || []), { id: newId(), title: 'نیا کارڈ', description: '', image: '/images/icon-scroll.png', href: '#', card_group: 'primary' as const }]; setCards(next); setSelected({ type: 'card', id: next[next.length - 1].id }) }}>+ Card</button><button disabled={!history.length} className="rounded border border-amber-600 px-2 py-1 disabled:opacity-40" onClick={() => { const old = history[history.length - 1]; if (old) { setMenusState(old.menus); setCardsState(old.cards); setSidebarState(old.sidebar); setHistory(history.slice(0, -1)) } }}>Undo</button><button disabled={busy} className="rounded bg-amber-700 px-2 py-1" onClick={save}>Save draft</button><button disabled={busy} className="rounded bg-amber-500 px-2 py-1 font-bold text-black" onClick={publish}>Publish</button></>}
         <button className="rounded border border-amber-600 px-2 py-1" onClick={async () => { try { await api('/auth/logout', 'POST') } catch {} window.location.assign(window.location.pathname) }}>Logout</button>
@@ -306,9 +343,24 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
         <div className="min-h-0 flex-1 overflow-y-auto">{menuTree(menus || [])}</div>
         <div className="mt-2 flex gap-2"><button className="rounded border border-amber-600 p-2" onClick={() => addMenu()}>+ Main menu</button><button className="rounded border border-amber-600 p-2" onClick={() => {if(selected?.type==='menu')addMenu(selected.id)}}>+ Submenu</button></div>
       </aside>}
+      {!preview && cardPanelOpen && <aside className="fixed left-0 top-14 bottom-0 z-[9997] flex w-[min(360px,94vw)] flex-col rounded-r-xl border border-amber-600 bg-black/95 p-3 text-xs text-amber-100 shadow-2xl" dir="ltr">
+        <div className="mb-2 flex items-center justify-between"><strong>Advanced Cards Builder</strong><button type="button" onClick={() => setCardPanelOpen(false)}>✕</button></div>
+        <p className="mb-2 text-amber-200">Card select karein. ↑ ↓ se usi group mein order change karein. Group edit karne ke liye right panel kholein.</p>
+        <input aria-label="Search cards" placeholder="Search card title..." value={cardSearch} onChange={e => setCardSearch(e.target.value)} className="mb-3 w-full rounded border border-amber-700 bg-[#21190f] p-2 text-amber-100" />
+        <div className="min-h-0 flex-1 overflow-y-auto space-y-3">{(['primary', 'secondary'] as const).map(group => <section key={group}>
+          <h3 className="mb-2 font-bold text-amber-300">{group === 'primary' ? 'Primary cards' : 'Secondary cards'}</h3>
+          {(cards || []).filter(item => item.card_group === group && item.title.toLocaleLowerCase().includes(cardSearch.trim().toLocaleLowerCase())).map(item => <div key={item.id} className={`mb-1 flex items-center gap-1 rounded border p-2 ${selected?.type === 'card' && selected.id === item.id ? 'border-amber-400 bg-amber-900/60' : 'border-amber-800/60 bg-[#21190f]'}`}>
+            <button type="button" className="min-w-0 flex-1 truncate text-left" onClick={() => setSelected({ type: 'card', id: item.id })}>{item.title}{item.visible === false ? ' (hidden)' : ''}</button>
+            <button type="button" title="Move card up" onClick={() => moveCard(item.id, -1)}>↑</button>
+            <button type="button" title="Move card down" onClick={() => moveCard(item.id, 1)}>↓</button>
+            <button type="button" title="Duplicate card" onClick={() => duplicateCard(item.id)}>⧉</button>
+          </div>)}
+        </section>)}</div>
+        <button type="button" className="mt-3 rounded border border-amber-600 p-2" onClick={() => { const next = [...(cards || []), { id: newId(), title: 'نیا کارڈ', description: '', image: '/images/icon-scroll.png', href: '#', card_group: 'primary' as const }]; setCards(next); setSelected({type:'card',id:next[next.length-1].id}) }}>+ Add card</button>
+      </aside>}
       {!preview && (menu || card) && <aside className="fixed right-0 top-14 bottom-0 z-[9997] flex w-[min(340px,94vw)] flex-col gap-3 overflow-auto rounded-xl border border-amber-600 bg-black/95 p-4 text-amber-100 shadow-2xl" dir="ltr"><div className="flex justify-between"><strong>{menu ? 'Edit Menu' : 'Edit Card'}</strong><button onClick={() => setSelected(null)}>✕</button></div>
         {menu && <>{field('Label', menu.label, v => changeMenu(menu.id, { label: v }))}{field('Link / URL', menu.href, v => changeMenu(menu.id, { href: v }))}<label className="flex flex-col gap-1 text-sm text-amber-200">Link to published Page<select className="rounded border border-amber-700 bg-black p-2 text-white" value={pageOptions.find(p => menu.href === `/pages/?slug=${encodeURIComponent(p.slug)}`)?.id || ''} onChange={e => {const page=pageOptions.find(p => p.id===e.target.value);if(page)changeMenu(menu.id,{href:`/pages/?slug=${encodeURIComponent(page.slug)}`,openInNewTab:false})}}><option value="">Select published Page...</option>{pageOptions.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label><label><input type="checkbox" checked={menu.visible !== false} onChange={e => changeMenu(menu.id, { visible: e.target.checked })}/> Visible</label><label><input type="checkbox" checked={!!menu.openInNewTab} onChange={e => changeMenu(menu.id, { openInNewTab: e.target.checked })}/> Open in new tab</label><div className="flex flex-wrap gap-2"><button onClick={() => addMenu(menu.id)}>+ Submenu</button><button onClick={() => moveMenu(menu.id, -1)}>↑</button><button onClick={() => moveMenu(menu.id, 1)}>↓</button><button onClick={() => duplicateMenu(menu.id)}>Duplicate</button><button onClick={() => relocateMenu(menu.id, null)}>Move to root</button><button className="text-red-300" onClick={() => { if (window.confirm('Delete menu and its submenus?')) { setMenus(removeMenu(menus || [], menu.id)); setSelected(null) } }}>Delete</button></div></>}
-        {card && <>{field('Title', card.title, v => changeCard(card.id, { title: v }))}{field('Description', card.description, v => changeCard(card.id, { description: v }))}{field('Image URL', card.image, v => changeCard(card.id, { image: v }))}{field('Link / URL', card.href, v => changeCard(card.id, { href: v }))}<label>Group <select className="bg-black" value={card.card_group} onChange={e => changeCard(card.id, { card_group: e.target.value as 'primary' | 'secondary' })}><option value="primary">Primary</option><option value="secondary">Secondary</option></select></label><label><input type="checkbox" checked={card.visible !== false} onChange={e => changeCard(card.id, { visible: e.target.checked })}/> Visible</label><label><input type="checkbox" checked={!!card.openInNewTab} onChange={e => changeCard(card.id, { openInNewTab: e.target.checked })}/> New tab</label><button className="text-red-300" onClick={() => { if (window.confirm('Delete card?')) { setCards((cards || []).filter(c => c.id !== card.id)); setSelected(null) } }}>Delete card</button></>}
+        {card && <>{field('Title', card.title, v => changeCard(card.id, { title: v }))}{field('Description', card.description, v => changeCard(card.id, { description: v }))}{field('Image URL', card.image, v => changeCard(card.id, { image: v }))}{field('Link / URL', card.href, v => changeCard(card.id, { href: v }))}<label className="flex flex-col gap-1 text-sm text-amber-200">Link to published Page<select className="rounded border border-amber-700 bg-black p-2 text-white" value={pageOptions.find(p => card.href === `/pages/?slug=${encodeURIComponent(p.slug)}`)?.id || ''} onChange={e => { const page = pageOptions.find(p => p.id === e.target.value); if (page) changeCard(card.id, { href: `/pages/?slug=${encodeURIComponent(page.slug)}`, openInNewTab: false }) }}><option value="">Select published Page...</option>{pageOptions.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label><label>Group <select className="bg-black" value={card.card_group} onChange={e => moveCardToGroup(card.id, e.target.value as 'primary' | 'secondary')}><option value="primary">Primary</option><option value="secondary">Secondary</option></select></label><label><input type="checkbox" checked={card.visible !== false} onChange={e => changeCard(card.id, { visible: e.target.checked })}/> Visible</label><label><input type="checkbox" checked={!!card.openInNewTab} onChange={e => changeCard(card.id, { openInNewTab: e.target.checked })}/> New tab</label><div className="flex flex-wrap gap-2"><button type="button" onClick={() => moveCard(card.id, -1)}>↑ Move up</button><button type="button" onClick={() => moveCard(card.id, 1)}>↓ Move down</button><button type="button" onClick={() => duplicateCard(card.id)}>Duplicate</button></div><button className="text-red-300" onClick={() => { if (window.confirm('Delete card?')) { setCards((cards || []).filter(c => c.id !== card.id)); setSelected(null) } }}>Delete card</button></>}
       </aside>}
     </>}
   </Context.Provider>
