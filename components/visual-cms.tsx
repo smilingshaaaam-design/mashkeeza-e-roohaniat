@@ -258,10 +258,10 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
       </div>
       {contentPanelOpen && <section id="mashkeeza-content-panel" aria-label="Content Management" className="fixed right-3 top-20 z-[9999] w-[min(360px,calc(100vw-24px))] rounded-xl border border-amber-600 bg-[#150f0a] p-4 text-amber-100 shadow-2xl" dir="ltr">
         <div className="mb-3 flex items-center justify-between"><strong>Content Management</strong><button type="button" aria-label="Close Content Management" onClick={() => setContentPanelOpen(false)}>✕</button></div>
-        <p className="mb-3 text-xs text-amber-200">Articles aur Pages ki existing settings Admin Panel mein hi rahengi. Link nayi tab mein khulega; wahan apna Articles ya Pages tab select karein.</p>
-        <a href="https://mashkeeza-admin.pages.dev/" target="_blank" rel="noopener noreferrer" className="mb-2 flex items-center justify-between rounded-lg border border-amber-700 px-3 py-3 hover:bg-amber-900/40"><span>📚 مضامین — Manage Articles</span><span aria-hidden="true">↗</span></a>
-        <a href="https://mashkeeza-admin.pages.dev/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-lg border border-amber-700 px-3 py-3 hover:bg-amber-900/40"><span>📄 صفحات — Manage Pages</span><span aria-hidden="true">↗</span></a>
-        <p className="mt-3 text-xs text-amber-300">Admin Panel mein login ke baad relevant tab kholein. Public website ke changes sirf Publish karne par live honge.</p>
+        <p className="mb-3 text-xs text-amber-200">Articles aur Pages ki existing settings Admin Panel mein hi rahengi. Link nayi tab mein khulega aur login ke baad relevant Articles ya Pages section khul jayega.</p>
+        <a href="https://mashkeeza-admin.pages.dev/?section=articles" target="_blank" rel="noopener noreferrer" className="mb-2 flex items-center justify-between rounded-lg border border-amber-700 px-3 py-3 hover:bg-amber-900/40"><span>📚 مضامین — Manage Articles</span><span aria-hidden="true">↗</span></a>
+        <a href="https://mashkeeza-admin.pages.dev/?section=pages" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-lg border border-amber-700 px-3 py-3 hover:bg-amber-900/40"><span>📄 صفحات — Manage Pages</span><span aria-hidden="true">↗</span></a>
+        <p className="mt-3 text-xs text-amber-300">Admin Panel login ke baad relevant section automatically select karega. Public website ke changes sirf Publish karne par live honge.</p>
       </section>}
       {!preview && recoveryWarning && <div role="alert" className="fixed top-16 left-1/2 z-[9998] w-[min(560px,94vw)] -translate-x-1/2 rounded-lg border border-amber-500 bg-[#201407] p-3 text-sm text-amber-100 shadow-xl" dir="ltr">
         CMS mein sirf 1–2 menu items mile. Safety ke liye original menu structure editor mein restore kiya gaya hai; abhi public site par kuch publish nahi hua.
