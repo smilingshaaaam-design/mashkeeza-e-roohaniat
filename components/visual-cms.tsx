@@ -73,6 +73,7 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const [publishedCards, setPublishedCards] = useState<CardItem[] | null>(null)
   const [pageOptions, setPageOptions] = useState<Array<{id:string;title:string;slug:string}>>([])
   const [menuPanelOpen, setMenuPanelOpen] = useState(false)
+  const [contentPanelOpen, setContentPanelOpen] = useState(false)
   const [dragId, setDragId] = useState<string | null>(null)
   const [recoveryWarning, setRecoveryWarning] = useState(false)
   const [compactDraft, setCompactDraft] = useState<MenuItem[] | null>(null)
@@ -248,12 +249,20 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
     {editing && authenticated && <>
       <div className="fixed inset-x-0 top-0 z-[9998] flex min-h-14 flex-wrap items-center justify-center gap-2 border-b border-amber-700 bg-[#110d09]/95 px-3 py-2 text-xs text-amber-100 shadow-2xl" dir="ltr">
         <strong>مشکیزہ • Visual Builder</strong>
+        <button type="button" aria-expanded={contentPanelOpen} aria-controls="mashkeeza-content-panel" className="rounded border border-amber-600 px-2 py-1" onClick={() => setContentPanelOpen(v => !v)}>Content Management</button>
         <button className="rounded border border-amber-600 px-2 py-1" onClick={() => setMenuPanelOpen(!menuPanelOpen)}>{menuPanelOpen ? 'Hide menu tree' : 'Menu builder'}</button>
         <button className="rounded border border-amber-600 px-2 py-1" onClick={() => setPreview(!preview)}>{preview ? 'Edit mode' : 'Preview published'}</button>
         {!preview && <><button className="rounded border border-amber-600 px-2 py-1" onClick={() => addMenu()}>+ Menu</button><button className="rounded border border-amber-600 px-2 py-1" onClick={() => { const next = [...(cards || []), { id: newId(), title: 'نیا کارڈ', description: '', image: '/images/icon-scroll.png', href: '#', card_group: 'primary' as const }]; setCards(next); setSelected({ type: 'card', id: next[next.length - 1].id }) }}>+ Card</button><button disabled={!history.length} className="rounded border border-amber-600 px-2 py-1 disabled:opacity-40" onClick={() => { const old = history[history.length - 1]; if (old) { setMenusState(old.menus); setCardsState(old.cards); setSidebarState(old.sidebar); setHistory(history.slice(0, -1)) } }}>Undo</button><button disabled={busy} className="rounded bg-amber-700 px-2 py-1" onClick={save}>Save draft</button><button disabled={busy} className="rounded bg-amber-500 px-2 py-1 font-bold text-black" onClick={publish}>Publish</button></>}
         <button className="rounded border border-amber-600 px-2 py-1" onClick={async () => { try { await api('/auth/logout', 'POST') } catch {} window.location.assign(window.location.pathname) }}>Logout</button>
         {message && <span role="status" className="w-full text-center">{message}</span>}
       </div>
+      {contentPanelOpen && <section id="mashkeeza-content-panel" aria-label="Content Management" className="fixed right-3 top-20 z-[9999] w-[min(360px,calc(100vw-24px))] rounded-xl border border-amber-600 bg-[#150f0a] p-4 text-amber-100 shadow-2xl" dir="ltr">
+        <div className="mb-3 flex items-center justify-between"><strong>Content Management</strong><button type="button" aria-label="Close Content Management" onClick={() => setContentPanelOpen(false)}>✕</button></div>
+        <p className="mb-3 text-xs text-amber-200">Articles aur Pages ki existing settings Admin Panel mein hi rahengi. Link nayi tab mein khulega; wahan apna Articles ya Pages tab select karein.</p>
+        <a href="https://mashkeeza-admin.pages.dev/" target="_blank" rel="noopener noreferrer" className="mb-2 flex items-center justify-between rounded-lg border border-amber-700 px-3 py-3 hover:bg-amber-900/40"><span>📚 مضامین — Manage Articles</span><span aria-hidden="true">↗</span></a>
+        <a href="https://mashkeeza-admin.pages.dev/" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between rounded-lg border border-amber-700 px-3 py-3 hover:bg-amber-900/40"><span>📄 صفحات — Manage Pages</span><span aria-hidden="true">↗</span></a>
+        <p className="mt-3 text-xs text-amber-300">Admin Panel mein login ke baad relevant tab kholein. Public website ke changes sirf Publish karne par live honge.</p>
+      </section>}
       {!preview && recoveryWarning && <div role="alert" className="fixed top-16 left-1/2 z-[9998] w-[min(560px,94vw)] -translate-x-1/2 rounded-lg border border-amber-500 bg-[#201407] p-3 text-sm text-amber-100 shadow-xl" dir="ltr">
         CMS mein sirf 1–2 menu items mile. Safety ke liye original menu structure editor mein restore kiya gaya hai; abhi public site par kuch publish nahi hua.
         <div className="mt-2 flex flex-wrap gap-2"><button className="rounded border border-amber-500 px-2 py-1" onClick={() => setRecoveryWarning(false)}>Continue with original menus</button>
