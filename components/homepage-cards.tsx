@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { FeatureCard, type Feature } from '@/components/feature-card'
-import { CMS_API, useVisualCms, type CardItem } from '@/components/visual-cms'
+import { CMS_API, useVisualCms, type CardItem, type CardStyle } from '@/components/visual-cms'
 
 const primaryFeatures: Feature[] = [
   { id: 'ism-azam', title: 'اسم اعظم', description: 'اللہ کے اسم اعظم سے روحانی فائدہ حاصل کریں', image: '/images/icon-ism-azam.png' },
@@ -25,11 +25,16 @@ const defaults: CardItem[] = [
 export function HomepageCards() {
   const cms = useVisualCms()
   const [published, setPublished] = useState<CardItem[] | null>(null)
+  const [publishedStyles, setPublishedStyles] = useState<Record<string, CardStyle>>({})
   useEffect(() => { cms?.initCards(defaults) }, [cms?.authenticated])
   useEffect(() => {
     let active = true
     fetch(`${CMS_API}/public/cards`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => {
       if (active && Array.isArray(data?.items) && data.items.length) setPublished(data.items)
+    }).catch(() => {})
+    fetch(`${CMS_API}/public/design`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => {
+      const styles = data?.settings?.published_appearance?.cardStyles
+      if (active && styles && typeof styles === 'object' && !Array.isArray(styles)) setPublishedStyles(styles)
     }).catch(() => {})
     return () => { active = false }
   }, [])
@@ -39,10 +44,10 @@ export function HomepageCards() {
   return <section aria-labelledby="services-heading" className="relative mx-auto mt-10 max-w-7xl px-4 pb-20 md:mt-14">
     <h2 id="services-heading" className="sr-only">ہماری روحانی خدمات</h2>
     <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-6">
-      {primary.map(feature => <FeatureCard key={feature.id} feature={feature} />)}
+      {primary.map(feature => <FeatureCard key={feature.id} feature={feature} publishedStyle={publishedStyles[feature.id]} />)}
     </div>
     <div className="mt-10 grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
-      {secondary.map(feature => <FeatureCard key={feature.id} feature={feature} wide />)}
+      {secondary.map(feature => <FeatureCard key={feature.id} feature={feature} wide publishedStyle={publishedStyles[feature.id]} />)}
     </div>
   </section>
 }
