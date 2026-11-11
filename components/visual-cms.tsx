@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { defaultNavItems } from '@/components/main-nav'
 
 export const CMS_API = 'https://mashkeeza-cms-api.smilingshaaaam.workers.dev'
 export type MenuItem = { id: string; label: string; href: string; visible?: boolean; openInNewTab?: boolean; children?: MenuItem[] }
@@ -73,6 +74,8 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const [pageOptions, setPageOptions] = useState<Array<{id:string;title:string;slug:string}>>([])
   const [menuPanelOpen, setMenuPanelOpen] = useState(false)
   const [dragId, setDragId] = useState<string | null>(null)
+  const [recoveryWarning, setRecoveryWarning] = useState(false)
+  const [compactDraft, setCompactDraft] = useState<MenuItem[] | null>(null)
 
   // Pause decorative effects only while an authenticated editor is actively editing.
   // Preview and logout restore the visitor's normal experience.
@@ -94,11 +97,16 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
       const draftDesign = design.draft || pubDesign
       setDesignOther(draftDesign)
       if (Array.isArray(pubDesign.sidebar)) setPublishedSidebar(pubDesign.sidebar)
-      if (Array.isArray(draftDesign.sidebar)) setSidebarState(draftDesign.sidebar)
-      setPublishedMenus(nav.published?.items?.length ? nav.published.items : null)
+      setSidebarState(Array.isArray(draftDesign.sidebar) ? draftDesign.sidebar : [])
+      setPublishedMenus(nav.published?.items?.length >= 3 ? nav.published.items : clone(defaultNavItems))
       setPublishedCards(card.published?.items?.length ? card.published.items : null)
-      if (nav.draft?.items) setMenusState(nav.draft.items)
-      else if (nav.published?.items?.length) setMenusState(nav.published.items)
+      // Recover the original navigation if an accidental two-item CMS draft replaced it.
+      // Never silently publish this recovery: the editor must explicitly save/publish.
+      const candidate = Array.isArray(nav.draft?.items) ? nav.draft.items : nav.published?.items
+      const looksAccidentallyTruncated = Array.isArray(candidate) && candidate.length < 3
+      setRecoveryWarning(looksAccidentallyTruncated)
+      setCompactDraft(looksAccidentallyTruncated ? clone(candidate) : null)
+      setMenusState(looksAccidentallyTruncated ? clone(defaultNavItems) : Array.isArray(candidate) && candidate.length ? candidate : clone(defaultNavItems))
       if (card.draft?.items) setCardsState(card.draft.items)
       else if (card.published?.items?.length) setCardsState(card.published.items)
     }).catch(e => setMessage(e.message))
@@ -111,7 +119,7 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const activeMenus = preview ? publishedMenus : menus
   const activeCards = preview ? publishedCards : cards
   const activeSidebar = preview ? publishedSidebar : sidebar
-  const ctx = useMemo<CmsContext>(() => ({ editing: editing && authenticated && !preview, authenticated, menus: activeMenus, cards: activeCards, sidebar: activeSidebar, setMenus, setCards, setSidebar, initSidebar: v => setSidebarState(prev => prev ?? v), initMenus: v => setMenusState(prev => prev ?? v), initCards: v => setCardsState(prev => prev ?? v), selectedMenuId: selected?.type === 'menu' ? selected.id : null, selectMenu: id => setSelected({ type: 'menu', id }), selectCard: id => setSelected({ type: 'card', id }) }), [editing, authenticated, preview, activeMenus, activeCards, activeSidebar, history, selected])
+  const ctx = useMemo<CmsContext>(() => ({ editing: editing && authenticated && !preview, authenticated, menus: activeMenus, cards: activeCards, sidebar: activeSidebar, setMenus, setCards, setSidebar, initSidebar: v => setSidebarState(prev => prev ?? v), initMenus: v => setMenusState(prev => prev && prev.length >= 3 ? prev : clone(v)), initCards: v => setCardsState(prev => prev ?? v), selectedMenuId: selected?.type === 'menu' ? selected.id : null, selectMenu: id => setSelected({ type: 'menu', id }), selectCard: id => setSelected({ type: 'card', id }) }), [editing, authenticated, preview, activeMenus, activeCards, activeSidebar, history, selected])
 
   async function login(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setMessage('')
@@ -232,25 +240,32 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
     html.mashkeeza-editing a, html.mashkeeza-editing button, html.mashkeeza-editing [role="button"] { cursor: pointer !important; }
     html.mashkeeza-editing input, html.mashkeeza-editing textarea, html.mashkeeza-editing [contenteditable="true"] { cursor: text !important; }
     html.mashkeeza-editing canvas, html.mashkeeza-editing video { visibility: hidden !important; }
+    html.mashkeeza-editing, html.mashkeeza-editing body { cursor: default !important; }
+    html.mashkeeza-editing body { padding-top: 58px; }
     html.mashkeeza-editing { scroll-behavior: auto !important; }
     `}</style>
     {editing && !authenticated && <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4" dir="ltr"><form onSubmit={login} className="flex w-full max-w-sm flex-col gap-3 rounded-xl border border-amber-600 bg-[#130e07] p-6 text-amber-100"><strong>مشکیزہ روحانیت — Editor Login</strong><input required type="email" placeholder="Email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className="rounded bg-white p-2 text-black"/><input required type="password" placeholder="Password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} className="rounded bg-white p-2 text-black"/><button disabled={busy} className="rounded bg-amber-600 p-2 font-bold text-black">Login</button>{message && <p role="alert">{message}</p>}<button type="button" onClick={() => { setEditing(false); window.history.replaceState({}, '', window.location.pathname) }}>Cancel</button></form></div>}
     {editing && authenticated && <>
-      <div className="fixed bottom-3 left-1/2 z-[9998] flex max-w-[96vw] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-xl border border-amber-600 bg-black/95 p-3 text-xs text-amber-100 shadow-2xl" dir="ltr">
-        <strong>Live Editor</strong>
+      <div className="fixed inset-x-0 top-0 z-[9998] flex min-h-14 flex-wrap items-center justify-center gap-2 border-b border-amber-700 bg-[#110d09]/95 px-3 py-2 text-xs text-amber-100 shadow-2xl" dir="ltr">
+        <strong>مشکیزہ • Visual Builder</strong>
         <button className="rounded border border-amber-600 px-2 py-1" onClick={() => setMenuPanelOpen(!menuPanelOpen)}>{menuPanelOpen ? 'Hide menu tree' : 'Menu builder'}</button>
         <button className="rounded border border-amber-600 px-2 py-1" onClick={() => setPreview(!preview)}>{preview ? 'Edit mode' : 'Preview published'}</button>
         {!preview && <><button className="rounded border border-amber-600 px-2 py-1" onClick={() => addMenu()}>+ Menu</button><button className="rounded border border-amber-600 px-2 py-1" onClick={() => { const next = [...(cards || []), { id: newId(), title: 'نیا کارڈ', description: '', image: '/images/icon-scroll.png', href: '#', card_group: 'primary' as const }]; setCards(next); setSelected({ type: 'card', id: next[next.length - 1].id }) }}>+ Card</button><button disabled={!history.length} className="rounded border border-amber-600 px-2 py-1 disabled:opacity-40" onClick={() => { const old = history[history.length - 1]; if (old) { setMenusState(old.menus); setCardsState(old.cards); setSidebarState(old.sidebar); setHistory(history.slice(0, -1)) } }}>Undo</button><button disabled={busy} className="rounded bg-amber-700 px-2 py-1" onClick={save}>Save draft</button><button disabled={busy} className="rounded bg-amber-500 px-2 py-1 font-bold text-black" onClick={publish}>Publish</button></>}
         <button className="rounded border border-amber-600 px-2 py-1" onClick={async () => { try { await api('/auth/logout', 'POST') } catch {} window.location.assign(window.location.pathname) }}>Logout</button>
         {message && <span role="status" className="w-full text-center">{message}</span>}
       </div>
-      {!preview && menuPanelOpen && <aside className="fixed left-3 top-20 z-[9997] flex max-h-[72vh] w-[min(360px,94vw)] flex-col rounded-xl border border-amber-600 bg-black/95 p-3 text-xs text-amber-100 shadow-2xl" dir="ltr">
+      {!preview && recoveryWarning && <div role="alert" className="fixed top-16 left-1/2 z-[9998] w-[min(560px,94vw)] -translate-x-1/2 rounded-lg border border-amber-500 bg-[#201407] p-3 text-sm text-amber-100 shadow-xl" dir="ltr">
+        CMS mein sirf 1–2 menu items mile. Safety ke liye original menu structure editor mein restore kiya gaya hai; abhi public site par kuch publish nahi hua.
+        <div className="mt-2 flex flex-wrap gap-2"><button className="rounded border border-amber-500 px-2 py-1" onClick={() => setRecoveryWarning(false)}>Continue with original menus</button>
+        {compactDraft && <button className="rounded border border-amber-700 px-2 py-1" onClick={() => { if(window.confirm('Sirf chhota saved draft load karna hai? Original menus editor mein hide ho jayenge.')) { setMenus(compactDraft); setRecoveryWarning(false); setMessage('Small draft loaded. Publish carefully.') } }}>Load 2-item draft instead</button>}</div>
+      </div>}
+      {!preview && menuPanelOpen && <aside className="fixed left-0 top-14 bottom-0 z-[9997] flex w-[min(340px,94vw)] flex-col rounded-r-xl border border-amber-600 bg-black/95 p-3 text-xs text-amber-100 shadow-2xl" dir="ltr">
         <div className="mb-2 flex items-center justify-between"><strong>Visual Menu Structure</strong><button onClick={() => setMenuPanelOpen(false)}>✕</button></div>
         <p className="mb-2 text-amber-200">Drag onto a row to move after it. Hold Shift while dropping to make it a submenu. Select a row to edit its label and page link.</p>
         <div className="min-h-0 flex-1 overflow-y-auto">{menuTree(menus || [])}</div>
         <div className="mt-2 flex gap-2"><button className="rounded border border-amber-600 p-2" onClick={() => addMenu()}>+ Main menu</button><button className="rounded border border-amber-600 p-2" onClick={() => {if(selected?.type==='menu')addMenu(selected.id)}}>+ Submenu</button></div>
       </aside>}
-      {!preview && (menu || card) && <aside className="fixed bottom-24 right-3 z-[9997] flex max-h-[65vh] w-[min(350px,94vw)] flex-col gap-3 overflow-auto rounded-xl border border-amber-600 bg-black/95 p-4 text-amber-100 shadow-2xl" dir="ltr"><div className="flex justify-between"><strong>{menu ? 'Edit Menu' : 'Edit Card'}</strong><button onClick={() => setSelected(null)}>✕</button></div>
+      {!preview && (menu || card) && <aside className="fixed right-0 top-14 bottom-0 z-[9997] flex w-[min(340px,94vw)] flex-col gap-3 overflow-auto rounded-xl border border-amber-600 bg-black/95 p-4 text-amber-100 shadow-2xl" dir="ltr"><div className="flex justify-between"><strong>{menu ? 'Edit Menu' : 'Edit Card'}</strong><button onClick={() => setSelected(null)}>✕</button></div>
         {menu && <>{field('Label', menu.label, v => changeMenu(menu.id, { label: v }))}{field('Link / URL', menu.href, v => changeMenu(menu.id, { href: v }))}<label className="flex flex-col gap-1 text-sm text-amber-200">Link to published Page<select className="rounded border border-amber-700 bg-black p-2 text-white" value={pageOptions.find(p => menu.href === `/pages/?slug=${encodeURIComponent(p.slug)}`)?.id || ''} onChange={e => {const page=pageOptions.find(p => p.id===e.target.value);if(page)changeMenu(menu.id,{href:`/pages/?slug=${encodeURIComponent(page.slug)}`,openInNewTab:false})}}><option value="">Select published Page...</option>{pageOptions.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label><label><input type="checkbox" checked={menu.visible !== false} onChange={e => changeMenu(menu.id, { visible: e.target.checked })}/> Visible</label><label><input type="checkbox" checked={!!menu.openInNewTab} onChange={e => changeMenu(menu.id, { openInNewTab: e.target.checked })}/> Open in new tab</label><div className="flex flex-wrap gap-2"><button onClick={() => addMenu(menu.id)}>+ Submenu</button><button onClick={() => moveMenu(menu.id, -1)}>↑</button><button onClick={() => moveMenu(menu.id, 1)}>↓</button><button className="text-red-300" onClick={() => { if (window.confirm('Delete menu and its submenus?')) { setMenus(removeMenu(menus || [], menu.id)); setSelected(null) } }}>Delete</button></div></>}
         {card && <>{field('Title', card.title, v => changeCard(card.id, { title: v }))}{field('Description', card.description, v => changeCard(card.id, { description: v }))}{field('Image URL', card.image, v => changeCard(card.id, { image: v }))}{field('Link / URL', card.href, v => changeCard(card.id, { href: v }))}<label>Group <select className="bg-black" value={card.card_group} onChange={e => changeCard(card.id, { card_group: e.target.value as 'primary' | 'secondary' })}><option value="primary">Primary</option><option value="secondary">Secondary</option></select></label><label><input type="checkbox" checked={card.visible !== false} onChange={e => changeCard(card.id, { visible: e.target.checked })}/> Visible</label><label><input type="checkbox" checked={!!card.openInNewTab} onChange={e => changeCard(card.id, { openInNewTab: e.target.checked })}/> New tab</label><button className="text-red-300" onClick={() => { if (window.confirm('Delete card?')) { setCards((cards || []).filter(c => c.id !== card.id)); setSelected(null) } }}>Delete card</button></>}
       </aside>}
