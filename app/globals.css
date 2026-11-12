@@ -239,12 +239,6 @@ summary,
 .magic-star-cross::before { width: 600%; height: 1px; }
 .magic-star-cross::after { width: 1px; height: 600%; }
 
-/* Hide only the + shaped star rays. Keep tiny star twinkles and all animations. */
-.magic-star-cross::before,
-.magic-star-cross::after {
-  content: none !important;
-}
-
 /* Glowing runes on the mashk */
 @keyframes rune-glow {
   0%, 100% {
@@ -353,51 +347,6 @@ summary,
   .lamp-spout-glow { animation: none; }
 }
 
-/* Shooting stars in their own elements: never use body::before/::after.
-   Existing lamp smoke, twinkling stars, and golden visuals remain untouched. */
-.mashkeeza-shooting-stars {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  overflow: hidden;
-  pointer-events: none;
-  direction: ltr;
-}
-.mashkeeza-shooting-star {
-  position: absolute;
-  display: block;
-  width: 140px;
-  height: 2px;
-  border-radius: 999px;
-  opacity: 0;
-  pointer-events: none;
-  background: linear-gradient(90deg, transparent, rgba(255,235,183,.2) 30%, rgba(255,243,211,.85) 80%, #fff);
-  box-shadow: 0 0 5px rgba(255,231,167,.55), 0 0 11px rgba(255,210,110,.18);
-  transform-origin: right center;
-  will-change: transform, opacity;
-}
-.mashkeeza-shooting-star--one {
-  top: 12%; left: 65%;
-  animation: mashkeeza-fall-one 19s linear infinite;
-}
-.mashkeeza-shooting-star--two {
-  top: 22%; left: 42%;
-  width: 105px;
-  animation: mashkeeza-fall-two 27s linear infinite;
-}
-@keyframes mashkeeza-fall-one {
-  0%, 13%, 20%, 100% { opacity: 0; transform: translate(0,0) rotate(-27deg) scaleX(.5); }
-  14% { opacity: .95; transform: translate(-40px,22px) rotate(-27deg) scaleX(1); }
-  17% { opacity: .9; transform: translate(-190px,100px) rotate(-27deg) scaleX(1); }
-  19% { opacity: 0; transform: translate(-310px,165px) rotate(-27deg) scaleX(.8); }
-}
-@keyframes mashkeeza-fall-two {
-  0%, 53%, 60%, 100% { opacity: 0; transform: translate(0,0) rotate(-32deg) scaleX(.5); }
-  54% { opacity: .9; transform: translate(-30px,20px) rotate(-32deg) scaleX(1); }
-  57% { opacity: .85; transform: translate(-160px,110px) rotate(-32deg) scaleX(1); }
-  59% { opacity: 0; transform: translate(-270px,180px) rotate(-32deg) scaleX(.8); }
-}
-html.mashkeeza-editing .mashkeeza-shooting-stars { display: none; }
-@media (prefers-reduced-motion: reduce) {
-  .mashkeeza-shooting-star { animation: none; }
-}
+/* Remove only plus-shaped star rays; keep twinkling stars and smoke. */
+.magic-star-cross::before,
+.magic-star-cross::after { content: none !important; }
