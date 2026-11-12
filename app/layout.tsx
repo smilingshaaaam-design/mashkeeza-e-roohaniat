@@ -68,10 +68,6 @@ export default function RootLayout({
     >
       <body className="font-urdu antialiased bg-night text-gold-light">
         {children}
-        <div className="mashkeeza-shooting-stars" aria-hidden="true">
-          <span className="mashkeeza-shooting-star mashkeeza-shooting-star--one" />
-          <span className="mashkeeza-shooting-star mashkeeza-shooting-star--two" />
-        </div>
         <SparkleCursor />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
