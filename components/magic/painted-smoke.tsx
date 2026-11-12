@@ -485,7 +485,7 @@ export function MagicalSmoke({
       if (!spots.length) return null; let r = Math.random() * totalWeight;
       for (const s of spots) { r -= s.weight; if (r <= 0) return s; } return spots[spots.length - 1];
     };
-    let path: Path = buildPath(0, 0, 1, 1, sgn, reach, ctrl), raf = 0, particles: Particle[] = [], t = 0, last = performance.now(), avgDelta = 1;
+    let path: Path = buildPath(0, 0, 1, 1, sgn, reach, ctrl), raf = 0, particles: Particle[] = [], t = 0, last = performance.now();
     const acc = { puff: 0, wisp: 0, glyph: 0, spark: 0 }, wind: Wind = { x: 0, y: 0, px: -999, py: -999, power: 0 };
 
     for (const dh of DOT_HUES) getDotSprite(dh); for (const gh of GLYPH_HUES) getStarFlashSprite(gh);
@@ -564,7 +564,12 @@ export function MagicalSmoke({
 
     const frame = (now: number) => {
       if (!visible) { last = now; raf = requestAnimationFrame(frame); return; }
-      const rawDelta = Math.min((now - last) / 16.667, 2.5); last = now; avgDelta += (rawDelta - avgDelta) * 0.07; const dt = avgDelta * speed; t += dt / 60;
+      // Real elapsed time keeps the original speed but avoids delayed, uneven movement
+      // when the browser renders frames at irregular intervals.
+      const elapsed = Math.max(0, Math.min((now - last) / 16.667, 2.5));
+      last = now;
+      const dt = elapsed * speed;
+      t += dt / 60;
       ctx.clearRect(0, 0, w, h); sctx.clearRect(0, 0, w, h);
       cnt.puff = cnt.wisp = cnt.glyph = cnt.spark = cnt.flash = 0;
       for (let i = 0; i < particles.length; i++) cnt[particles[i].kind]++;
@@ -593,14 +598,14 @@ export function MagicalSmoke({
       particles.length = alive;
 
       sctx.globalCompositeOperation = "screen";
-      for (const p of particles) if (p.kind === "puff") p.draw(sctx, k, sdpr);
-      for (const p of particles) if (p.kind === "wisp") p.draw(sctx, k, sdpr);
+      for (const p of particles) if (p.kind === "puff" && p.x > -180 && p.x < w + 180 && p.y > -180 && p.y < h + 180) p.draw(sctx, k, sdpr);
+      for (const p of particles) if (p.kind === "wisp" && p.x > -180 && p.x < w + 180 && p.y > -180 && p.y < h + 180) p.draw(sctx, k, sdpr);
       sctx.setTransform(sdpr, 0, 0, sdpr, 0, 0); sctx.globalAlpha = 1; sctx.globalCompositeOperation = "source-over";
 
       ctx.globalCompositeOperation = "lighter";
-      for (const p of particles) if (p.kind === "glyph") p.draw(ctx, k, dpr);
-      for (const p of particles) if (p.kind === "spark") p.draw(ctx, k, dpr);
-      for (const p of particles) if (p.kind === "flash") p.draw(ctx, k, dpr);
+      for (const p of particles) if (p.kind === "glyph" && p.x > -140 && p.x < w + 140 && p.y > -140 && p.y < h + 140) p.draw(ctx, k, dpr);
+      for (const p of particles) if (p.kind === "spark" && p.x > -140 && p.x < w + 140 && p.y > -140 && p.y < h + 140) p.draw(ctx, k, dpr);
+      for (const p of particles) if (p.kind === "flash" && p.x > -140 && p.x < w + 140 && p.y > -140 && p.y < h + 140) p.draw(ctx, k, dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
 
       wind.power *= Math.pow(0.92, dt); raf = requestAnimationFrame(frame);
