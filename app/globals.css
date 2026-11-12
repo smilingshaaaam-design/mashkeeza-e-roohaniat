@@ -215,29 +215,21 @@ summary,
   cursor: var(--feather-cursor, url('/cursor-feather.svg') 3 37, auto);
 }
 
-/* Twinkling stars */
-@keyframes star-twinkle {
-  0%, 100% { opacity: 0.15; transform: scale(0.6); }
-  50% { opacity: 1; transform: scale(1.25); }
-}
-
-.magic-star {
-  box-shadow: 0 0 6px 1px currentColor;
-  animation: star-twinkle 3s ease-in-out infinite;
-}
-
+/* Plus-shaped twinkling stars disabled. Other magical effects remain unchanged. */
+.magic-star,
+.magic-star-cross,
 .magic-star-cross::before,
 .magic-star-cross::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  background: currentColor;
-  transform: translate(-50%, -50%);
-  border-radius: 9999px;
+  animation: none !important;
+  box-shadow: none !important;
 }
-.magic-star-cross::before { width: 600%; height: 1px; }
-.magic-star-cross::after { width: 1px; height: 600%; }
+.magic-star-cross::before,
+.magic-star-cross::after {
+  content: none !important;
+}
+.magic-star {
+  opacity: 0 !important;
+}
 
 /* Glowing runes on the mashk */
 @keyframes rune-glow {
