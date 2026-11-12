@@ -22,25 +22,38 @@ const defaults: CardItem[] = [
   ...primaryFeatures.map(x => ({ ...x, href: `#${x.id}`, card_group: 'primary' as const })),
   ...secondaryFeatures.map(x => ({ ...x, href: `#${x.id}`, card_group: 'secondary' as const })),
 ]
+
 export function HomepageCards() {
   const cms = useVisualCms()
   const [published, setPublished] = useState<CardItem[] | null>(null)
   const [publishedStyles, setPublishedStyles] = useState<Record<string, CardStyle>>({})
+
   useEffect(() => { cms?.initCards(defaults) }, [cms?.authenticated])
+
   useEffect(() => {
     let active = true
-    fetch(`${CMS_API}/public/cards`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => {
-      if (active && Array.isArray(data?.items) && data.items.length) setPublished(data.items)
-    }).catch(() => {})
-    fetch(`${CMS_API}/public/design`, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => {
-      const styles = data?.settings?.published_appearance?.cardStyles
-      if (active && styles && typeof styles === 'object' && !Array.isArray(styles)) setPublishedStyles(styles)
-    }).catch(() => {})
+    fetch(`${CMS_API}/public/cards`, { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (active && Array.isArray(data?.items)) setPublished(data.items)
+      }).catch(() => {})
+
+    fetch(`${CMS_API}/public/design`, { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const styles = data?.settings?.published_appearance?.cardStyles
+        if (active && styles && typeof styles === 'object' && !Array.isArray(styles)) setPublishedStyles(styles)
+      }).catch(() => {})
     return () => { active = false }
   }, [])
-  const cards = (cms?.cards ?? published ?? defaults).filter(x => x.visible !== false)
+
+  // Draft order is visible only in active edit mode.
+  // Public visitors and published preview use the published API order.
+  const source = cms?.editing ? (cms.cards ?? published ?? defaults) : (published ?? defaults)
+  const cards = source.filter(x => x.visible !== false)
   const primary = cards.filter(x => x.card_group === 'primary')
   const secondary = cards.filter(x => x.card_group === 'secondary')
+
   return <section aria-labelledby="services-heading" className="relative mx-auto mt-10 max-w-7xl px-4 pb-20 md:mt-14">
     <h2 id="services-heading" className="sr-only">ہماری روحانی خدمات</h2>
     <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-6">
