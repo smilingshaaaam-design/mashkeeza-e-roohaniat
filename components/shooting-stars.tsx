@@ -94,13 +94,13 @@ export function ShootingStars() {
           if (!stopped) setStars(prev => prev.filter(star => star.id !== id))
         }, duration * 1000 + 100))
       }
-      // Preserve the previous irregular 9–19 second pause.
-      timers.push(setTimeout(spawn, random(9000, 19000)))
+      // Random 25–30 second pause between shooting stars.
+      timers.push(setTimeout(spawn, random(25000, 30000)))
     }
 
     measure()
     window.addEventListener('resize', measure)
-    timers.push(setTimeout(spawn, random(2500, 6000)))
+    timers.push(setTimeout(spawn, random(25000, 30000)))
     return () => {
       stopped = true
       window.removeEventListener('resize', measure)
