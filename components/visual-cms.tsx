@@ -82,6 +82,7 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const [collapsedMenus, setCollapsedMenus] = useState<string[]>([])
   const [contentPanelOpen, setContentPanelOpen] = useState(false)
   const [dragId, setDragId] = useState<string | null>(null)
+  const [cardDragId, setCardDragId] = useState<string | null>(null)
   const [recoveryWarning, setRecoveryWarning] = useState(false)
   const [compactDraft, setCompactDraft] = useState<MenuItem[] | null>(null)
 
@@ -281,6 +282,22 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
     ;[next[current], next[target]] = [next[target], next[current]]
     setCards(next)
   }
+  // Reorder cards inside their existing group. No group or design settings are changed.
+  function dropCard(sourceId: string, targetId: string, placement: 'before' | 'after') {
+    if (!cards || sourceId === targetId || cardSearch.trim()) return
+    const source = cards.find(item => item.id === sourceId)
+    const target = cards.find(item => item.id === targetId)
+    if (!source || !target || source.card_group !== target.card_group) return
+    const next = clone(cards)
+    const sourceIndex = next.findIndex(item => item.id === sourceId)
+    const [moved] = next.splice(sourceIndex, 1)
+    const targetIndex = next.findIndex(item => item.id === targetId)
+    next.splice(targetIndex + (placement === 'after' ? 1 : 0), 0, moved)
+    setCards(next)
+    setSelected({ type: 'card', id: sourceId })
+    setMessage('Card order updated in editor. Save draft ya Publish dabayein.')
+  }
+
   function duplicateCard(id: string) {
     if (!cards) return
     const index = cards.findIndex(x => x.id === id)
@@ -358,17 +375,25 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
       </aside>}
       {!preview && cardPanelOpen && <aside className="fixed left-0 top-14 bottom-0 z-[9997] flex w-[min(360px,94vw)] flex-col rounded-r-xl border border-amber-600 bg-black/95 p-3 text-xs text-amber-100 shadow-2xl" dir="ltr">
         <div className="mb-2 flex items-center justify-between"><strong>Advanced Cards Builder</strong><button type="button" onClick={() => setCardPanelOpen(false)}>✕</button></div>
-        <p className="mb-2 text-amber-200">Card select karein. ↑ ↓ se usi group mein order change karein. Group edit karne ke liye right panel kholein.</p>
+        <p className="mb-2 text-amber-200">Card ko ⠿ se drag karke isi group ke kisi doosre card par drop karein. Row ke upper half par drop = before, lower half = after. ↑ ↓ bhi kaam karte hain.</p>
         <input aria-label="Search cards" placeholder="Search card title..." value={cardSearch} onChange={e => setCardSearch(e.target.value)} className="mb-3 w-full rounded border border-amber-700 bg-[#21190f] p-2 text-amber-100" />
         <div className="min-h-0 flex-1 overflow-y-auto space-y-3">{(['primary', 'secondary'] as const).map(group => <section key={group}>
           <h3 className="mb-2 font-bold text-amber-300">{group === 'primary' ? 'Primary cards' : 'Secondary cards'}</h3>
-          {(cards || []).filter(item => item.card_group === group && item.title.toLocaleLowerCase().includes(cardSearch.trim().toLocaleLowerCase())).map(item => <div key={item.id} className={`mb-1 flex items-center gap-1 rounded border p-2 ${selected?.type === 'card' && selected.id === item.id ? 'border-amber-400 bg-amber-900/60' : 'border-amber-800/60 bg-[#21190f]'}`}>
+          {(cards || []).filter(item => item.card_group === group && item.title.toLocaleLowerCase().includes(cardSearch.trim().toLocaleLowerCase())).map(item => <div key={item.id}
+            draggable={!cardSearch.trim()}
+            onDragStart={e => { if (cardSearch.trim()) { e.preventDefault(); return } e.dataTransfer.setData('application/x-mashkeeza-card', item.id); e.dataTransfer.effectAllowed = 'move'; setCardDragId(item.id) }}
+            onDragEnd={() => setCardDragId(null)}
+            onDragOver={e => { if (!cardSearch.trim() && cardDragId && cardDragId !== item.id && cards?.find(c => c.id === cardDragId)?.card_group === item.card_group) { e.preventDefault(); e.dataTransfer.dropEffect = 'move' } }}
+            onDrop={e => { e.preventDefault(); const sourceId = e.dataTransfer.getData('application/x-mashkeeza-card') || cardDragId; if (sourceId) { const bounds = e.currentTarget.getBoundingClientRect(); dropCard(sourceId, item.id, e.clientY < bounds.top + bounds.height / 2 ? 'before' : 'after') } setCardDragId(null) }}
+            className={`mb-1 flex items-center gap-1 rounded border p-2 ${cardDragId === item.id ? 'opacity-50 ' : ''}${selected?.type === 'card' && selected.id === item.id ? 'border-amber-400 bg-amber-900/60' : 'border-amber-800/60 bg-[#21190f]'}`}>
+            <span aria-hidden="true" title="Drag card to reorder" className="cursor-grab select-none text-amber-400">⠿</span>
             <button type="button" className="min-w-0 flex-1 truncate text-left" onClick={() => setSelected({ type: 'card', id: item.id })}>{item.title}{item.visible === false ? ' (hidden)' : ''}</button>
             <button type="button" title="Move card up" onClick={() => moveCard(item.id, -1)}>↑</button>
             <button type="button" title="Move card down" onClick={() => moveCard(item.id, 1)}>↓</button>
             <button type="button" title="Duplicate card" onClick={() => duplicateCard(item.id)}>⧉</button>
           </div>)}
         </section>)}</div>
+        {cardSearch.trim() && <p className="mt-2 text-amber-300">Drag & drop ke liye search clear karein.</p>}
         <button type="button" className="mt-3 rounded border border-amber-600 p-2" onClick={() => { const next = [...(cards || []), { id: newId(), title: 'نیا کارڈ', description: '', image: '/images/icon-scroll.png', href: '#', card_group: 'primary' as const }]; setCards(next); setSelected({type:'card',id:next[next.length-1].id}) }}>+ Add card</button>
       </aside>}
       {!preview && (menu || card) && <aside className="fixed right-0 top-14 bottom-0 z-[9997] flex w-[min(340px,94vw)] flex-col gap-3 overflow-auto rounded-xl border border-amber-600 bg-black/95 p-4 text-amber-100 shadow-2xl" dir="ltr"><div className="flex justify-between"><strong>{menu ? 'Edit Menu' : 'Edit Card'}</strong><button onClick={() => setSelected(null)}>✕</button></div>
