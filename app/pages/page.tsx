@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { ArticleRichBody } from "@/components/article-rich-body";
 import { useSearchParams } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -61,7 +62,7 @@ function PublishedPageContent() {
           <>
             <h1 className="gold-text mb-8 text-2xl font-bold leading-[2] sm:text-4xl">{page.title}</h1>
             {page.excerpt && <p className="mb-6 text-lg leading-[2] text-amber-200">{page.excerpt}</p>}
-            <div className="whitespace-pre-wrap break-words text-base leading-[2.5] sm:text-lg">{page.body || ""}</div>
+            <div className="whitespace-pre-wrap break-words text-base leading-[2.5] sm:text-lg"><ArticleRichBody body={page.body} /></div>
           </>
         ) : null}
       </article>
