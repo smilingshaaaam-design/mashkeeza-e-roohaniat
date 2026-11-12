@@ -10,8 +10,8 @@ export default function HomePage() {
   return (
     <VisualCmsProvider>
       <div className="flex min-h-screen flex-col overflow-x-hidden bg-night">
-        {/* Header must stack above hero overlays so dropdowns remain clickable. */}
-        <div className="relative z-[100]">
+        {/* Keep header background below smoke; header text and navigation retain their own z-20 layers. */}
+        <div className="relative">
           <SiteHeader />
         </div>
         <EditAwareMagic kind="smoke" />
