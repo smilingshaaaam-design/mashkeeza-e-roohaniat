@@ -3,13 +3,14 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArticleRichBody } from "@/components/article-rich-body";
+import { articleBackgroundStyle, articleOverlayOpacity, type ArticleAppearance } from "@/components/article-background";
 import { useSearchParams } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { VisualCmsProvider } from "@/components/visual-cms";
 
 const API = "https://mashkeeza-cms-api.smilingshaaaam.workers.dev";
-type CmsPage = {
+type CmsPage = ArticleAppearance & {
   id: string;
   slug: string;
   title: string;
@@ -55,7 +56,9 @@ function PublishedPageContent() {
 
   return (
     <main dir="rtl" className="mx-auto min-h-[60vh] max-w-5xl px-5 py-12 text-amber-100 sm:px-10">
-      <article className="rounded-2xl border border-amber-700/50 bg-black/55 p-6 shadow-2xl sm:p-12">
+      <article className="relative isolate overflow-hidden rounded-2xl border border-amber-700/50 p-6 shadow-2xl sm:p-12" style={page ? articleBackgroundStyle(page) : { backgroundColor: '#0000008c' }}>
+        {page && <div className="pointer-events-none absolute inset-0 z-0" style={{ backgroundColor: `rgba(0,0,0,${articleOverlayOpacity(page.overlay_opacity)})` }} />}
+        <div className="relative z-10">
         {loading ? <p role="status">صفحہ لوڈ ہو رہا ہے...</p> : error ? (
           <p role="alert" className="text-amber-200">{error}</p>
         ) : page ? (
@@ -65,6 +68,7 @@ function PublishedPageContent() {
             <div className="whitespace-pre-wrap break-words text-base leading-[2.5] sm:text-lg"><ArticleRichBody body={page.body} /></div>
           </>
         ) : null}
+        </div>
       </article>
       <Link className="mt-8 inline-block text-amber-300 underline" href="/">صفحۂ اول</Link>
     </main>
