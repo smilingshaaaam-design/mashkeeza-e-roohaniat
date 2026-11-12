@@ -1,4 +1,3 @@
-
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Gulzar, Noto_Nastaliq_Urdu } from 'next/font/google'
@@ -19,16 +18,13 @@ const gulzar = Gulzar({
 
 export const metadata: Metadata = {
   title: 'مشکیزہ روحانیت | علم و معرفت کا روحانی مرکز',
-
   description:
     'مشکیزہ روحانیت — اسم اعظم، علم جفر، علم الاعداد، تعویذات، طلسمات اور ورد و وظائف کا روحانی مرکز۔',
-
   icons: {
     icon: '/mashkeeza-logo.png',
     shortcut: '/mashkeeza-logo.png',
     apple: '/mashkeeza-logo.png',
   },
-
   openGraph: {
     title: 'مشکیزہ روحانیت | علم و معرفت کا روحانی مرکز',
     description:
@@ -46,7 +42,6 @@ export const metadata: Metadata = {
     locale: 'ur_PK',
     type: 'website',
   },
-
   twitter: {
     card: 'summary_large_image',
     title: 'مشکیزہ روحانیت',
@@ -73,6 +68,10 @@ export default function RootLayout({
     >
       <body className="font-urdu antialiased bg-night text-gold-light">
         {children}
+        <div className="mashkeeza-shooting-stars" aria-hidden="true">
+          <span className="mashkeeza-shooting-star mashkeeza-shooting-star--one" />
+          <span className="mashkeeza-shooting-star mashkeeza-shooting-star--two" />
+        </div>
         <SparkleCursor />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
