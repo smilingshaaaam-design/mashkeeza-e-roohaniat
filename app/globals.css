@@ -215,20 +215,34 @@ summary,
   cursor: var(--feather-cursor, url('/cursor-feather.svg') 3 37, auto);
 }
 
-/* Plus-shaped twinkling stars disabled. Other magical effects remain unchanged. */
-.magic-star,
-.magic-star-cross,
+/* Twinkling stars */
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.6); }
+  50% { opacity: 1; transform: scale(1.25); }
+}
+
+.magic-star {
+  box-shadow: 0 0 6px 1px currentColor;
+  animation: star-twinkle 3s ease-in-out infinite;
+}
+
 .magic-star-cross::before,
 .magic-star-cross::after {
-  animation: none !important;
-  box-shadow: none !important;
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
 }
+.magic-star-cross::before { width: 600%; height: 1px; }
+.magic-star-cross::after { width: 1px; height: 600%; }
+
+/* Hide only the + shaped star rays. Keep tiny star twinkles and all animations. */
 .magic-star-cross::before,
 .magic-star-cross::after {
   content: none !important;
-}
-.magic-star {
-  opacity: 0 !important;
 }
 
 /* Glowing runes on the mashk */
@@ -337,4 +351,58 @@ summary,
   .painted-smoke-base,
   .painted-smoke-glow,
   .lamp-spout-glow { animation: none; }
+}
+
+/* Occasional shooting stars — independent of existing tiny twinkling stars.
+   Decorative only; does not affect page layout or mouse interaction. */
+html:not(.mashkeeza-editing) body::before,
+html:not(.mashkeeza-editing) body::after {
+  content: '';
+  position: fixed;
+  width: 150px;
+  height: 2px;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 236, 181, .18) 28%, rgba(255, 245, 213, .85) 82%, #fff 100%);
+  box-shadow: 0 0 5px rgba(255, 232, 168, .6), 0 0 12px rgba(255, 210, 110, .2);
+  transform-origin: right center;
+  will-change: transform, opacity;
+}
+
+/* First star: a brief streak, followed by a long quiet gap. */
+html:not(.mashkeeza-editing) body::before {
+  top: 13%;
+  left: 62%;
+  animation: mashkeeza-shooting-star-one 17s linear infinite;
+}
+
+/* Second star: appears at a different place and at a different time. */
+html:not(.mashkeeza-editing) body::after {
+  top: 25%;
+  left: 33%;
+  width: 110px;
+  animation: mashkeeza-shooting-star-two 23s linear infinite;
+}
+
+@keyframes mashkeeza-shooting-star-one {
+  0%, 13%, 20%, 100% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-27deg) scaleX(.5); }
+  14% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-27deg) scaleX(.5); }
+  15% { opacity: .95; transform: translate3d(-65px, 30px, 0) rotate(-27deg) scaleX(1); }
+  17% { opacity: .9; transform: translate3d(-220px, 105px, 0) rotate(-27deg) scaleX(1); }
+  19% { opacity: 0; transform: translate3d(-330px, 155px, 0) rotate(-27deg) scaleX(.8); }
+}
+
+@keyframes mashkeeza-shooting-star-two {
+  0%, 53%, 60%, 100% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-32deg) scaleX(.5); }
+  54% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-32deg) scaleX(.5); }
+  55% { opacity: .9; transform: translate3d(-45px, 27px, 0) rotate(-32deg) scaleX(1); }
+  57% { opacity: .85; transform: translate3d(-175px, 108px, 0) rotate(-32deg) scaleX(1); }
+  59% { opacity: 0; transform: translate3d(-260px, 160px, 0) rotate(-32deg) scaleX(.8); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not(.mashkeeza-editing) body::before,
+  html:not(.mashkeeza-editing) body::after { animation: none; opacity: 0; }
 }
