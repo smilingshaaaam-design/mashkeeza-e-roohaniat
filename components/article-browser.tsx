@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { ArticleRichBody } from './article-rich-body'
+import { articleBackgroundStyle, articleOverlayOpacity, type ArticleAppearance } from './article-background'
 
 const CMS_API = 'https://mashkeeza-cms-api.smilingshaaaam.workers.dev'
 
-type Article = {
+type Article = ArticleAppearance & {
   id: string
   title: string
   body?: string | null
@@ -74,10 +75,13 @@ export function ArticleBrowser() {
         </aside>
         <div id="selected-article" className="min-w-0 max-h-full overflow-y-auto bg-transparent [scrollbar-width:thin]" aria-live="polite">
           {selected && (
-            <article className="bg-transparent">
-              <h2 className="gold-text mb-2 text-base font-bold leading-[2] sm:text-2xl">{selected.title}</h2>
-              {selected.excerpt && <p className="mb-2 text-xs leading-[1.9] text-amber-100/90 sm:text-base">{selected.excerpt}</p>}
-              <div className="whitespace-pre-wrap break-words text-xs leading-[2] text-amber-50 sm:text-base md:leading-[2.3]"><ArticleRichBody body={selected.body} /></div>
+            <article className="relative isolate min-h-[320px] overflow-hidden rounded-xl" style={articleBackgroundStyle(selected)}>
+              <div className="pointer-events-none absolute inset-0 z-0" style={{ backgroundColor: `rgba(0,0,0,${articleOverlayOpacity(selected.overlay_opacity)})` }} />
+              <div className="relative z-10 p-3 sm:p-6">
+                <h2 className="gold-text mb-2 text-base font-bold leading-[2] sm:text-2xl">{selected.title}</h2>
+                {selected.excerpt && <p className="mb-2 text-xs leading-[1.9] text-amber-100/90 sm:text-base">{selected.excerpt}</p>}
+                <div className="whitespace-pre-wrap break-words text-xs leading-[2] text-amber-50 sm:text-base md:leading-[2.3]"><ArticleRichBody body={selected.body} /></div>
+              </div>
             </article>
           )}
         </div>
