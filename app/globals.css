@@ -353,56 +353,51 @@ summary,
   .lamp-spout-glow { animation: none; }
 }
 
-/* Occasional shooting stars — independent of existing tiny twinkling stars.
-   Decorative only; does not affect page layout or mouse interaction. */
-html:not(.mashkeeza-editing) body::before,
-html:not(.mashkeeza-editing) body::after {
-  content: '';
+/* Shooting stars in their own elements: never use body::before/::after.
+   Existing lamp smoke, twinkling stars, and golden visuals remain untouched. */
+.mashkeeza-shooting-stars {
   position: fixed;
-  width: 150px;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+  direction: ltr;
+}
+.mashkeeza-shooting-star {
+  position: absolute;
+  display: block;
+  width: 140px;
   height: 2px;
   border-radius: 999px;
-  pointer-events: none;
-  z-index: 5;
   opacity: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 236, 181, .18) 28%, rgba(255, 245, 213, .85) 82%, #fff 100%);
-  box-shadow: 0 0 5px rgba(255, 232, 168, .6), 0 0 12px rgba(255, 210, 110, .2);
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255,235,183,.2) 30%, rgba(255,243,211,.85) 80%, #fff);
+  box-shadow: 0 0 5px rgba(255,231,167,.55), 0 0 11px rgba(255,210,110,.18);
   transform-origin: right center;
   will-change: transform, opacity;
 }
-
-/* First star: a brief streak, followed by a long quiet gap. */
-html:not(.mashkeeza-editing) body::before {
-  top: 13%;
-  left: 62%;
-  animation: mashkeeza-shooting-star-one 17s linear infinite;
+.mashkeeza-shooting-star--one {
+  top: 12%; left: 65%;
+  animation: mashkeeza-fall-one 19s linear infinite;
 }
-
-/* Second star: appears at a different place and at a different time. */
-html:not(.mashkeeza-editing) body::after {
-  top: 25%;
-  left: 33%;
-  width: 110px;
-  animation: mashkeeza-shooting-star-two 23s linear infinite;
+.mashkeeza-shooting-star--two {
+  top: 22%; left: 42%;
+  width: 105px;
+  animation: mashkeeza-fall-two 27s linear infinite;
 }
-
-@keyframes mashkeeza-shooting-star-one {
-  0%, 13%, 20%, 100% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-27deg) scaleX(.5); }
-  14% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-27deg) scaleX(.5); }
-  15% { opacity: .95; transform: translate3d(-65px, 30px, 0) rotate(-27deg) scaleX(1); }
-  17% { opacity: .9; transform: translate3d(-220px, 105px, 0) rotate(-27deg) scaleX(1); }
-  19% { opacity: 0; transform: translate3d(-330px, 155px, 0) rotate(-27deg) scaleX(.8); }
+@keyframes mashkeeza-fall-one {
+  0%, 13%, 20%, 100% { opacity: 0; transform: translate(0,0) rotate(-27deg) scaleX(.5); }
+  14% { opacity: .95; transform: translate(-40px,22px) rotate(-27deg) scaleX(1); }
+  17% { opacity: .9; transform: translate(-190px,100px) rotate(-27deg) scaleX(1); }
+  19% { opacity: 0; transform: translate(-310px,165px) rotate(-27deg) scaleX(.8); }
 }
-
-@keyframes mashkeeza-shooting-star-two {
-  0%, 53%, 60%, 100% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-32deg) scaleX(.5); }
-  54% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-32deg) scaleX(.5); }
-  55% { opacity: .9; transform: translate3d(-45px, 27px, 0) rotate(-32deg) scaleX(1); }
-  57% { opacity: .85; transform: translate3d(-175px, 108px, 0) rotate(-32deg) scaleX(1); }
-  59% { opacity: 0; transform: translate3d(-260px, 160px, 0) rotate(-32deg) scaleX(.8); }
+@keyframes mashkeeza-fall-two {
+  0%, 53%, 60%, 100% { opacity: 0; transform: translate(0,0) rotate(-32deg) scaleX(.5); }
+  54% { opacity: .9; transform: translate(-30px,20px) rotate(-32deg) scaleX(1); }
+  57% { opacity: .85; transform: translate(-160px,110px) rotate(-32deg) scaleX(1); }
+  59% { opacity: 0; transform: translate(-270px,180px) rotate(-32deg) scaleX(.8); }
 }
-
+html.mashkeeza-editing .mashkeeza-shooting-stars { display: none; }
 @media (prefers-reduced-motion: reduce) {
-  html:not(.mashkeeza-editing) body::before,
-  html:not(.mashkeeza-editing) body::after { animation: none; opacity: 0; }
+  .mashkeeza-shooting-star { animation: none; }
 }
