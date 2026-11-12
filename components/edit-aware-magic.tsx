@@ -9,7 +9,7 @@ import { PaintedSmoke } from '@/components/magic/painted-smoke'
 export function EditAwareMagic({ kind }: { kind: 'smoke' | 'stars' | 'mashk' }) {
   const cms = useVisualCms()
   if (cms?.editing) return null
-  if (kind === 'smoke') return <PaintedSmoke anchorSelector="#hero-stage" zIndex={10} menuHeight={90} />
+  if (kind === 'smoke') return <PaintedSmoke anchorSelector="#hero-stage" zIndex={101} menuHeight={0} topGap={0} />
   if (kind === 'stars') return <Starfield count={90} seed={11} className="inset-x-0 top-0 h-[38%]" />
   return <Mashk />
 }
