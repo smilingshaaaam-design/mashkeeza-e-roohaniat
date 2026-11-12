@@ -6,18 +6,19 @@ import { useVisualCms } from '@/components/visual-cms'
 type Star = {
   id: number
   side: 'left' | 'right'
-  top: number
-  edge: number
+  x: number
+  y: number
   dx: number
   dy: number
   angle: number
   duration: number
 }
 
-/** Independent shooting stars; smoke, site layout and other effects are untouched. */
+/** Independent shooting stars: smoke, page, and all other effects remain untouched. */
 export function ShootingStars() {
   const cms = useVisualCms()
   const [stars, setStars] = useState<Star[]>([])
+  const [layerHeight, setLayerHeight] = useState(800)
 
   useEffect(() => {
     if (cms?.editing) {
@@ -30,36 +31,79 @@ export function ShootingStars() {
     const timers: ReturnType<typeof setTimeout>[] = []
     const random = (min: number, max: number) => min + Math.random() * (max - min)
 
+    // Desert/sky meeting line measured from the original desert-scene.png.
+    // Coordinates are normalized to the actual hero image, not the viewport.
+    const horizonPoints: [number, number][] = [
+      [0, 0.42], [0.12, 0.39], [0.24, 0.37], [0.34, 0.40],
+      [0.47, 0.42], [0.59, 0.43], [0.72, 0.36], [0.85, 0.29], [1, 0.32],
+    ]
+    const horizonAt = (x: number) => {
+      const clamped = Math.max(0, Math.min(1, x))
+      for (let i = 1; i < horizonPoints.length; i++) {
+        const [rightX, rightY] = horizonPoints[i]
+        const [leftX, leftY] = horizonPoints[i - 1]
+        if (clamped <= rightX) {
+          const t = (clamped - leftX) / (rightX - leftX)
+          return leftY + (rightY - leftY) * t
+        }
+      }
+      return horizonPoints[horizonPoints.length - 1][1]
+    }
+
+    const measure = () => {
+      const hero = document.getElementById('hero-stage')
+      if (!hero) return null
+      const rect = hero.getBoundingClientRect()
+      // The star layer starts at the top of the page, while rect is viewport-relative.
+      const pageY = window.scrollY
+      const heroTop = rect.top + pageY
+      const horizonMax = heroTop + rect.height * 0.45
+      setLayerHeight(Math.max(300, Math.ceil(horizonMax + 20)))
+      return { rect, heroTop, pageY }
+    }
+
     const spawn = () => {
       if (stopped) return
-      const side: Star['side'] = Math.random() < 0.5 ? 'left' : 'right'
-      // Choose a fresh visual angle for every star, not one repeated diagonal.
-      // Use pixel distances so the actual on-screen angle matches the trail.
-      const desiredAngle = random(22, 74)
-      const travelY = window.innerHeight * random(0.48, 0.72)
-      const travelX = Math.min(
-        travelY / Math.tan(desiredAngle * Math.PI / 180),
-        window.innerWidth * 0.84,
-      )
-      const dx = travelX * (side === 'right' ? -1 : 1)
-      const dy = travelY
-      const angle = Math.atan2(dy, Math.abs(dx)) * (180 / Math.PI)
-      const duration = random(1.9, 2.8)
-      const id = ++nextId
-      setStars(prev => [...prev, {
-        id, side, top: random(1, 13), edge: random(1, 13),
-        dx, dy, angle, duration,
-      }])
-      timers.push(setTimeout(() => {
-        if (!stopped) setStars(prev => prev.filter(s => s.id !== id))
-      }, duration * 1000 + 100))
-      // Irregular pauses; no fixed left/right sequence.
+      const scene = measure()
+      if (scene) {
+        const { rect, heroTop, pageY } = scene
+        const viewportWidth = document.documentElement.clientWidth
+        const side: Star['side'] = Math.random() < 0.5 ? 'left' : 'right'
+
+        // Random starting point near either upper corner.
+        const x = side === 'left'
+          ? random(viewportWidth * 0.025, viewportWidth * 0.19)
+          : random(viewportWidth * 0.81, viewportWidth * 0.975)
+        const y = random(8, Math.max(20, Math.min(95, heroTop * 0.38)))
+
+        // Random endpoint on the actual visible desert horizon.
+        // Endpoint x varies widely, so no fixed repeated shooting angle.
+        const targetX = side === 'left'
+          ? random(viewportWidth * 0.29, viewportWidth * 0.78)
+          : random(viewportWidth * 0.22, viewportWidth * 0.71)
+        const imageX = (targetX - rect.left) / rect.width
+        const targetY = heroTop + rect.height * horizonAt(imageX)
+        const dx = targetX - x
+        const dy = Math.max(35, targetY - y)
+        const angle = Math.atan2(dy, Math.abs(dx)) * (180 / Math.PI)
+        const duration = random(1.9, 2.8)
+        const id = ++nextId
+
+        setStars(prev => [...prev, { id, side, x, y, dx, dy, angle, duration }])
+        timers.push(setTimeout(() => {
+          if (!stopped) setStars(prev => prev.filter(star => star.id !== id))
+        }, duration * 1000 + 100))
+      }
+      // Preserve the previous irregular 9–19 second pause.
       timers.push(setTimeout(spawn, random(9000, 19000)))
     }
 
+    measure()
+    window.addEventListener('resize', measure)
     timers.push(setTimeout(spawn, random(2500, 6000)))
     return () => {
       stopped = true
+      window.removeEventListener('resize', measure)
       timers.forEach(clearTimeout)
     }
   }, [cms?.editing])
@@ -70,13 +114,14 @@ export function ShootingStars() {
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-x-0 top-0 z-[12] overflow-hidden"
-      style={{ height: 'min(1050px, 100vh)', minHeight: 520 }}
+      style={{ height: layerHeight }}
     >
       <style>{`
         @keyframes mashkeeza-random-shoot {
           0% { opacity: 0; transform: translate3d(0, 0, 0); }
           8% { opacity: 1; }
-          75% { opacity: .95; }
+          60% { opacity: .95; }
+          80% { opacity: .5; }
           100% { opacity: 0; transform: translate3d(var(--shoot-dx), var(--shoot-dy), 0); }
         }
         .mashkeeza-random-star {
@@ -121,8 +166,8 @@ export function ShootingStars() {
           key={star.id}
           className={`mashkeeza-random-star mashkeeza-random-star--${star.side}`}
           style={{
-            top: `${star.top}%`,
-            [star.side]: `${star.edge}%`,
+            left: star.x,
+            top: star.y,
             ['--shoot-dx' as string]: `${star.dx}px`,
             ['--shoot-dy' as string]: `${star.dy}px`,
             ['--shoot-angle' as string]: `${star.angle}deg`,
