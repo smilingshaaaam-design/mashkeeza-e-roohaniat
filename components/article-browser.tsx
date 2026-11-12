@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { ArticleRichBody } from './article-rich-body'
 
 const CMS_API = 'https://mashkeeza-cms-api.smilingshaaaam.workers.dev'
 
@@ -76,7 +77,7 @@ export function ArticleBrowser() {
             <article className="bg-transparent">
               <h2 className="gold-text mb-2 text-base font-bold leading-[2] sm:text-2xl">{selected.title}</h2>
               {selected.excerpt && <p className="mb-2 text-xs leading-[1.9] text-amber-100/90 sm:text-base">{selected.excerpt}</p>}
-              <div className="whitespace-pre-wrap break-words text-xs leading-[2] text-amber-50 sm:text-base md:leading-[2.3]">{selected.body || ''}</div>
+              <div className="whitespace-pre-wrap break-words text-xs leading-[2] text-amber-50 sm:text-base md:leading-[2.3]"><ArticleRichBody body={selected.body} /></div>
             </article>
           )}
         </div>
