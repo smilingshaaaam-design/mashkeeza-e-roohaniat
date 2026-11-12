@@ -5,16 +5,18 @@ import { VisualCmsProvider } from '@/components/visual-cms'
 import { SiteFooter } from '@/components/site-footer'
 import { EditAwareMagic } from '@/components/edit-aware-magic'
 import { ArticleBrowser } from '@/components/article-browser'
+import { ShootingStars } from '@/components/shooting-stars'
 
 export default function HomePage() {
   return (
     <VisualCmsProvider>
-      <div className="flex min-h-screen flex-col overflow-x-hidden bg-night">
+      <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-night">
         {/* Keep header background below smoke; header text and navigation retain their own z-20 layers. */}
         <div className="relative">
           <SiteHeader />
         </div>
         <EditAwareMagic kind="smoke" />
+        <ShootingStars />
         <main className="relative z-0 flex-1">
           <section aria-label="روحانی منظر" className="relative -mt-2">
             <div className="relative aspect-[16/10] w-full overflow-hidden md:aspect-[16/8]">
