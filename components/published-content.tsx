@@ -1,6 +1,8 @@
 
 "use client";
 
+import { ArticleRichEditor } from "./article-rich-editor";
+
 import React, {
   useCallback,
   useEffect,
@@ -1364,17 +1366,10 @@ export function PublishedContent() {
                               مکمل مضمون / Content
                             </span>
 
-                            <textarea
-                              className={field}
-                              rows={18}
+                            <ArticleRichEditor
+                              key={draft.id || "new-" + draft.content_type}
                               value={draft.body}
-                              onChange={event =>
-                                setDraft(previous => ({
-                                  ...previous,
-                                  body:
-                                    event.target.value,
-                                }))
-                              }
+                              onChange={body => setDraft(previous => ({ ...previous, body }))}
                             />
                           </label>
                         </div>
