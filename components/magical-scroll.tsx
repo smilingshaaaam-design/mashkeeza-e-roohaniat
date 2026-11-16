@@ -98,6 +98,23 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       return animation.finished.catch(() => undefined)
     }
 
+    // Animate the paper's actual layout height exactly ONCE, without WAAPI
+    // fill:'forwards'. That fill otherwise competes with height:'auto' and
+    // produces the apparent SECOND scroll opening on long posts.
+    const unfoldPaperOnce = (targetHeight: number, duration: number) =>
+      new Promise<void>(resolve => {
+        const started = performance.now()
+        const tick = (time: number) => {
+          if (cancelled) { resolve(); return }
+          const p = Math.min(1, (time - started) / duration)
+          const eased = 1 - Math.pow(1 - p, 3)
+          paper.style.height = `${Math.max(0, targetHeight * eased)}px`
+          if (p < 1) rememberFrame(tick)
+          else resolve()
+        }
+        rememberFrame(tick)
+      })
+
     // These exact coordinates are from the last user-approved file. Keep them unchanged.
     const potRestRightShift = Math.max(0, Math.min(96, stage.clientWidth * .15) - 10)
     let px = 0
@@ -136,8 +153,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         canvasContext.save()
         canvasContext.translate(f.x, f.y)
         canvasContext.rotate(f.rotation)
-        canvasContext.globalAlpha = .62 * Math.pow(1 - age, 1.5)
-        canvasContext.shadowBlur = 6
+        canvasContext.globalAlpha = .78 * Math.pow(1 - age, 1.35)
+        canvasContext.shadowBlur = 8
         canvasContext.shadowColor = f.color
         canvasContext.strokeStyle = f.color
         canvasContext.lineWidth = Math.max(.7, f.size * .46)
@@ -164,9 +181,9 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       lastNibY = nibY
       if (!engraveActive || !canvasContext) return
       const now = performance.now()
-      if (now - lastFilingsEmit < 42) return
+      if (now - lastFilingsEmit < 33) return
       lastFilingsEmit = now
-      for (let i = 0; i < 3 && filings.length < 65; i++) {
+      for (let i = 0; i < 4 && filings.length < 72; i++) {
         const a = Math.PI * (1.03 + Math.random() * .95)
         const v = .7 + Math.random() * 1.65
         filings.push({
@@ -175,8 +192,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           vx: Math.cos(a) * v,
           vy: Math.sin(a) * v - .5,
           birth: now,
-          ttl: 320 + Math.random() * 260,
-          size: 1.1 + Math.random() * 2.1,
+          ttl: 390 + Math.random() * 240,
+          size: 1.35 + Math.random() * 2.2,
           rotation: Math.random() * Math.PI,
           spin: (Math.random() - .5) * .16,
           color: filingColors[Math.floor(Math.random() * filingColors.length)]
@@ -208,6 +225,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     }
     const move = (x: number, y: number, duration: number, opts: { pot?: boolean; writing?: boolean } = {}) =>
       new Promise<void>(resolve => {
+        engraveActive = true
         const target = getTarget(x, y, Boolean(opts.pot))
         const fromX = px
         const fromY = py
@@ -236,6 +254,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     // the exact same inkpot mouth as before (no X/Y changes to resting pose).
     const swingHome = (destinationX: number, destinationY: number, duration = 1950) =>
       new Promise<void>(resolve => {
+        engraveActive = true
         const target = getTarget(destinationX, destinationY, true)
         const sx = px, sy = py
         const radius = Math.max(12, Math.min(64, stage.clientWidth * .095))
@@ -276,6 +295,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           if (p < 1) rememberFrame(frame)
           else {
             putFeather(target.x, target.y, 0)
+            engraveActive = false
             spark.style.opacity = '0'
             resolve()
           }
@@ -458,7 +478,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         setOpened(true)
         return
       }
-      await animate(paper, [{height: '0px'}, {height: `${height}px`}], 2200, 'cubic-bezier(.22,.8,.22,1)')
+      await unfoldPaperOnce(height, 2200)
       if (cancelled) return
       paper.style.height = 'auto'
       paper.style.overflow = 'visible'
@@ -504,6 +524,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       await swingHome(mouth.left + mouth.width * .52, mouth.top + mouth.height * .43)
       spark.style.opacity = '0'
       if (cancelled) return
+      engraveActive = false
       putFeather(Number(quill.dataset.x), Number(quill.dataset.y), 0)
     }
     void run().catch(error => {
