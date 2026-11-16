@@ -299,11 +299,11 @@ export function ArticleBrowser() {
       </section>
 
       <style jsx global>{`
-        .original-mashkeeza-scroll{font-family:'Noto Nastaliq Urdu',serif;color:#422410;width:100%;filter:drop-shadow(0 12px 20px #0007)}
-        .original-scroll-stage{position:relative;width:100%;padding:8px 0 105px;overflow:visible;isolation:isolate}
-        .original-scroll-assembly{width:100%;display:flex;flex-direction:column;align-items:center;position:relative}
+        .original-mashkeeza-scroll{font-family:'Noto Nastaliq Urdu',serif;color:#422410;width:100%;position:relative;z-index:100;overflow:visible}
+        .original-scroll-stage{position:relative;z-index:101;width:100%;padding:8px 0 105px;overflow:visible;isolation:auto}
+        .original-scroll-assembly{width:100%;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
         .original-scroll-roller{width:100%;height:auto;position:relative;z-index:3;display:block;pointer-events:none;user-select:none}
-        .original-scroll-paper{width:63.6%;margin:-1px 0;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
+        .original-scroll-paper{width:63.6%;margin:-1px 0 -12px;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
         .original-scroll-paper-surface{position:relative;min-height:330px;padding:12% 10% 14%;isolation:isolate}
         .original-scroll-paper-surface::before{content:"";position:absolute;inset:0;z-index:-1;background:url('/magical-scroll/paper-bg.png') center / 100% 100% no-repeat;opacity:var(--paper-opacity);pointer-events:none}
         .original-scroll-writing{direction:rtl;text-align:right;overflow-wrap:anywhere;font-size:clamp(11px,2.8cqw,22px);line-height:2.4;color:#422410;visibility:hidden}
@@ -311,9 +311,9 @@ export function ArticleBrowser() {
         .original-scroll-writing p,.original-scroll-writing li{margin:.7em 0}
         .original-scroll-writing img{max-width:100%;object-fit:contain}
         .original-scroll-excerpt{font-size:.9em;text-align:center}
-        .original-scroll-pot{position:absolute;z-index:4;width:19.15%;height:auto;right:1%;bottom:0;opacity:0;pointer-events:none;filter:drop-shadow(0 0 8px #5e8cff99)}
-        .original-scroll-quill{position:absolute;z-index:5;left:0;top:0;width:30%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform}
-        .original-scroll-sparkles{position:absolute;right:8%;bottom:13%;z-index:5;pointer-events:none;color:#ffe88e;text-shadow:0 0 10px #e752ff,0 0 18px #21c8ff;animation:scrollSparkle 1.7s ease-in-out infinite alternate}
+        .original-scroll-pot{position:absolute;z-index:1000;width:19.15%;height:auto;right:1%;bottom:0;opacity:0;pointer-events:none;filter:drop-shadow(0 0 8px #5e8cff99)}
+        .original-scroll-quill{position:absolute;z-index:2147483647;left:0;top:0;width:30%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform}
+        .original-scroll-sparkles{position:absolute;right:8%;bottom:13%;z-index:1001;pointer-events:none;color:#ffe88e;text-shadow:0 0 10px #e752ff,0 0 18px #21c8ff;animation:scrollSparkle 1.7s ease-in-out infinite alternate}
         @keyframes scrollSparkle{from{opacity:.25;transform:translateY(5px) scale(.8)}to{opacity:1;transform:translateY(-7px) scale(1.2)}}
         @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:230px;padding:11% 10% 13%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
         @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-sparkles{animation:none}}
