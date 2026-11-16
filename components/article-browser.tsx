@@ -186,11 +186,115 @@ function MagicalScroll({ article }: { article: Article }) {
         if (Math.random() > .54) addMagicDust(mx, my, 1, true)
       }
     }
+    // Animate the luminous BLUE FLAME already painted above the inkpot.
+    // This adds moving highlights to the existing image; it never moves the
+    // bottle, feather, approved resting point, rollers or parchment.
+    const drawBlueFlame = (time: number) => {
+      if (!ctx || !inkReady) return
+      const stageRect = stage.getBoundingClientRect()
+      const potRect = pot.getBoundingClientRect()
+      if (potRect.width <= 0 || potRect.height <= 0) return
+      const left = potRect.left - stageRect.left
+      const top = potRect.top - stageRect.top
+      const w = potRect.width
+      const h = potRect.height
+      const seconds = time * 0.001
+
+      type FlameXY = { x: number; y: number }
+      const cubic = (a: number, b: number, c: number, d: number, t: number) => {
+        const v = 1 - t
+        return v * v * v * a + 3 * v * v * t * b + 3 * v * t * t * c + t * t * t * d
+      }
+
+      // Three continuous S-curves follow the blue wisp in inkpot.png:
+      // from the real bottle mouth (near 43% height) upward to the tip.
+      const curves: [FlameXY, FlameXY, FlameXY, FlameXY][] = [
+        [{ x: .52, y: .415 }, { x: .69, y: .335 }, { x: .66, y: .270 }, { x: .51, y: .240 }],
+        [{ x: .51, y: .240 }, { x: .34, y: .225 }, { x: .245, y: .170 }, { x: .32, y: .125 }],
+        [{ x: .32, y: .125 }, { x: .315, y: .079 }, { x: .47, y: .055 }, { x: .415, y: .010 }],
+      ]
+
+      // u = 0 at the mouth, u = 1 at the rising tip.
+      const flameAt = (u: number, strand: number): FlameXY => {
+        const clamped = Math.min(.999999, Math.max(0, u))
+        const section = Math.min(2, Math.floor(clamped * 3))
+        const v = clamped * 3 - section
+        const [a, b, c, d] = curves[section]
+        const x = cubic(a.x, b.x, c.x, d.x, v)
+        const y = cubic(a.y, b.y, c.y, d.y, v)
+        const sway = (0.0035 + u * .013) * (
+          Math.sin(seconds * 1.75 + u * 7.0 + strand * .8) +
+          .40 * Math.sin(seconds * 2.7 + u * 12.3 + strand)
+        )
+        const plume = Math.sin(seconds * 1.1 + u * 6.8 + strand * 1.9) * .0035 * u
+        return {
+          x: left + w * (x + sway + strand * .006),
+          y: top + h * (y + plume),
+        }
+      }
+
+      // Soft breathing glow, then narrower travelling cyan highlights.
+      // Original image remains visible beneath the animation at all times.
+      ctx.save()
+      ctx.globalCompositeOperation = 'lighter'
+      const pulse = .75 + .25 * Math.sin(seconds * 2.4)
+      for (let strand = 0; strand < 3; strand++) {
+        const gradient = ctx.createLinearGradient(0, top + h * .43, 0, top)
+        gradient.addColorStop(0, `rgba(44,175,255,${.18 * pulse})`)
+        gradient.addColorStop(.52, `rgba(43,195,255,${.27 * pulse})`)
+        gradient.addColorStop(1, 'rgba(118,113,255,.06)')
+        ctx.beginPath()
+        for (let i = 0; i <= 48; i++) {
+          const p = flameAt(i / 48, strand - 1)
+          if (i === 0) ctx.moveTo(p.x, p.y)
+          else ctx.lineTo(p.x, p.y)
+        }
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+        ctx.shadowBlur = Math.max(4, w * .065)
+        ctx.shadowColor = 'rgba(0,130,255,.32)'
+        ctx.lineWidth = Math.max(2, w * (strand === 1 ? .035 : .023))
+        ctx.strokeStyle = gradient
+        ctx.stroke()
+        ctx.shadowBlur = 0
+        ctx.lineWidth = Math.max(.75, w * .008)
+        ctx.strokeStyle = `rgba(134,240,255,${strand === 1 ? .40 * pulse : .16 * pulse})`
+        ctx.stroke()
+      }
+
+      // Bright, small motes travel UP the existing blue flame, giving it
+      // visible motion without large fireworks or extra image assets.
+      for (let i = 0; i < 4; i++) {
+        const u = (seconds * .19 + i * .25) % 1
+        const pos = flameAt(u, 0)
+        const fade = Math.sin(Math.PI * u)
+        const radius = Math.max(.7, w * (.006 + .004 * (1 - u)))
+        ctx.shadowBlur = Math.max(3, w * .035)
+        ctx.shadowColor = 'rgba(57,182,255,.48)'
+        ctx.fillStyle = `rgba(172,242,255,${.50 * fade})`
+        ctx.beginPath()
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.shadowBlur = 0
+        if (i % 2 === 0) {
+          ctx.save()
+          ctx.translate(pos.x, pos.y)
+          ctx.fillStyle = `rgba(225,241,255,${.30 * fade})`
+          drawFourPointStar(radius * 1.45)
+          ctx.restore()
+        }
+      }
+      ctx.restore()
+    }
+
     const drawMagicFrame = (time: number) => {
       if (cancelled || !ctx || reduced) return
       ctx.clearRect(0, 0, canvasWidth, canvasHeight)
       ctx.globalCompositeOperation = 'lighter'
-      if (inkReady) drawInkInsideBottle(time)
+      if (inkReady) {
+        drawInkInsideBottle(time)
+        drawBlueFlame(time)
+      }
       if (particleTrailActive && nibKnown && time - lastEmit > 38) {
         lastEmit = time
         addMagicDust(magicNibX + 1, magicNibY - 2, 3)
