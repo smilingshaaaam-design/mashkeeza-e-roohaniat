@@ -50,11 +50,14 @@ function MagicalScroll({ article }: { article: Article }) {
     }
     const flyTo = (x: number, y: number, duration: number) => {
       const bounds = stage.getBoundingClientRect()
-      const quillBounds = quill.getBoundingClientRect()
+      // Use untransformed dimensions: getBoundingClientRect changes during rotation.
+      const qw = quill.offsetWidth, qh = quill.offsetHeight
       const fromX = parseFloat(quill.dataset.x || '0')
       const fromY = parseFloat(quill.dataset.y || '0')
-      const toX = x - bounds.left - quillBounds.width * .014
-      const toY = y - bounds.top - quillBounds.height * .993
+      // The image points at bottom-left and extends upward/right.
+      // Keep the complete feather inside the article viewing area.
+      const toX = Math.max(0, Math.min(x - bounds.left - qw * .014, bounds.width - qw - 8))
+      const toY = Math.max(0, Math.min(y - bounds.top - qh * .993, bounds.height - qh - 4))
       quill.dataset.x = String(toX); quill.dataset.y = String(toY)
       return animate(quill, [
         { transform: `translate(${fromX}px, ${fromY}px) rotate(-9deg)` },
@@ -78,9 +81,12 @@ function MagicalScroll({ article }: { article: Article }) {
       if (cancelled) return
       const potBounds = pot.getBoundingClientRect()
       const stageBounds = stage.getBoundingClientRect()
-      const qWidth = quill.getBoundingClientRect().width, qHeight = quill.getBoundingClientRect().height
-      const startX = potBounds.left + potBounds.width * .5 - stageBounds.left - qWidth * .014
-      const startY = potBounds.top + potBounds.height * .28 - stageBounds.top - qHeight * .993
+      const qWidth = quill.offsetWidth, qHeight = quill.offsetHeight
+      const potTipX = potBounds.left + potBounds.width * .48
+      // Feather's nib must enter the inkpot, not stop above its rim.
+      const potTipY = potBounds.top + potBounds.height * .77
+      const startX = Math.max(0, Math.min(potTipX - stageBounds.left - qWidth * .014, stageBounds.width - qWidth - 8))
+      const startY = Math.max(0, potTipY - stageBounds.top - qHeight * .993)
       quill.dataset.x = String(startX); quill.dataset.y = String(startY)
       quill.style.transform = `translate(${startX}px, ${startY}px)`
       quill.style.opacity = '1'
@@ -105,7 +111,10 @@ function MagicalScroll({ article }: { article: Article }) {
       }
       if (cancelled) return
       const mouth = pot.getBoundingClientRect()
-      await flyTo(mouth.left + mouth.width * .5, mouth.top + mouth.height * .28, 850)
+      await flyTo(mouth.left + mouth.width * .48, mouth.top + mouth.height * .77, 1100)
+      if (cancelled) return
+      // Leave the nib resting inside the pot after the flight.
+      quill.style.transform = `translate(${quill.dataset.x}px, ${quill.dataset.y}px) rotate(0deg)`
     }
     void run()
     return () => { cancelled = true; animations.forEach(a => a.cancel()) }
@@ -125,7 +134,9 @@ function MagicalScroll({ article }: { article: Article }) {
               </div>
             </div>
           </div>
-          <img className="original-scroll-roller" src="/magical-scroll/bottom-roller.png" alt="" draggable={false}/>
+          <div className="original-scroll-bottom-mount" aria-hidden="true">
+            <img className="original-scroll-roller original-scroll-bottom-roller" src="/magical-scroll/bottom-roller.png" alt="" draggable={false}/>
+          </div>
         </div>
         <span className="original-scroll-sparkles" aria-hidden="true">✦ ✧ ✦</span>
         <img ref={potRef} className="original-scroll-pot" src="/magical-scroll/inkpot.png" alt="" draggable={false}/>
@@ -256,7 +267,7 @@ export function ArticleBrowser() {
 
           <div
             id="selected-article"
-            className="min-w-0 max-h-full overflow-y-auto overflow-x-hidden bg-transparent [scrollbar-width:thin]"
+            className="min-w-0 max-h-full overflow-y-auto bg-transparent [scrollbar-width:thin]"
             aria-live="polite"
           >
             {selected && (
@@ -303,8 +314,14 @@ export function ArticleBrowser() {
         .original-scroll-stage{position:relative;z-index:101;width:100%;min-height:max-content;padding:8px 0 145px;overflow:visible;isolation:auto}
         .original-scroll-assembly{width:100%;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
         .original-scroll-roller{width:100%;height:auto;position:relative;z-index:3;flex-shrink:0;display:block;pointer-events:none;user-select:none}
-        .original-scroll-paper{width:63.6%;margin:-1px 0 -26px;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
-        .original-scroll-paper-surface{position:relative;min-height:330px;padding:12% 10% 14%;isolation:isolate}
+        .original-scroll-paper{width:63.6%;margin:-1px 0 0;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
+        /* Bottom roller sits in front of the parchment edge, like the top roller. */
+        /* The mount overlaps the parchment and casts an upward contact shadow,
+           matching the way the top wooden roller sits against the paper. */
+        .original-scroll-bottom-mount{position:relative;width:100%;flex-shrink:0;margin-top:calc(-1 * clamp(30px, 5.5vw, 70px));z-index:8;isolation:isolate;pointer-events:none}
+        .original-scroll-bottom-mount::before{content:"";position:absolute;left:18.2%;right:18.2%;top:-20px;height:33px;z-index:1;pointer-events:none;background:linear-gradient(to bottom,rgba(65,29,12,0),rgba(69,31,12,.12) 22%,rgba(59,24,8,.38) 65%,rgba(44,17,6,.52) 100%);filter:blur(5px);border-radius:0 0 48% 48%}
+        .original-scroll-bottom-roller{position:relative;z-index:2;margin:0;filter:drop-shadow(0 -3px 3px rgba(53,21,7,.28))}
+        .original-scroll-paper-surface{position:relative;min-height:390px;padding:12% 10% 18%;isolation:isolate}
         .original-scroll-paper-surface::before{content:"";position:absolute;inset:0;z-index:-1;background:url('/magical-scroll/paper-bg.png') center / 100% 100% no-repeat;opacity:var(--paper-opacity);pointer-events:none}
         .original-scroll-writing{direction:rtl;text-align:right;overflow-wrap:anywhere;font-size:clamp(11px,2.8cqw,22px);line-height:2.4;color:#422410;visibility:hidden}
         .original-scroll-writing h2{font-size:1.55em;font-weight:700;text-align:center;line-height:2.2;margin:0 0 .8em;color:#71351d}
@@ -312,10 +329,10 @@ export function ArticleBrowser() {
         .original-scroll-writing img{max-width:100%;object-fit:contain}
         .original-scroll-excerpt{font-size:.9em;text-align:center}
         .original-scroll-pot{position:absolute;z-index:1000;width:19.15%;height:auto;right:1%;bottom:0;opacity:0;pointer-events:none;filter:drop-shadow(0 0 8px #5e8cff99)}
-        .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:30%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform}
+        .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform}
         .original-scroll-sparkles{position:absolute;right:8%;bottom:13%;z-index:1001;pointer-events:none;color:#ffe88e;text-shadow:0 0 10px #e752ff,0 0 18px #21c8ff;animation:scrollSparkle 1.7s ease-in-out infinite alternate}
         @keyframes scrollSparkle{from{opacity:.25;transform:translateY(5px) scale(.8)}to{opacity:1;transform:translateY(-7px) scale(1.2)}}
-        @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:230px;padding:11% 10% 13%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
+        @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:11% 10% 17%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
         @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-sparkles{animation:none}}
       `}</style>
     </>
