@@ -115,7 +115,7 @@ function MagicalScroll({ article }: { article: Article }) {
             fromY + (target.y - fromY) * v - envelope * (opts.writing ? 1 : 15),
             wave * angle * envelope - 4 * envelope
           )
-          spark.style.opacity = opts.writing ? '.29' : '.18'
+          spark.style.opacity = opts.writing ? '.58' : '.34'
           if (p < 1) rememberFrame(loop)
           else { putFeather(target.x, target.y, 0); resolve() }
         }
@@ -162,9 +162,8 @@ function MagicalScroll({ article }: { article: Article }) {
       return points
     }
 
-    const revealWhileWriting = (block: HTMLElement) =>
+    const revealWhileWriting = (block: HTMLElement, points: InkPoint[]) =>
       new Promise<void>(resolve => {
-        const points = measureInkPoints(block)
         const box = block.getBoundingClientRect()
         if (!points.length || box.width <= 0) {
           block.style.clipPath = 'none'
@@ -175,10 +174,9 @@ function MagicalScroll({ article }: { article: Article }) {
         // A staircase mask reveals completed RTL lines in full and writes the active line
         // right-to-left. Actual glyph geometry determines the feather tip position.
         const count = points.length
-        const duration = Math.min(11500, Math.max(850, count * 28))
+        // Roughly twice as fast as the last version, while the nib still follows each glyph.
+        const duration = Math.min(6500, Math.max(440, count * 14))
         const start = performance.now()
-        const fromX = px
-        const fromY = py
         const loop = (now: number) => {
           if (cancelled) return resolve()
           const progress = Math.min(1, (now - start) / duration)
@@ -190,12 +188,15 @@ function MagicalScroll({ article }: { article: Article }) {
           const sameLine = Math.abs(a.lineTop - b.lineTop) < 5
           const featherX = sameLine ? a.x + (b.x - a.x) * part : a.x
           const featherY = sameLine ? a.y + (b.y - a.y) * part : a.y
-          const bx = progress < .08 ? fromX + (getTarget(featherX, featherY).x - fromX) * ease(progress / .08) : getTarget(featherX, featherY).x
-          const by = progress < .08 ? fromY + (getTarget(featherX, featherY).y - fromY) * ease(progress / .08) : getTarget(featherX, featherY).y
-          const wave = Math.sin(now / 96)
-          const pressure = Math.sin(now / 61)
-          putFeather(bx + wave * .8, by + pressure * .65, wave * 2.5)
-          spark.style.opacity = '.23'
+          // Pen nib and the visible writing edge use the SAME interpolated glyph coordinate.
+          const target = getTarget(featherX, featherY)
+          const bx = target.x
+          const by = target.y
+          // Gentle calligraphic movement: small rotation around the nib, no lateral drift.
+          const wave = Math.sin(now / 100)
+          const pressure = Math.sin(now / 67)
+          putFeather(bx, by + pressure * .35, wave * 2.8)
+          spark.style.opacity = '.58'
           const top = a.lineTop
           const bottom = a.lineBottom
           const x = sameLine ? a.relX + (b.relX - a.relX) * part : a.relX
@@ -263,12 +264,15 @@ function MagicalScroll({ article }: { article: Article }) {
       if (cancelled) return
       for (const block of blocks) {
         if (cancelled) return
+        const points = measureInkPoints(block)
+        // Fly directly to the first actual Urdu glyph, not to an approximate paragraph corner.
         const r = block.getBoundingClientRect()
-        await move(r.right - 9, r.top + Math.min(r.height * .6, 30), 450)
+        const first = points[0]
+        await move(first?.x ?? r.right - 9, first?.y ?? r.top + Math.min(r.height * .6, 30), 240)
         if (cancelled) return
-        await revealWhileWriting(block)
+        await revealWhileWriting(block, points)
         if (cancelled) return
-        await delay(95)
+        await delay(35)
       }
       if (cancelled) return
       const mouth = pot.getBoundingClientRect()
@@ -320,7 +324,7 @@ function MagicalScroll({ article }: { article: Article }) {
         <span className="original-scroll-sparkles" aria-hidden="true">✦ ✧ ✦</span>
         <img ref={potRef} className="original-scroll-pot" src="/magical-scroll/inkpot.png" alt="" draggable={false}/>
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
-        <span ref={sparkleRef} className="original-scroll-nib-sparks" aria-hidden="true"><i/><i/><i/></span>
+        <span ref={sparkleRef} className="original-scroll-nib-sparks" aria-hidden="true"><i/><i/><i/><i/><i/></span>
         {opened && <span className="sr-only">Scroll opened</span>}
       </div>
     </article>
@@ -511,17 +515,19 @@ export function ArticleBrowser() {
         .original-scroll-writing img{max-width:100%;object-fit:contain}
         .original-scroll-excerpt{font-size:.9em;text-align:center}
         .original-scroll-pot{position:absolute;z-index:1000;width:19.15%;height:auto;right:1%;bottom:0;opacity:0;pointer-events:none;filter:drop-shadow(0 0 8px #5e8cff99)}
-        .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform}
+        .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform;transform-origin:1.4% 99.3%}
         /* Small, soft sparks follow the ACTUAL nib; not the top of the feather. */
-        .original-scroll-nib-sparks{position:absolute;left:0;top:0;width:22px;height:22px;z-index:1200;opacity:0;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 0 3px #f7d8a466)}
+        .original-scroll-nib-sparks{position:absolute;left:0;top:0;width:22px;height:22px;z-index:1200;opacity:0;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 0 5px #f7d8a477)}
         .original-scroll-nib-sparks i{position:absolute;left:9px;top:9px;width:4px;height:4px;display:block;border-radius:50%;background:#ffeeb4;box-shadow:0 0 5px #efb763aa;animation:subtleNibSpark .9s ease-out infinite}
         .original-scroll-nib-sparks i:nth-child(2){animation-delay:.28s;background:#dd92e5;box-shadow:0 0 5px #c57fe899}
         .original-scroll-nib-sparks i:nth-child(3){animation-delay:.55s;background:#80d5ff;box-shadow:0 0 5px #82caff66}
-        @keyframes subtleNibSpark{from{transform:translate(0,0) scale(.75);opacity:.7}to{transform:translate(7px,-10px) scale(.2);opacity:0}}
+        .original-scroll-nib-sparks i:nth-child(4){animation-delay:.14s;background:#fff4c1;box-shadow:0 0 4px #fff0a388;animation-duration:.75s}
+        .original-scroll-nib-sparks i:nth-child(5){animation-delay:.42s;background:#d29aff;box-shadow:0 0 4px #c47cff66;animation-duration:1.1s}
+        @keyframes subtleNibSpark{from{transform:translate(0,0) scale(.65);opacity:.65}to{transform:translate(6px,-9px) scale(.15);opacity:0}}
         .original-scroll-sparkles{position:absolute;right:8%;bottom:13%;z-index:1001;pointer-events:none;color:#ffe88e;text-shadow:0 0 10px #e752ff,0 0 18px #21c8ff;animation:scrollSparkle 1.7s ease-in-out infinite alternate}
         @keyframes scrollSparkle{from{opacity:.25;transform:translateY(5px) scale(.8)}to{opacity:1;transform:translateY(-7px) scale(1.2)}}
         @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:11% 10% 17%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
-        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-sparkles{animation:none}}
+        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-sparkles,.original-scroll-nib-sparks i{animation:none}}
       `}</style>
     </>
   )
