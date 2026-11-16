@@ -271,7 +271,9 @@ export function ArticleBrowser() {
 
           <div
             id="selected-article"
-            className="min-w-0 max-h-full overflow-y-auto bg-transparent [scrollbar-width:thin]"
+            className={magical
+              ? "min-w-0 max-h-full overflow-visible bg-transparent"
+              : "min-w-0 max-h-full overflow-y-auto bg-transparent [scrollbar-width:thin]"}
             aria-live="polite"
           >
             {selected && (
