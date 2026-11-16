@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import { RICH_MARKER } from "./article-rich-editor";
 
-const TAGS = new Set(["DIV", "P", "BR", "STRONG", "B", "EM", "I", "U", "H2", "H3", "UL", "OL", "LI", "BLOCKQUOTE", "A"]);
+const TAGS = new Set(["DIV", "P", "BR", "STRONG", "B", "EM", "I", "U", "H2", "H3", "UL", "OL", "LI", "BLOCKQUOTE", "A", "IMG"]);
 
 function safeNodes(root: ParentNode): React.ReactNode[] {
   return Array.from(root.childNodes).map((node, i): React.ReactNode => {
@@ -14,6 +14,25 @@ function safeNodes(root: ParentNode): React.ReactNode[] {
     if (!TAGS.has(el.tagName)) return <React.Fragment key={i}>{children}</React.Fragment>;
     const tag = el.tagName.toLowerCase();
     const props: Record<string, unknown> = { key: i };
+    if (tag === "img") {
+      const src = el.getAttribute("src") || "";
+      if (!/^https:\/\/mashkeeza-cms-api\.smilingshaaaam\.workers\.dev\/media\/[0-9a-f-]{36}$/.test(src)) return null;
+      const width = Number(el.getAttribute("width"));
+      const height = Number(el.getAttribute("height"));
+      const align = el.getAttribute("data-align") || "center";
+      const validWidth = Number.isInteger(width) && width >= 20 && width <= 2000 ? width : undefined;
+      const validHeight = Number.isInteger(height) && height >= 20 && height <= 2000 ? height : undefined;
+      const style: React.CSSProperties = {
+        maxWidth: "100%",
+        width: validWidth ? `${validWidth}px` : "auto",
+        height: validHeight ? `${validHeight}px` : "auto",
+        display: align === "inline" ? "inline-block" : "block",
+        margin: align === "left" ? "1rem auto 1rem 0" : align === "right" ? "1rem 0 1rem auto" : align === "inline" ? "0 .25rem" : "1rem auto",
+        objectFit: "fill",
+        verticalAlign: "middle"
+      };
+      return <img key={i} src={src} alt={el.getAttribute("alt") || ""} loading="lazy" style={style} />;
+    }
     if (tag === "a") {
       const href = el.getAttribute("href") || "";
       try {
