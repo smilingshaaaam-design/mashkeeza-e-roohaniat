@@ -37,11 +37,8 @@ function MagicalScroll({ article }: { article: Article }) {
 
   useEffect(() => {
     let cancelled = false
-    const timeouts: ReturnType<typeof setTimeout>[] = []
+    
     const animations: Animation[] = []
-    const wait = (ms: number) => new Promise<void>(resolve => {
-      const t = setTimeout(resolve, ms); timeouts.push(t)
-    })
     const stage = stageRef.current, paper = paperRef.current, text = textRef.current
     const quill = quillRef.current, pot = potRef.current
     if (!stage || !paper || !text || !quill || !pot) return
@@ -65,14 +62,14 @@ function MagicalScroll({ article }: { article: Article }) {
       ], duration)
     }
     const run = async () => {
-      const innerHeight = paper.scrollHeight
+      const innerHeight = Math.max(paper.scrollHeight, 330)
       paper.style.height = '0px'
       paper.style.overflow = 'hidden'
       text.style.visibility = 'hidden'
       pot.style.opacity = '0'; quill.style.opacity = '0'
       if (reduced) {
         paper.style.height = 'auto'; text.style.visibility = 'visible'
-        pot.style.opacity = '1'; setOpened(true); return
+        pot.style.opacity = '1'; quill.style.opacity = '1'; setOpened(true); return
       }
       await animate(paper, [{ height: '0px' }, { height: `${innerHeight}px` }], 2200, 'cubic-bezier(.22,.8,.22,1)')
       if (cancelled) return
@@ -89,29 +86,36 @@ function MagicalScroll({ article }: { article: Article }) {
       quill.style.opacity = '1'
       text.style.visibility = 'visible'
       const blocks = [...text.querySelectorAll('h2,h3,p,li,blockquote')].filter(el => el.textContent?.trim())
+      blocks.forEach(el => { (el as HTMLElement).style.opacity = '0' })
       for (const block of blocks) {
         if (cancelled) return
         const rect = block.getBoundingClientRect()
         await flyTo(rect.right - 8, rect.top + Math.min(rect.height * .6, 30), 400)
         if (cancelled) return
-        await animate(block, [
-          { clipPath: 'inset(0 0 0 100%)', opacity: .25 },
+        const target = block as HTMLElement
+        const duration = Math.min(2600, Math.max(550, (block.textContent?.length || 0) * 25))
+        const writing = animate(target, [
+          { clipPath: 'inset(0 0 0 100%)', opacity: 0 },
           { clipPath: 'inset(0 0 0 0)', opacity: 1 }
-        ], Math.min(2600, Math.max(500, (block.textContent?.length || 0) * 25)), 'linear')
+        ], duration, 'linear')
+        const b = block.getBoundingClientRect()
+        const featherMotion = flyTo(b.left + 10, b.top + Math.min(b.height * .6, 30), duration)
+        await Promise.all([writing, featherMotion])
+        target.style.opacity = '1'
       }
       if (cancelled) return
       const mouth = pot.getBoundingClientRect()
       await flyTo(mouth.left + mouth.width * .5, mouth.top + mouth.height * .28, 850)
     }
     void run()
-    return () => { cancelled = true; timeouts.forEach(clearTimeout); animations.forEach(a => a.cancel()) }
+    return () => { cancelled = true; animations.forEach(a => a.cancel()) }
   }, [article.id, article.body])
 
   return (
     <article dir="rtl" lang="ur" className="original-mashkeeza-scroll" aria-label={article.title}>
       <div ref={stageRef} className="original-scroll-stage">
         <div className="original-scroll-assembly">
-          <img className="original-scroll-roller" src="/magical-scroll/top-roller.jpg" alt="" draggable={false}/>
+          <img className="original-scroll-roller" src="/magical-scroll/top-roller.png" alt="" draggable={false}/>
           <div ref={paperRef} className="original-scroll-paper" style={{'--paper-opacity': opacity} as CSSProperties}>
             <div className="original-scroll-paper-surface">
               <div ref={textRef} className="original-scroll-writing">
@@ -121,8 +125,9 @@ function MagicalScroll({ article }: { article: Article }) {
               </div>
             </div>
           </div>
-          <img className="original-scroll-roller" src="/magical-scroll/bottom-roller.jpg" alt="" draggable={false}/>
+          <img className="original-scroll-roller" src="/magical-scroll/bottom-roller.png" alt="" draggable={false}/>
         </div>
+        <span className="original-scroll-sparkles" aria-hidden="true">✦ ✧ ✦</span>
         <img ref={potRef} className="original-scroll-pot" src="/magical-scroll/inkpot.png" alt="" draggable={false}/>
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
         {opened && <span className="sr-only">Scroll opened</span>}
@@ -294,22 +299,24 @@ export function ArticleBrowser() {
       </section>
 
       <style jsx global>{`
-        .original-mashkeeza-scroll{font-family:'Noto Nastaliq Urdu',serif;color:#3b2412;width:100%;filter:drop-shadow(0 12px 20px #0008)}
-        .original-scroll-stage{position:relative;width:100%;padding:14px 0 60px;overflow:hidden;isolation:isolate}
+        .original-mashkeeza-scroll{font-family:'Noto Nastaliq Urdu',serif;color:#422410;width:100%;filter:drop-shadow(0 12px 20px #0007)}
+        .original-scroll-stage{position:relative;width:100%;padding:8px 0 105px;overflow:visible;isolation:isolate}
         .original-scroll-assembly{width:100%;display:flex;flex-direction:column;align-items:center;position:relative}
         .original-scroll-roller{width:100%;height:auto;position:relative;z-index:3;display:block;pointer-events:none;user-select:none}
         .original-scroll-paper{width:63.6%;margin:-1px 0;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
-        .original-scroll-paper-surface{position:relative;min-height:330px;padding:12% 13% 14%;isolation:isolate}
-        .original-scroll-paper-surface::before{content:"";position:absolute;inset:0;z-index:-1;background:url('/magical-scroll/paper-bg.jpg') center / 100% 100% no-repeat;opacity:var(--paper-opacity);pointer-events:none}
-        .original-scroll-writing{direction:rtl;text-align:right;overflow-wrap:anywhere;font-size:clamp(11px,2.8cqw,22px);line-height:2.4;color:#3b2412;visibility:hidden}
+        .original-scroll-paper-surface{position:relative;min-height:330px;padding:12% 10% 14%;isolation:isolate}
+        .original-scroll-paper-surface::before{content:"";position:absolute;inset:0;z-index:-1;background:url('/magical-scroll/paper-bg.png') center / 100% 100% no-repeat;opacity:var(--paper-opacity);pointer-events:none}
+        .original-scroll-writing{direction:rtl;text-align:right;overflow-wrap:anywhere;font-size:clamp(11px,2.8cqw,22px);line-height:2.4;color:#422410;visibility:hidden}
         .original-scroll-writing h2{font-size:1.55em;font-weight:700;text-align:center;line-height:2.2;margin:0 0 .8em;color:#71351d}
         .original-scroll-writing p,.original-scroll-writing li{margin:.7em 0}
         .original-scroll-writing img{max-width:100%;object-fit:contain}
         .original-scroll-excerpt{font-size:.9em;text-align:center}
-        .original-scroll-pot{position:absolute;z-index:4;width:19.15%;height:auto;right:0;bottom:7%;opacity:0;pointer-events:none;mix-blend-mode:screen}
+        .original-scroll-pot{position:absolute;z-index:4;width:19.15%;height:auto;right:1%;bottom:0;opacity:0;pointer-events:none;filter:drop-shadow(0 0 8px #5e8cff99)}
         .original-scroll-quill{position:absolute;z-index:5;left:0;top:0;width:30%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform}
-        @media(max-width:640px){.original-scroll-stage{padding-bottom:40px}.original-scroll-paper-surface{min-height:230px;padding:11% 10% 13%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
-        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}}
+        .original-scroll-sparkles{position:absolute;right:8%;bottom:13%;z-index:5;pointer-events:none;color:#ffe88e;text-shadow:0 0 10px #e752ff,0 0 18px #21c8ff;animation:scrollSparkle 1.7s ease-in-out infinite alternate}
+        @keyframes scrollSparkle{from{opacity:.25;transform:translateY(5px) scale(.8)}to{opacity:1;transform:translateY(-7px) scale(1.2)}}
+        @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:230px;padding:11% 10% 13%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
+        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-sparkles{animation:none}}
       `}</style>
     </>
   )
