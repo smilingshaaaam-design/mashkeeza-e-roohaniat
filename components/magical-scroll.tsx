@@ -42,6 +42,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
   const quillRef = useRef<HTMLImageElement>(null)
   const potRef = useRef<HTMLImageElement>(null)
   const sparkleRef = useRef<HTMLSpanElement>(null)
+  const engravingCanvasRef = useRef<HTMLCanvasElement>(null)
   const [opened, setOpened] = useState(false)
   const [visitEpoch, setVisitEpoch] = useState(0)
 
@@ -59,7 +60,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const quill = quillRef.current
     const pot = potRef.current
     const spark = sparkleRef.current
-    if (!stage || !paper || !text || !quill || !pot || !spark) return
+    const engravingCanvas = engravingCanvasRef.current
+    if (!stage || !paper || !text || !quill || !pot || !spark || !engravingCanvas) return
 
     let cancelled = false
     const animations: Animation[] = []
@@ -100,6 +102,88 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const potRestRightShift = Math.max(0, Math.min(96, stage.clientWidth * .15) - 10)
     let px = 0
     let py = 0
+    // Lightweight engraving filings: 120px overlay around the nib, not a
+    // giant canvas over a potentially very long article. This deliberately
+    // does not change the feather's approved position or dimensions.
+    type Filings = {
+      x: number; y: number; vx: number; vy: number; birth: number
+      ttl: number; size: number; rotation: number; spin: number; color: string
+    }
+    const filings: Filings[] = []
+    const filingColors = ['#ffda78', '#fbad62', '#ff91d7', '#ae92ff', '#70ddff']
+    const canvasContext = engravingCanvas.getContext('2d', { alpha: true })
+    const canvasScale = Math.min(window.devicePixelRatio || 1, 2)
+    engravingCanvas.width = Math.round(120 * canvasScale)
+    engravingCanvas.height = Math.round(120 * canvasScale)
+    canvasContext?.setTransform(canvasScale, 0, 0, canvasScale, 0, 0)
+    let dustFrame = 0
+    let lastFilingsEmit = 0
+    let lastNibX = NaN
+    let lastNibY = NaN
+    let engraveActive = false
+    const drawFilings = (time: number) => {
+      if (cancelled || !canvasContext) return
+      canvasContext.clearRect(0, 0, 120, 120)
+      for (let i = filings.length - 1; i >= 0; i--) {
+        const f = filings[i]
+        const age = (time - f.birth) / f.ttl
+        if (age >= 1) { filings.splice(i, 1); continue }
+        f.x += f.vx
+        f.y += f.vy
+        f.vy += .055
+        f.vx *= .978
+        f.rotation += f.spin
+        canvasContext.save()
+        canvasContext.translate(f.x, f.y)
+        canvasContext.rotate(f.rotation)
+        canvasContext.globalAlpha = .62 * Math.pow(1 - age, 1.5)
+        canvasContext.shadowBlur = 6
+        canvasContext.shadowColor = f.color
+        canvasContext.strokeStyle = f.color
+        canvasContext.lineWidth = Math.max(.7, f.size * .46)
+        canvasContext.beginPath()
+        canvasContext.moveTo(-f.size * 1.25, 0)
+        canvasContext.lineTo(f.size * 1.25, 0)
+        canvasContext.moveTo(0, -f.size * 1.25)
+        canvasContext.lineTo(0, f.size * 1.25)
+        canvasContext.stroke()
+        canvasContext.restore()
+      }
+      if (filings.length) dustFrame = requestAnimationFrame(drawFilings)
+      else dustFrame = 0
+    }
+    const showNibFilings = (nibX: number, nibY: number) => {
+      engravingCanvas.style.transform = `translate(${nibX - 60}px, ${nibY - 60}px)`
+      if (Number.isFinite(lastNibX) && Number.isFinite(lastNibY)) {
+        const dx = nibX - lastNibX
+        const dy = nibY - lastNibY
+        // Existing metallic flecks stay in place while the nib moves.
+        for (const f of filings) { f.x -= dx; f.y -= dy }
+      }
+      lastNibX = nibX
+      lastNibY = nibY
+      if (!engraveActive || !canvasContext) return
+      const now = performance.now()
+      if (now - lastFilingsEmit < 42) return
+      lastFilingsEmit = now
+      for (let i = 0; i < 3 && filings.length < 65; i++) {
+        const a = Math.PI * (1.03 + Math.random() * .95)
+        const v = .7 + Math.random() * 1.65
+        filings.push({
+          x: 60 + (Math.random() - .5) * 6,
+          y: 60 + (Math.random() - .5) * 4,
+          vx: Math.cos(a) * v,
+          vy: Math.sin(a) * v - .5,
+          birth: now,
+          ttl: 320 + Math.random() * 260,
+          size: 1.1 + Math.random() * 2.1,
+          rotation: Math.random() * Math.PI,
+          spin: (Math.random() - .5) * .16,
+          color: filingColors[Math.floor(Math.random() * filingColors.length)]
+        })
+      }
+      if (!dustFrame) dustFrame = requestAnimationFrame(drawFilings)
+    }
     const putFeather = (x: number, y: number, rotation = 0) => {
       px = x
       py = y
@@ -110,6 +194,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       const nibX = x + quill.offsetWidth * .014
       const nibY = y + quill.offsetHeight * .993
       spark.style.transform = `translate(${nibX - 11}px, ${nibY - 12}px)`
+      showNibFilings(nibX, nibY)
     }
     const getTarget = (x: number, y: number, inkpotRest = false) => {
       const bounds = stage.getBoundingClientRect()
@@ -145,6 +230,57 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           else { putFeather(target.x, target.y, 0); resolve() }
         }
         rememberFrame(loop)
+      })
+
+    // One complete, fluid swing over the page before the quill returns to
+    // the exact same inkpot mouth as before (no X/Y changes to resting pose).
+    const swingHome = (destinationX: number, destinationY: number, duration = 1950) =>
+      new Promise<void>(resolve => {
+        const target = getTarget(destinationX, destinationY, true)
+        const sx = px, sy = py
+        const radius = Math.max(12, Math.min(64, stage.clientWidth * .095))
+        const orbitX = Math.max(radius + 10,
+          Math.min(stage.clientWidth - radius - 10, (sx + target.x) / 2))
+        const orbitY = Math.max(radius + 10,
+          Math.min(stage.clientHeight - radius - 45, (sy + target.y) / 2 - radius * .95))
+        const entryX = orbitX + radius
+        const entryY = orbitY
+        const cubic = (a: number, b: number, c: number, d: number, t: number) => {
+          const k = 1 - t
+          return k * k * k * a + 3 * k * k * t * b + 3 * k * t * t * c + t * t * t * d
+        }
+        const started = performance.now()
+        const frame = (time: number) => {
+          if (cancelled) return resolve()
+          const p = Math.min(1, (time - started) / duration)
+          let x: number, y: number
+          if (p < .29) {
+            const t = ease(p / .29)
+            x = cubic(sx, sx + radius * .3, entryX - radius, entryX, t)
+            y = cubic(sy, sy - radius * 1.2, orbitY - radius * .8, entryY, t)
+          } else if (p < .67) {
+            const t = (p - .29) / .38
+            const theta = t * Math.PI * 2
+            x = orbitX + radius * Math.cos(theta)
+            y = orbitY + radius * .68 * Math.sin(theta)
+          } else {
+            const t = ease((p - .67) / .33)
+            x = cubic(entryX, entryX + radius * .35, target.x - radius * .35, target.x, t)
+            y = cubic(entryY, entryY + radius * .5, target.y - radius * .65, target.y, t)
+          }
+          // Gentle swaying about the original nib point: no sharp direction cuts.
+          const envelope = Math.sin(Math.PI * p)
+          const rotation = Math.sin(p * Math.PI * 5) * 11 * envelope
+          putFeather(x, y, rotation)
+          spark.style.opacity = '.34'
+          if (p < 1) rememberFrame(frame)
+          else {
+            putFeather(target.x, target.y, 0)
+            spark.style.opacity = '0'
+            resolve()
+          }
+        }
+        rememberFrame(frame)
       })
 
     type InkPoint = { x: number; y: number; lineTop: number; lineBottom: number; relX: number }
@@ -242,6 +378,13 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       })
 
     const run = async () => {
+      // Avoid 0px-height quill/pot images on a visitor's first load.
+      // Image decoding is independent of the animations and is cached later.
+      await Promise.all([pot, quill].map(img => {
+        if (img.complete) return Promise.resolve()
+        return img.decode().catch(() => undefined)
+      }))
+      if (cancelled) return
       // Preserve the existing parchment/roller opening and their exact geometry.
       const height = Math.max(paper.scrollHeight, 330)
       paper.style.height = '0px'
@@ -350,13 +493,15 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         const first = points[0]
         await move(first?.x ?? r.right - 9, first?.y ?? r.top + Math.min(r.height * .6, 30), fastBody ? 120 : 240)
         if (cancelled) return
+        engraveActive = true
         await revealWhileWriting(block, points, fastBody)
+        engraveActive = false
         if (cancelled) return
         await delay(fastBody ? 12 : 35)
       }
       if (cancelled) return
       const mouth = pot.getBoundingClientRect()
-      await move(mouth.left + mouth.width * .52, mouth.top + mouth.height * .43, 1150, {pot:true})
+      await swingHome(mouth.left + mouth.width * .52, mouth.top + mouth.height * .43)
       spark.style.opacity = '0'
       if (cancelled) return
       putFeather(Number(quill.dataset.x), Number(quill.dataset.y), 0)
@@ -373,6 +518,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         if (node.style.clipPath) node.style.clipPath = 'none'
       })
       pot.style.opacity = '1'
+      quill.style.opacity = '1'
+      engraveActive = false
       spark.style.opacity = '0'
     })
     return () => {
@@ -380,6 +527,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       frameIds.forEach(id => cancelAnimationFrame(id))
       timerIds.forEach(id => clearTimeout(id))
       animations.forEach(animation => animation.cancel())
+      cancelAnimationFrame(dustFrame)
+      filings.length = 0
     }
   }, [article.id, article.body, article.title, article.excerpt, visitEpoch])
 
@@ -437,6 +586,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         </svg>
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
         <span ref={sparkleRef} className="original-scroll-nib-sparks" aria-hidden="true"><i/><i/><i/><i/><i/></span>
+        <canvas ref={engravingCanvasRef} className="original-scroll-engraving-dust" aria-hidden="true" />
         {opened && <span className="sr-only">Scroll opened</span>}
       </div>
     </article>
@@ -469,6 +619,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         @keyframes inkFlameBreathe{from{opacity:.38;transform:translate(-1px,1px) rotate(-1deg)}to{opacity:.83;transform:translate(1px,-1.5px) rotate(1.5deg)}}
         @keyframes inkFlameFlow{to{stroke-dashoffset:-64}}
         .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform;transform-origin:1.4% 99.3%}
+        /* Light, localized engraving flecks — separate from the feather's z-index. */
+        .original-scroll-engraving-dust{position:absolute;left:0;top:0;width:120px;height:120px;z-index:1250;pointer-events:none;overflow:visible;will-change:transform}
         /* Small, soft sparks follow the ACTUAL nib; not the top of the feather. */
         .original-scroll-nib-sparks{position:absolute;left:0;top:0;width:22px;height:22px;z-index:1200;opacity:0;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 0 5px #f7d8a477)}
         .original-scroll-nib-sparks i{position:absolute;left:9px;top:9px;width:4px;height:4px;display:block;border-radius:50%;background:#ffeeb4;box-shadow:0 0 5px #efb763aa;animation:subtleNibSpark .9s ease-out infinite}
