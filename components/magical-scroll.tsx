@@ -19,6 +19,18 @@ export type MagicalArticle = ArticleAppearance & {
 
 const openedScrollKeys = new Set<string>()
 
+// A new full-page visit starts fresh. This also handles browser Back restoring
+// the document from the back/forward cache without reloading JavaScript.
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', () => openedScrollKeys.clear())
+  window.addEventListener('pageshow', event => {
+    if (event.persisted) {
+      openedScrollKeys.clear()
+      window.dispatchEvent(new Event('mashkeeza:scroll:new-visit'))
+    }
+  })
+}
+
 export function isMagicalScrollEnabled(value: MagicalArticle['use_magical_scroll']) {
   return value === true || value === 1
 }
@@ -31,6 +43,13 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
   const potRef = useRef<HTMLImageElement>(null)
   const sparkleRef = useRef<HTMLSpanElement>(null)
   const [opened, setOpened] = useState(false)
+  const [visitEpoch, setVisitEpoch] = useState(0)
+
+  useEffect(() => {
+    const onNewVisit = () => setVisitEpoch(epoch => epoch + 1)
+    window.addEventListener('mashkeeza:scroll:new-visit', onNewVisit)
+    return () => window.removeEventListener('mashkeeza:scroll:new-visit', onNewVisit)
+  }, [])
   const opacity = Math.min(100, Math.max(0, Number(article.paper_opacity ?? 100))) / 100
 
   useEffect(() => {
@@ -60,18 +79,15 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       }, ms)
       timerIds.add(id)
     })
-    // A visitor sees the scroll writing only the FIRST time they open this item.
-    // localStorage persists across browser refreshes; the Set is a fallback for
-    // browsers that block storage. Article and page keys are independent.
+    // Play just once per WEBSITE VISIT (one loaded browser document).
+    // This in-memory Set survives switching between articles/pages while the
+    // website is open, but is automatically empty on refresh, tab reopening,
+    // or returning after a real navigation away from the site.
+    // NEVER read/write localStorage or sessionStorage: they persist across
+    // reloads and would incorrectly suppress the next visit's animation.
     const visitKey = `mashkeeza:magical-scroll:seen:v1:${article.content_type === 'page' ? 'page' : 'article'}:${article.id}`
-    let seenBefore = openedScrollKeys.has(visitKey)
-    try {
-      seenBefore = seenBefore || window.localStorage.getItem(visitKey) === '1'
-    } catch { /* Storage may be disabled; in-memory tracking still works. */ }
-    if (!seenBefore) {
-      openedScrollKeys.add(visitKey)
-      try { window.localStorage.setItem(visitKey, '1') } catch { /* ignore */ }
-    }
+    const seenBefore = openedScrollKeys.has(visitKey)
+    if (!seenBefore) openedScrollKeys.add(visitKey)
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const ease = (v: number) => v * v * (3 - 2 * v)
     const animate = (el: Element, keyframes: Keyframe[], duration: number, easing = 'ease-in-out') => {
@@ -365,7 +381,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       timerIds.forEach(id => clearTimeout(id))
       animations.forEach(animation => animation.cancel())
     }
-  }, [article.id, article.body, article.title, article.excerpt])
+  }, [article.id, article.body, article.title, article.excerpt, visitEpoch])
 
   return (
     <>
