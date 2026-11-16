@@ -82,9 +82,9 @@ function MagicalScroll({ article }: { article: Article }) {
       const potBounds = pot.getBoundingClientRect()
       const stageBounds = stage.getBoundingClientRect()
       const qWidth = quill.offsetWidth, qHeight = quill.offsetHeight
-      const potTipX = potBounds.left + potBounds.width * .48
-      // Feather's nib must enter the inkpot, not stop above its rim.
-      const potTipY = potBounds.top + potBounds.height * .77
+      const potTipX = potBounds.left + potBounds.width * .52
+      // The inkpot image has transparent smoke above it: the actual mouth is near 43% of image height.
+      const potTipY = potBounds.top + potBounds.height * .43
       const startX = Math.max(0, Math.min(potTipX - stageBounds.left - qWidth * .014, stageBounds.width - qWidth - 8))
       const startY = Math.max(0, potTipY - stageBounds.top - qHeight * .993)
       quill.dataset.x = String(startX); quill.dataset.y = String(startY)
@@ -111,9 +111,9 @@ function MagicalScroll({ article }: { article: Article }) {
       }
       if (cancelled) return
       const mouth = pot.getBoundingClientRect()
-      await flyTo(mouth.left + mouth.width * .48, mouth.top + mouth.height * .77, 1100)
+      await flyTo(mouth.left + mouth.width * .52, mouth.top + mouth.height * .43, 1100)
       if (cancelled) return
-      // Leave the nib resting inside the pot after the flight.
+      // Rest the nib at the visible opening, not the base of the bottle.
       quill.style.transform = `translate(${quill.dataset.x}px, ${quill.dataset.y}px) rotate(0deg)`
     }
     void run()
