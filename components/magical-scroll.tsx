@@ -64,12 +64,15 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     if (!stage || !paper || !text || !quill || !pot || !spark || !engravingCanvas) return
 
     let cancelled = false
+    let runCompleted = false
+    let lastAnimationHeartbeat = performance.now()
     const animations: Animation[] = []
     const frameIds = new Set<number>()
     const timerIds = new Set<number>()
     const rememberFrame = (fn: FrameRequestCallback) => {
       const id = requestAnimationFrame(time => {
         frameIds.delete(id)
+        lastAnimationHeartbeat = performance.now()
         fn(time)
       })
       frameIds.add(id)
@@ -89,7 +92,9 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     // reloads and would incorrectly suppress the next visit's animation.
     const visitKey = `mashkeeza:magical-scroll:seen:v1:${article.content_type === 'page' ? 'page' : 'article'}:${article.id}`
     const seenBefore = openedScrollKeys.has(visitKey)
-    if (!seenBefore) openedScrollKeys.add(visitKey)
+    // Only mark as seen AFTER all writing and the return flight succeed.
+    // Recording at mount time incorrectly skips animation after aborted effects,
+    // React StrictMode re-mounts, or a failed image/layout measurement.
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const ease = (v: number) => v * v * (3 - 2 * v)
     const animate = (el: Element, keyframes: Keyframe[], duration: number, easing = 'ease-in-out') => {
@@ -223,6 +228,23 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         y: Math.max(0, Math.min(y - bounds.top - qh * .993, bounds.height - qh - 4))
       }
     }
+    // Exact approved resting formula (52% horizontal, 43% vertical on the
+    // inkpot image, plus the previously approved 10px-left X adjustment).
+    // Calculate it fresh after the scroll finishes opening; no guessed offset.
+    const getApprovedPotRest = () => {
+      const bounds = pot.getBoundingClientRect()
+      const stageBounds = stage.getBoundingClientRect()
+      const qw = quill.offsetWidth, qh = quill.offsetHeight
+      return {
+        x: Math.max(0, Math.min(bounds.left + bounds.width * .52 - stageBounds.left - qw * .014, stageBounds.width - qw - 8)) + potRestRightShift,
+        y: Math.max(0, bounds.top + bounds.height * .43 - stageBounds.top - qh * .993),
+      }
+    }
+    const restorePotRest = () => {
+      const pos = getApprovedPotRest()
+      putFeather(pos.x, pos.y, 0)
+      return pos
+    }
     const move = (x: number, y: number, duration: number, opts: { pot?: boolean; writing?: boolean } = {}) =>
       new Promise<void>(resolve => {
         engraveActive = true
@@ -303,43 +325,96 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         rememberFrame(frame)
       })
 
-    type InkPoint = { x: number; y: number; lineTop: number; lineBottom: number; relX: number }
-    // Keep original Urdu DOM nodes intact. Measuring a Range does not break joined letters.
+    type InkPoint = {
+      x: number; y: number; lineTop: number; lineBottom: number
+      relX: number; lineIndex: number
+    }
+    // Measure real *rendered* glyphs rather than assuming fixed character widths.
+    // Urdu/Nastaliq diacritics can create slightly different rect.top values
+    // within one heading, so group by VISUAL line and then order RTL by X.
     const measureInkPoints = (block: HTMLElement): InkPoint[] => {
       const box = block.getBoundingClientRect()
+      if (box.width <= 0 || box.height <= 0) return []
+      type Glyph = { left: number; right: number; top: number; bottom: number }
+      const glyphs: Glyph[] = []
       const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT)
-      const points: InkPoint[] = []
-      let current: Node | null
       const range = document.createRange()
-      while ((current = walker.nextNode())) {
-        const node = current as Text
-        const value = node.data
+      const mark = /[\p{M}\u200C\u200D]/u
+      let node: Node | null
+      while ((node = walker.nextNode())) {
+        const value = (node as Text).data
         if (!value.trim()) continue
-        // For very long paragraphs sample every few codepoints to keep animation responsive.
-        const chars = Array.from(value)
-        const stride = Math.max(1, Math.ceil(chars.length / 1200))
+        // Merge marks with their base character; never split joined Urdu marks.
+        const units: { start: number; end: number; value: string }[] = []
         let offset = 0
-        for (let i = 0; i < chars.length; i++) {
-          const nextOffset = offset + chars[i].length
-          if (i % stride === 0 || i === chars.length - 1) {
-            range.setStart(node, offset)
-            range.setEnd(node, nextOffset)
-            const rect = [...range.getClientRects()].find(r => r.height > 0 && r.width > 0)
-            if (rect) {
-              points.push({
-                x: rect.left,
-                y: rect.top + rect.height * .78,
-                lineTop: Math.max(0, rect.top - box.top - 1),
-                lineBottom: Math.min(box.height, rect.bottom - box.top + 2),
-                relX: Math.max(0, Math.min(box.width, rect.left - box.left))
-              })
-            }
+        for (const char of Array.from(value)) {
+          const prev = units[units.length - 1]
+          if (prev && mark.test(char)) {
+            prev.end += char.length
+            prev.value += char
+          } else {
+            units.push({ start: offset, end: offset + char.length, value: char })
           }
-          offset = nextOffset
+          offset += char.length
+        }
+        // Sample long posts to keep Range measurement responsive.
+        const stride = Math.max(1, Math.ceil(units.length / 1100))
+        for (let index = 0; index < units.length; index += stride) {
+          const unit = units[index]
+          if (!unit.value.trim()) continue
+          range.setStart(node, unit.start)
+          range.setEnd(node, unit.end)
+          const rect = Array.from(range.getClientRects()).find(r => r.width > .2 && r.height > 1)
+          if (rect) glyphs.push({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom })
         }
       }
       range.detach()
-      // Points use viewport coordinates; move() converts them to stage coordinates.
+      if (!glyphs.length) return []
+      // Same visual line may have diacritics/inline styles with different tops.
+      const font = window.getComputedStyle(block)
+      const lineHeight = Number.parseFloat(font.lineHeight)
+      const tolerance = Math.max(7, Math.min(19, (Number.isFinite(lineHeight) ? lineHeight : 48) * .28))
+      const lines: { center: number; glyphs: Glyph[] }[] = []
+      for (const glyph of glyphs.sort((a, b) => (a.top + a.bottom) - (b.top + b.bottom))) {
+        const middle = (glyph.top + glyph.bottom) / 2
+        const row = lines.find(line => Math.abs(line.center - middle) < tolerance)
+        if (row) {
+          row.glyphs.push(glyph)
+          row.center = (row.center * (row.glyphs.length - 1) + middle) / row.glyphs.length
+        } else lines.push({ center: middle, glyphs: [glyph] })
+      }
+      lines.sort((a, b) => a.center - b.center)
+      const points: InkPoint[] = []
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+        const row = lines[lineIndex]
+        const sorted = row.glyphs.sort((a, b) => b.right - a.right)
+        // Avoid spreading thousands of characters into Math.min/Math.max.
+        let minTop = Infinity, maxBottom = -Infinity
+        for (const glyph of row.glyphs) {
+          minTop = Math.min(minTop, glyph.top)
+          maxBottom = Math.max(maxBottom, glyph.bottom)
+        }
+        const top = Math.max(0, minTop - box.top - 1)
+        const bottom = Math.min(box.height, maxBottom - box.top + 2)
+        // Start at the rightmost stroke; keep nib aligned with the REVEAL edge.
+        const y = Math.min(maxBottom - 1, minTop + (maxBottom - minTop) * .78)
+        for (const glyph of sorted) {
+          points.push({
+            x: glyph.right, y,
+            lineTop: top, lineBottom: bottom,
+            relX: Math.max(0, Math.min(box.width, glyph.right - box.left)),
+            lineIndex,
+          })
+        }
+        // End at the last glyph's left edge: the whole line is now visible.
+        const last = sorted[sorted.length - 1]
+        points.push({
+          x: last.left, y,
+          lineTop: top, lineBottom: bottom,
+          relX: Math.max(0, Math.min(box.width, last.left - box.left)),
+          lineIndex,
+        })
+      }
       return points
     }
 
@@ -369,7 +444,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           const part = position - index
           const a = points[index]
           const b = points[Math.min(count - 1, index + 1)]
-          const sameLine = Math.abs(a.lineTop - b.lineTop) < 5
+          const sameLine = a.lineIndex === b.lineIndex
           const featherX = sameLine ? a.x + (b.x - a.x) * part : a.x
           const featherY = sameLine ? a.y + (b.y - a.y) * part : a.y
           // Pen nib and the visible writing edge use the SAME interpolated glyph coordinate.
@@ -402,7 +477,11 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       // Image decoding is independent of the animations and is cached later.
       await Promise.all([pot, quill].map(img => {
         if (img.complete) return Promise.resolve()
-        return img.decode().catch(() => undefined)
+        // A broken image/slow connection must not stall the article forever.
+        return Promise.race([
+          img.decode().catch(() => undefined),
+          new Promise<void>(resolve => window.setTimeout(resolve, 1400)),
+        ])
       }))
       if (cancelled) return
       // Preserve the existing parchment/roller opening and their exact geometry.
@@ -467,14 +546,9 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           el.style.willChange = ''
         })
         pot.style.opacity = '1'
-        const bounds = pot.getBoundingClientRect()
-        const stageBounds = stage.getBoundingClientRect()
-        const qw = quill.offsetWidth, qh = quill.offsetHeight
-        putFeather(
-          Math.max(0, Math.min(bounds.left + bounds.width * .52 - stageBounds.left - qw * .014, stageBounds.width - qw - 8)) + potRestRightShift,
-          Math.max(0, bounds.top + bounds.height * .43 - stageBounds.top - qh * .993)
-        )
+        restorePotRest()
         quill.style.opacity = '1'
+        runCompleted = true
         setOpened(true)
         return
       }
@@ -486,14 +560,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       await animate(pot, [{opacity: 0}, {opacity: 1}], 650)
       if (cancelled) return
 
-      const b = pot.getBoundingClientRect()
-      const s = stage.getBoundingClientRect()
-      const qw = quill.offsetWidth
-      const qh = quill.offsetHeight
-      // Keep the EXACT working mouth position (43% Y and 52% X, plus approved X shift).
-      const startX = Math.max(0, Math.min(b.left + b.width * .52 - s.left - qw * .014, s.width - qw - 8)) + potRestRightShift
-      const startY = Math.max(0, b.top + b.height * .43 - s.top - qh * .993)
-      putFeather(startX, startY)
+      // Start the flight from exactly the same approved resting pose.
+      restorePotRest()
       quill.style.opacity = '1'
       blocks.forEach(node => {node.style.opacity = '0'; node.style.clipPath = 'inset(0 0 100% 0)'})
       text.style.visibility = 'visible'
@@ -525,12 +593,19 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       spark.style.opacity = '0'
       if (cancelled) return
       engraveActive = false
-      putFeather(Number(quill.dataset.x), Number(quill.dataset.y), 0)
+      restorePotRest()
+      runCompleted = true
+      openedScrollKeys.add(visitKey)
     }
-    void run().catch(error => {
-      if (cancelled) return
-      console.error('Magical Scroll writing animation:', error)
-      // A rendering error must never leave the Urdu article invisible.
+
+    // Never let a stalled frame, image or animation promise keep the post blank.
+    // Watch progress only when the tab is visible (background rAF is paused).
+    const revealSafely = () => {
+      if (cancelled || runCompleted) return
+      runCompleted = true
+      cancelled = true
+      frameIds.forEach(id => cancelAnimationFrame(id))
+      animations.forEach(animation => animation.cancel())
       paper.style.height = 'auto'
       paper.style.overflow = 'visible'
       text.style.visibility = 'visible'
@@ -542,9 +617,23 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       quill.style.opacity = '1'
       engraveActive = false
       spark.style.opacity = '0'
+      try { restorePotRest() } catch { /* show text even if an asset is missing */ }
+      setOpened(true)
+    }
+    const safetyMonitor = window.setInterval(() => {
+      if (!runCompleted && !cancelled && document.visibilityState === 'visible' &&
+          performance.now() - lastAnimationHeartbeat > 6500) {
+        revealSafely()
+      }
+    }, 1000)
+    void run().catch(error => {
+      if (cancelled || runCompleted) return
+      console.error('Magical Scroll writing animation:', error)
+      revealSafely()
     })
     return () => {
       cancelled = true
+      window.clearInterval(safetyMonitor)
       frameIds.forEach(id => cancelAnimationFrame(id))
       timerIds.forEach(id => clearTimeout(id))
       animations.forEach(animation => animation.cancel())
