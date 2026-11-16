@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
@@ -25,303 +26,110 @@ function isMagicalScrollEnabled(value: Article['use_magical_scroll']) {
   return value === true || value === 1
 }
 
-function easeInOutCubic(value: number) {
-  return value < 0.5
-    ? 4 * value * value * value
-    : 1 - Math.pow(-2 * value + 2, 3) / 2
-}
-
-function wait(ms: number) {
-  return new Promise<void>(resolve => window.setTimeout(resolve, ms))
-}
-
 function MagicalScroll({ article }: { article: Article }) {
   const stageRef = useRef<HTMLDivElement>(null)
   const paperRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLDivElement>(null)
   const quillRef = useRef<HTMLImageElement>(null)
   const potRef = useRef<HTMLImageElement>(null)
-  const sparkleRef = useRef<HTMLSpanElement>(null)
   const [opened, setOpened] = useState(false)
   const opacity = Math.min(100, Math.max(0, Number(article.paper_opacity ?? 100))) / 100
 
   useEffect(() => {
     let cancelled = false
-
-    const stage = stageRef.current
-    const paper = paperRef.current
-    const text = textRef.current
-    const quill = quillRef.current
-    const pot = potRef.current
-    const sparkle = sparkleRef.current
-
-    if (!stage || !paper || !text || !quill || !pot || !sparkle) return
-
+    
+    const animations: Animation[] = []
+    const stage = stageRef.current, paper = paperRef.current, text = textRef.current
+    const quill = quillRef.current, pot = potRef.current
+    if (!stage || !paper || !text || !quill || !pot) return
     setOpened(false)
-
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-    const getStageRect = () => stage.getBoundingClientRect()
-    const getQuillRect = () => quill.getBoundingClientRect()
-    const getPotRect = () => pot.getBoundingClientRect()
-
-    const setSparkle = (x: number, y: number, visible = true) => {
-      sparkle.style.opacity = visible ? '0.58' : '0'
-      sparkle.style.transform = `translate(${x - 18}px, ${y - 18}px)`
+    const animate = (el: Element, keyframes: Keyframe[], duration: number, easing = 'ease-in-out') => {
+      const a = el.animate(keyframes, { duration, easing, fill: 'forwards' }); animations.push(a)
+      return a.finished.catch(() => undefined)
     }
-
-    const setQuillPose = (nibX: number, nibY: number, angle: number, sway = 0, scale = 1) => {
-      const qRect = getQuillRect()
-      const anchorX = qRect.width * 0.014
-      const anchorY = qRect.height * 0.993
-      const tx = nibX - anchorX
-      const ty = nibY - anchorY + sway
-      quill.style.transform = `translate(${tx}px, ${ty}px) rotate(${angle}deg) scale(${scale})`
-      quill.dataset.nibX = String(nibX)
-      quill.dataset.nibY = String(nibY)
-      setSparkle(nibX + 6, nibY - 8, true)
+    // Shift only the feather's resting position at the inkpot to the right.
+    // Adjust the inkpot resting X position 10 px left of the previous version.
+    const potRestRightShift = Math.max(0, Math.min(96, stage.clientWidth * .15) - 10)
+    const flyTo = (x: number, y: number, duration: number, inkpotRest = false) => {
+      const bounds = stage.getBoundingClientRect()
+      // Use untransformed dimensions: getBoundingClientRect changes during rotation.
+      const qw = quill.offsetWidth, qh = quill.offsetHeight
+      const fromX = parseFloat(quill.dataset.x || '0')
+      const fromY = parseFloat(quill.dataset.y || '0')
+      // The image points at bottom-left and extends upward/right.
+      // Keep the complete feather inside the article viewing area.
+      const baseX = Math.max(0, Math.min(x - bounds.left - qw * .014, bounds.width - qw - 8))
+      const toX = baseX + (inkpotRest ? potRestRightShift : 0)
+      const toY = Math.max(0, Math.min(y - bounds.top - qh * .993, bounds.height - qh - 4))
+      quill.dataset.x = String(toX); quill.dataset.y = String(toY)
+      return animate(quill, [
+        { transform: `translate(${fromX}px, ${fromY}px) rotate(-9deg)` },
+        { transform: `translate(${toX}px, ${toY}px) rotate(3deg)` }
+      ], duration)
     }
-
-    const getCurrentNib = () => ({
-      x: Number(quill.dataset.nibX || '0'),
-      y: Number(quill.dataset.nibY || '0'),
-    })
-
-    const animateHeight = (toHeight: number, duration: number) =>
-      new Promise<void>(resolve => {
-        const fromHeight = Number.parseFloat(paper.style.height || '0') || 0
-        const start = performance.now()
-
-        const step = (now: number) => {
-          if (cancelled) return resolve()
-          const progress = Math.min(1, (now - start) / duration)
-          const eased = easeInOutCubic(progress)
-          const height = fromHeight + (toHeight - fromHeight) * eased
-          paper.style.height = `${height}px`
-          if (progress < 1) {
-            requestAnimationFrame(step)
-          } else {
-            resolve()
-          }
-        }
-
-        requestAnimationFrame(step)
-      })
-
-    const flyNibTo = (
-      targetX: number,
-      targetY: number,
-      duration: number,
-      options?: {
-        startAngle?: number
-        endAngle?: number
-        swayX?: number
-        swayY?: number
-        hover?: boolean
-        sparkle?: boolean
-        scale?: number
-      }
-    ) =>
-      new Promise<void>(resolve => {
-        const startNib = getCurrentNib()
-        const startAngle = options?.startAngle ?? -14
-        const endAngle = options?.endAngle ?? 10
-        const swayX = options?.swayX ?? 7
-        const swayY = options?.swayY ?? 15
-        const hover = options?.hover ?? true
-        const sparkleOn = options?.sparkle ?? true
-        const scale = options?.scale ?? 1
-        const start = performance.now()
-
-        const step = (now: number) => {
-          if (cancelled) return resolve()
-          const progress = Math.min(1, (now - start) / duration)
-          const eased = easeInOutCubic(progress)
-          const wave = Math.sin(progress * Math.PI * 2.15)
-          const drift = Math.sin(progress * Math.PI * 4.3)
-          const x = startNib.x + (targetX - startNib.x) * eased + wave * swayX * (1 - progress * 0.35)
-          const y = startNib.y + (targetY - startNib.y) * eased - Math.sin(progress * Math.PI) * swayY + drift * 2.2
-          const angle = startAngle + (endAngle - startAngle) * eased + wave * (hover ? 8 : 4)
-          const bob = hover ? Math.cos(progress * Math.PI * 4.2) * 1.4 : 0
-          setQuillPose(x, y, angle, bob, scale)
-          if (!sparkleOn) setSparkle(x + 6, y - 8, false)
-          if (progress < 1) {
-            requestAnimationFrame(step)
-          } else {
-            resolve()
-          }
-        }
-
-        requestAnimationFrame(step)
-      })
-
-    const writeBlock = (block: HTMLElement) =>
-      new Promise<void>(resolve => {
-        const stageRect = getStageRect()
-        const rect = block.getBoundingClientRect()
-        const computed = window.getComputedStyle(block)
-        const lineHeightRaw = Number.parseFloat(computed.lineHeight)
-        const lineHeight = Number.isFinite(lineHeightRaw)
-          ? lineHeightRaw
-          : Math.max(28, rect.height)
-        const totalLines = Math.max(1, Math.min(6, Math.round(rect.height / lineHeight)))
-        const paddingX = Math.max(10, rect.width * 0.03)
-        const startX = rect.right - stageRect.left - paddingX
-        const endX = rect.left - stageRect.left + paddingX
-        const topY = rect.top - stageRect.top + Math.min(lineHeight * 0.72, rect.height * 0.45)
-        const rowGap = Math.max(18, Math.min(lineHeight, 34))
-        const totalDuration = Math.min(4200, Math.max(950, (block.textContent?.trim().length || 0) * 34))
-        const rowDuration = Math.max(420, totalDuration / totalLines)
-        const start = performance.now()
-
-        block.style.opacity = '1'
-
-        const step = (now: number) => {
-          if (cancelled) return resolve()
-          const elapsed = Math.min(totalDuration, now - start)
-          const overall = elapsed / totalDuration
-          const activeLine = Math.min(totalLines - 1, Math.floor(elapsed / rowDuration))
-          const lineProgress = Math.min(1, (elapsed - activeLine * rowDuration) / rowDuration)
-          const easedLine = easeInOutCubic(lineProgress)
-          const nibX = startX + (endX - startX) * easedLine
-          const nibY = topY + activeLine * rowGap + Math.sin(lineProgress * Math.PI * 2) * 2.2
-          const angle = -12 + Math.sin(lineProgress * Math.PI * 4) * 6 - activeLine * 0.6
-          setQuillPose(nibX, nibY, angle, Math.sin(lineProgress * Math.PI * 6) * 0.7)
-
-          const revealPercent = Math.max(0, 100 - overall * 100)
-          block.style.clipPath = `inset(0 ${revealPercent}% 0 0)`
-          block.style.opacity = '1'
-
-          if (elapsed < totalDuration) {
-            requestAnimationFrame(step)
-          } else {
-            block.style.clipPath = 'inset(0 0 0 0)'
-            block.style.opacity = '1'
-            resolve()
-          }
-        }
-
-        requestAnimationFrame(step)
-      })
-
     const run = async () => {
       const innerHeight = Math.max(paper.scrollHeight, 330)
       paper.style.height = '0px'
       paper.style.overflow = 'hidden'
       text.style.visibility = 'hidden'
-      pot.style.opacity = '0'
-      quill.style.opacity = '0'
-      sparkle.style.opacity = '0'
-
+      pot.style.opacity = '0'; quill.style.opacity = '0'
       if (reduced) {
-        paper.style.height = 'auto'
-        text.style.visibility = 'visible'
-        pot.style.opacity = '1'
-        quill.style.opacity = '1'
-        sparkle.style.opacity = '0.45'
-        setOpened(true)
-        return
+        paper.style.height = 'auto'; text.style.visibility = 'visible'
+        pot.style.opacity = '1'; quill.style.opacity = '1'; setOpened(true); return
       }
-
-      await animateHeight(innerHeight, 2200)
+      await animate(paper, [{ height: '0px' }, { height: `${innerHeight}px` }], 2200, 'cubic-bezier(.22,.8,.22,1)')
       if (cancelled) return
-
-      paper.style.height = 'auto'
-      paper.style.overflow = 'visible'
-      setOpened(true)
-
-      pot.style.opacity = '1'
-      await wait(260)
+      paper.style.height = 'auto'; paper.style.overflow = 'visible'; setOpened(true)
+      await animate(pot, [{ opacity: 0 }, { opacity: 1 }], 650)
       if (cancelled) return
-
-      const potBounds = getPotRect()
-      const stageBounds = getStageRect()
-      const mouthX = potBounds.left + potBounds.width * 0.50 - stageBounds.left
-      const mouthY = potBounds.top + potBounds.height * 0.29 - stageBounds.top
-
+      const potBounds = pot.getBoundingClientRect()
+      const stageBounds = stage.getBoundingClientRect()
+      const qWidth = quill.offsetWidth, qHeight = quill.offsetHeight
+      const potTipX = potBounds.left + potBounds.width * .52
+      // The inkpot image has transparent smoke above it: the actual mouth is near 43% of image height.
+      const potTipY = potBounds.top + potBounds.height * .43
+      const startX = Math.max(0, Math.min(potTipX - stageBounds.left - qWidth * .014, stageBounds.width - qWidth - 8)) + potRestRightShift
+      const startY = Math.max(0, potTipY - stageBounds.top - qHeight * .993)
+      quill.dataset.x = String(startX); quill.dataset.y = String(startY)
+      quill.style.transform = `translate(${startX}px, ${startY}px)`
       quill.style.opacity = '1'
-      setQuillPose(mouthX, mouthY, -8, 0, 1)
-      await flyNibTo(mouthX - 18, mouthY - 22, 520, {
-        startAngle: -4,
-        endAngle: -18,
-        swayX: 5,
-        swayY: 10,
-        hover: true,
-        sparkle: true,
-      })
-      if (cancelled) return
-
       text.style.visibility = 'visible'
-
       const blocks = [...text.querySelectorAll('h2,h3,p,li,blockquote')].filter(el => el.textContent?.trim())
-      blocks.forEach(el => {
-        const item = el as HTMLElement
-        item.style.opacity = '0'
-        item.style.clipPath = 'inset(0 100% 0 0)'
-        item.style.willChange = 'clip-path, opacity'
-      })
-
+      blocks.forEach(el => { (el as HTMLElement).style.opacity = '0' })
       for (const block of blocks) {
         if (cancelled) return
-        const element = block as HTMLElement
-        const rect = element.getBoundingClientRect()
-        const stageRect = getStageRect()
-        const introX = rect.right - stageRect.left - Math.max(8, rect.width * 0.03)
-        const introY = rect.top - stageRect.top + Math.min(rect.height * 0.6, 28)
-
-        await flyNibTo(introX, introY, 360, {
-          startAngle: -18,
-          endAngle: -9,
-          swayX: 7,
-          swayY: 13,
-          hover: true,
-          sparkle: true,
-        })
+        const rect = block.getBoundingClientRect()
+        await flyTo(rect.right - 8, rect.top + Math.min(rect.height * .6, 30), 400)
         if (cancelled) return
-
-        await writeBlock(element)
-        if (cancelled) return
-
-        await wait(90)
+        const target = block as HTMLElement
+        const duration = Math.min(2600, Math.max(550, (block.textContent?.length || 0) * 25))
+        const writing = animate(target, [
+          { clipPath: 'inset(0 0 0 100%)', opacity: 0 },
+          { clipPath: 'inset(0 0 0 0)', opacity: 1 }
+        ], duration, 'linear')
+        const b = block.getBoundingClientRect()
+        const featherMotion = flyTo(b.left + 10, b.top + Math.min(b.height * .6, 30), duration)
+        await Promise.all([writing, featherMotion])
+        target.style.opacity = '1'
       }
-
       if (cancelled) return
-
-      await flyNibTo(mouthX - 18, mouthY - 20, 700, {
-        startAngle: -8,
-        endAngle: -14,
-        swayX: 6,
-        swayY: 12,
-        hover: true,
-        sparkle: true,
-      })
+      const mouth = pot.getBoundingClientRect()
+      await flyTo(mouth.left + mouth.width * .52, mouth.top + mouth.height * .43, 1100, true)
       if (cancelled) return
-
-      await flyNibTo(mouthX, mouthY, 440, {
-        startAngle: -14,
-        endAngle: -6,
-        swayX: 2,
-        swayY: 5,
-        hover: false,
-        sparkle: true,
-      })
-
-      setSparkle(mouthX + 6, mouthY - 8, true)
+      // Rest the nib at the visible opening, not the base of the bottle.
+      quill.style.transform = `translate(${quill.dataset.x}px, ${quill.dataset.y}px) rotate(0deg)`
     }
-
     void run()
-
-    return () => {
-      cancelled = true
-    }
-  }, [article.id, article.body, article.excerpt, article.title])
+    return () => { cancelled = true; animations.forEach(a => a.cancel()) }
+  }, [article.id, article.body])
 
   return (
     <article dir="rtl" lang="ur" className="original-mashkeeza-scroll" aria-label={article.title}>
       <div ref={stageRef} className="original-scroll-stage">
         <div className="original-scroll-assembly">
           <img className="original-scroll-roller" src="/magical-scroll/top-roller.png" alt="" draggable={false}/>
-          <div ref={paperRef} className="original-scroll-paper" style={{ '--paper-opacity': opacity } as CSSProperties}>
+          <div ref={paperRef} className="original-scroll-paper" style={{'--paper-opacity': opacity} as CSSProperties}>
             <div className="original-scroll-paper-surface">
               <div ref={textRef} className="original-scroll-writing">
                 <h2>{article.title}</h2>
@@ -330,17 +138,13 @@ function MagicalScroll({ article }: { article: Article }) {
               </div>
             </div>
           </div>
-          <img className="original-scroll-roller" src="/magical-scroll/bottom-roller.png" alt="" draggable={false}/>
+          <div className="original-scroll-bottom-mount" aria-hidden="true">
+            <img className="original-scroll-roller original-scroll-bottom-roller" src="/magical-scroll/bottom-roller.png" alt="" draggable={false}/>
+          </div>
         </div>
         <span className="original-scroll-sparkles" aria-hidden="true">✦ ✧ ✦</span>
         <img ref={potRef} className="original-scroll-pot" src="/magical-scroll/inkpot.png" alt="" draggable={false}/>
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
-        <span ref={sparkleRef} className="original-scroll-quill-sparkles" aria-hidden="true">
-          <span className="spark-core" />
-          <span className="spark-dot spark-dot-one" />
-          <span className="spark-dot spark-dot-two" />
-          <span className="spark-dot spark-dot-three" />
-        </span>
         {opened && <span className="sr-only">Scroll opened</span>}
       </div>
     </article>
@@ -410,7 +214,7 @@ export function ArticleBrowser() {
       <section
         dir="rtl"
         aria-label="مضامین"
-        className="absolute inset-0 z-20 mx-auto w-full max-w-7xl overflow-hidden px-3 pt-2 pb-4 sm:px-5 sm:pt-3 md:pt-4"
+        className="absolute inset-0 z-20 mx-auto w-full max-w-7xl overflow-visible px-3 pt-2 pb-4 sm:px-5 sm:pt-3 md:pt-4"
       >
         <div className="grid h-full grid-cols-[minmax(110px,25%)_minmax(0,1fr)] items-start gap-3 sm:gap-6 lg:grid-cols-[minmax(0,250px)_minmax(0,1fr)] lg:gap-10">
           <aside
@@ -467,7 +271,9 @@ export function ArticleBrowser() {
 
           <div
             id="selected-article"
-            className="min-w-0 max-h-full overflow-y-auto bg-transparent [scrollbar-width:thin]"
+            className={magical
+              ? "min-w-0 max-h-full overflow-visible bg-transparent"
+              : "min-w-0 max-h-full overflow-y-auto bg-transparent [scrollbar-width:thin]"}
             aria-live="polite"
           >
             {selected && (
@@ -510,34 +316,30 @@ export function ArticleBrowser() {
       </section>
 
       <style jsx global>{`
-        .original-mashkeeza-scroll{font-family:'Noto Nastaliq Urdu',serif;color:#422410;width:100%;filter:drop-shadow(0 12px 20px #0007)}
-        .original-scroll-stage{position:relative;width:100%;padding:8px 0 105px;overflow:visible;isolation:isolate}
-        .original-scroll-assembly{width:100%;display:flex;flex-direction:column;align-items:center;position:relative}
-        .original-scroll-roller{width:100%;height:auto;position:relative;z-index:3;display:block;pointer-events:none;user-select:none}
-        .original-scroll-paper{width:63.6%;margin:-1px 0;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
-        .original-scroll-paper-surface{position:relative;min-height:330px;padding:12% 10% 14%;isolation:isolate}
+        .original-mashkeeza-scroll{font-family:'Noto Nastaliq Urdu',serif;color:#422410;width:100%;position:relative;z-index:100;overflow:visible}
+        .original-scroll-stage{position:relative;z-index:101;width:100%;min-height:max-content;padding:8px 0 145px;overflow:visible;isolation:auto}
+        .original-scroll-assembly{width:100%;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
+        .original-scroll-roller{width:100%;height:auto;position:relative;z-index:3;flex-shrink:0;display:block;pointer-events:none;user-select:none}
+        .original-scroll-paper{width:63.6%;margin:-1px 0 0;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
+        /* Bottom roller sits in front of the parchment edge, like the top roller. */
+        /* The mount overlaps the parchment and casts an upward contact shadow,
+           matching the way the top wooden roller sits against the paper. */
+        .original-scroll-bottom-mount{position:relative;width:100%;flex-shrink:0;margin-top:calc(-1 * clamp(30px, 5.5vw, 70px));z-index:8;isolation:isolate;pointer-events:none}
+        .original-scroll-bottom-mount::before{content:"";position:absolute;left:18.2%;right:18.2%;top:-20px;height:33px;z-index:1;pointer-events:none;background:linear-gradient(to bottom,rgba(65,29,12,0),rgba(69,31,12,.12) 22%,rgba(59,24,8,.38) 65%,rgba(44,17,6,.52) 100%);filter:blur(5px);border-radius:0 0 48% 48%}
+        .original-scroll-bottom-roller{position:relative;z-index:2;margin:0;filter:drop-shadow(0 -3px 3px rgba(53,21,7,.28))}
+        .original-scroll-paper-surface{position:relative;min-height:390px;padding:12% 10% 18%;isolation:isolate}
         .original-scroll-paper-surface::before{content:"";position:absolute;inset:0;z-index:-1;background:url('/magical-scroll/paper-bg.png') center / 100% 100% no-repeat;opacity:var(--paper-opacity);pointer-events:none}
         .original-scroll-writing{direction:rtl;text-align:right;overflow-wrap:anywhere;font-size:clamp(11px,2.8cqw,22px);line-height:2.4;color:#422410;visibility:hidden}
         .original-scroll-writing h2{font-size:1.55em;font-weight:700;text-align:center;line-height:2.2;margin:0 0 .8em;color:#71351d}
         .original-scroll-writing p,.original-scroll-writing li{margin:.7em 0}
         .original-scroll-writing img{max-width:100%;object-fit:contain}
         .original-scroll-excerpt{font-size:.9em;text-align:center}
-        .original-scroll-pot{position:absolute;z-index:4;width:19.15%;height:auto;right:1%;bottom:0;opacity:0;pointer-events:none;filter:drop-shadow(0 0 8px #5e8cff99)}
-        .original-scroll-quill{position:absolute;z-index:7;left:0;top:0;width:30%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform;transform-origin:1.5% 99%}
-        .original-scroll-quill-sparkles{position:absolute;left:0;top:0;z-index:8;width:36px;height:36px;pointer-events:none;opacity:0;will-change:transform,opacity}
-        .original-scroll-quill-sparkles .spark-core,.original-scroll-quill-sparkles .spark-dot{position:absolute;display:block;border-radius:999px;background:radial-gradient(circle,#fffbe2 0%,#ffe07a 38%,rgba(255,106,230,.72) 72%,rgba(33,200,255,0) 100%)}
-        .original-scroll-quill-sparkles .spark-core{inset:11px;box-shadow:0 0 8px rgba(255,230,151,.45),0 0 14px rgba(221,118,255,.18);animation:quillSparklePulse 1.8s ease-in-out infinite}
-        .original-scroll-quill-sparkles .spark-dot-one{width:8px;height:8px;right:4px;top:2px;animation:quillSparkleDriftOne 1.6s ease-in-out infinite}
-        .original-scroll-quill-sparkles .spark-dot-two{width:6px;height:6px;left:1px;top:8px;animation:quillSparkleDriftTwo 1.9s ease-in-out infinite}
-        .original-scroll-quill-sparkles .spark-dot-three{width:7px;height:7px;left:10px;bottom:2px;animation:quillSparkleDriftThree 1.5s ease-in-out infinite}
-        .original-scroll-sparkles{position:absolute;right:8%;bottom:13%;z-index:5;pointer-events:none;color:#ffe88e;text-shadow:0 0 10px #e752ff,0 0 18px #21c8ff;animation:scrollSparkle 1.7s ease-in-out infinite alternate}
-        @keyframes scrollSparkle{from{opacity:.22;transform:translateY(5px) scale(.86)}to{opacity:.72;transform:translateY(-5px) scale(1.05)}}
-        @keyframes quillSparklePulse{0%,100%{opacity:.34;transform:scale(.82)}50%{opacity:.68;transform:scale(1.08)}}
-        @keyframes quillSparkleDriftOne{0%,100%{transform:translate(0,0) scale(.8);opacity:.25}50%{transform:translate(4px,-5px) scale(1.04);opacity:.56}}
-        @keyframes quillSparkleDriftTwo{0%,100%{transform:translate(0,0) scale(.76);opacity:.22}50%{transform:translate(-3px,-4px) scale(1);opacity:.48}}
-        @keyframes quillSparkleDriftThree{0%,100%{transform:translate(0,0) scale(.8);opacity:.24}50%{transform:translate(1px,3px) scale(1.02);opacity:.45}}
-        @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:230px;padding:11% 10% 13%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
-        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-sparkles,.original-scroll-quill-sparkles .spark-core,.original-scroll-quill-sparkles .spark-dot{animation:none}}
+        .original-scroll-pot{position:absolute;z-index:1000;width:19.15%;height:auto;right:1%;bottom:0;opacity:0;pointer-events:none;filter:drop-shadow(0 0 8px #5e8cff99)}
+        .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform}
+        .original-scroll-sparkles{position:absolute;right:8%;bottom:13%;z-index:1001;pointer-events:none;color:#ffe88e;text-shadow:0 0 10px #e752ff,0 0 18px #21c8ff;animation:scrollSparkle 1.7s ease-in-out infinite alternate}
+        @keyframes scrollSparkle{from{opacity:.25;transform:translateY(5px) scale(.8)}to{opacity:1;transform:translateY(-7px) scale(1.2)}}
+        @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:11% 10% 17%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
+        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-sparkles{animation:none}}
       `}</style>
     </>
   )
