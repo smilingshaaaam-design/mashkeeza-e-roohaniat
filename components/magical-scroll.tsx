@@ -110,10 +110,10 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         ctx.save()
         ctx.translate(particle.x, particle.y)
         ctx.strokeStyle = particle.color
-        ctx.globalAlpha = .68 * Math.pow(1 - life, 1.4)
-        ctx.lineWidth = .85
+        ctx.globalAlpha = .83 * Math.pow(1 - life, 1.35)
+        ctx.lineWidth = 1.05
         ctx.shadowColor = particle.color
-        ctx.shadowBlur = 4
+        ctx.shadowBlur = 6
         const r = particle.size * (1 - life * .4)
         ctx.beginPath()
         ctx.moveTo(-r, 0); ctx.lineTo(r, 0)
@@ -132,18 +132,18 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       lastNibX = x; lastNibY = y
       if (!engraved || !ctx) return
       const now = performance.now()
-      if (now - lastEmission < 47) return
+      if (now - lastEmission < 32) return
       lastEmission = now
-      for (let i = 0; i < 3 && flecks.length < 36; i++) {
+      for (let i = 0; i < 5 && flecks.length < 56; i++) {
         flecks.push({
-          x: 60 + (Math.random() - .5) * 4,
-          y: 60 + (Math.random() - .5) * 4,
-          vx: (Math.random() - .5) * 2.5,
-          vy: -(.35 + Math.random() * 1.3),
+          x: 60 + (Math.random() - .5) * 5,
+          y: 60 + (Math.random() - .5) * 5,
+          vx: (Math.random() - .5) * 3.0,
+          vy: -(.40 + Math.random() * 1.55),
           born: now,
           ttl: 330 + Math.random() * 260,
           color: colours[Math.floor(Math.random() * colours.length)],
-          size: 1.3 + Math.random() * 2.2,
+          size: 1.5 + Math.random() * 2.55,
         })
       }
       if (!dustFrame) dustFrame = requestAnimationFrame(drawFlecks)
@@ -217,7 +217,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const moveTo = async (destination: { x: number; y: number }, duration: number) => {
       const sx = featherX, sy = featherY
       engraved = true
-      spark.style.opacity = '.48'
+      spark.style.opacity = '.68'
       await tween(duration, t => {
         const e = ease(t)
         const bump = Math.sin(Math.PI * t)
@@ -368,9 +368,9 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         const from = toPoseFromPage(pts[0].x,pts[0].y)
         // Flying to the next line is separate from the writing stroke.
         if (Math.abs(featherX-from.x) + Math.abs(featherY-from.y) > 9) await moveTo(from,fast ? 80 : 120)
-        const duration = clamp(line.letters * (fast ? 9 : 21),fast ? 170 : 280,fast ? 1300 : 2300)
+        const duration = clamp(line.letters * (fast ? 8 : 18),fast ? 155 : 245,fast ? 1150 : 2070)
         engraved = true
-        spark.style.opacity='.58'
+        spark.style.opacity='.80'
         // Fixed stage geometry throughout each stroke: no forced layout read
         // per animation frame, which was causing the feather to stutter.
         const strokeStage = rectOfStage()
@@ -385,7 +385,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           const nibX = x - strokeStage.left - quillWidth * .014
           const nibY = y - strokeStage.top - quillHeight * .993
           // No independent XY wave: feather nib exactly matches reveal edge.
-          setPose(nibX,nibY,Math.sin(t * Math.PI * 5)*2.8)
+          setPose(nibX,nibY,Math.sin(t * Math.PI * 6)*4.1)
           const edgeX = clamp(x-r.left,0,r.width)
           const endY = clamp(line.bottom,0,r.height)
           const startY = clamp(line.top,0,endY)
@@ -407,7 +407,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       const radiusX = Math.min(62, Math.max(20, stage.clientWidth * .07))
       const radiusY = radiusX * .74
       engraved = true
-      spark.style.opacity = '.43'
+      spark.style.opacity = '.62'
       await tween(1950, t => {
         const e = ease(t)
         const envelope = Math.sin(Math.PI * t) ** 2
@@ -597,13 +597,13 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         /* Light, localized engraving flecks — separate from the feather's z-index. */
         .original-scroll-engraving-dust{position:absolute;left:0;top:0;width:120px;height:120px;z-index:1250;pointer-events:none;overflow:visible;will-change:transform}
         /* Small, soft sparks follow the ACTUAL nib; not the top of the feather. */
-        .original-scroll-nib-sparks{position:absolute;left:0;top:0;width:22px;height:22px;z-index:1200;opacity:0;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 0 5px #f7d8a477)}
-        .original-scroll-nib-sparks i{position:absolute;left:9px;top:9px;width:4px;height:4px;display:block;border-radius:50%;background:#ffeeb4;box-shadow:0 0 5px #efb763aa;animation:subtleNibSpark .9s ease-out infinite}
+        .original-scroll-nib-sparks{position:absolute;left:0;top:0;width:22px;height:22px;z-index:1200;opacity:0;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 0 7px #f7d8a4aa)}
+        .original-scroll-nib-sparks i{position:absolute;left:9px;top:9px;width:4px;height:4px;display:block;border-radius:50%;background:#ffeeb4;box-shadow:0 0 7px #efb763cc;animation:subtleNibSpark .9s ease-out infinite}
         .original-scroll-nib-sparks i:nth-child(2){animation-delay:.28s;background:#dd92e5;box-shadow:0 0 5px #c57fe899}
         .original-scroll-nib-sparks i:nth-child(3){animation-delay:.55s;background:#80d5ff;box-shadow:0 0 5px #82caff66}
         .original-scroll-nib-sparks i:nth-child(4){animation-delay:.14s;background:#fff4c1;box-shadow:0 0 4px #fff0a388;animation-duration:.75s}
         .original-scroll-nib-sparks i:nth-child(5){animation-delay:.42s;background:#d29aff;box-shadow:0 0 4px #c47cff66;animation-duration:1.1s}
-        @keyframes subtleNibSpark{from{transform:translate(0,0) scale(.65);opacity:.65}to{transform:translate(6px,-9px) scale(.15);opacity:0}}
+        @keyframes subtleNibSpark{from{transform:translate(0,0) scale(.85);opacity:.86}to{transform:translate(7px,-11px) scale(.17);opacity:0}}
         .original-scroll-sparkles{position:absolute;right:8%;bottom:13%;z-index:1001;pointer-events:none;color:#ffe88e;text-shadow:0 0 10px #e752ff,0 0 18px #21c8ff;animation:scrollSparkle 1.7s ease-in-out infinite alternate}
         @keyframes scrollSparkle{from{opacity:.25;transform:translateY(5px) scale(.8)}to{opacity:1;transform:translateY(-7px) scale(1.2)}}
         @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:11% 10% 17%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
