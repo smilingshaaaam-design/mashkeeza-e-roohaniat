@@ -33,6 +33,7 @@ function MagicalScroll({ article }: { article: Article }) {
   const quillRef = useRef<HTMLImageElement>(null)
   const potRef = useRef<HTMLImageElement>(null)
   const sparkleRef = useRef<HTMLSpanElement>(null)
+  const magicCanvasRef = useRef<HTMLCanvasElement>(null)
   const [opened, setOpened] = useState(false)
   const opacity = Math.min(100, Math.max(0, Number(article.paper_opacity ?? 100))) / 100
 
@@ -43,7 +44,8 @@ function MagicalScroll({ article }: { article: Article }) {
     const quill = quillRef.current
     const pot = potRef.current
     const spark = sparkleRef.current
-    if (!stage || !paper || !text || !quill || !pot || !spark) return
+    const magicCanvas = magicCanvasRef.current
+    if (!stage || !paper || !text || !quill || !pot || !spark || !magicCanvas) return
 
     let cancelled = false
     const animations: Animation[] = []
@@ -63,6 +65,160 @@ function MagicalScroll({ article }: { article: Article }) {
       }, ms)
       timerIds.add(id)
     })
+    // Canvas particles use the same four-point shimmer as the site's magical
+    // cursor. This overlay is OUTSIDE the parchment clipping layer.
+    const ctx = magicCanvas.getContext('2d')
+    const palette = [43, 275, 196, 316, 52] // gold, violet, blue, pink, warm gold
+    type MagicDust = {
+      x: number; y: number; vx: number; vy: number
+      life: number; maxLife: number; size: number; hue: number
+      angle: number; spin: number
+    }
+    const dust: MagicDust[] = []
+    const MAX_DUST = 130
+    let magicNibX = 0, magicNibY = 0, nibKnown = false
+    let inkReady = false, particleTrailActive = false
+    let lastEmit = 0, lastGlowFrame = 0, canvasFrame = 0
+    let canvasWidth = 0, canvasHeight = 0
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
+    const resizeMagicCanvas = () => {
+      if (!ctx) return
+      const b = stage.getBoundingClientRect()
+      canvasWidth = Math.max(1, b.width)
+      canvasHeight = Math.max(1, b.height)
+      magicCanvas.width = Math.round(canvasWidth * dpr)
+      magicCanvas.height = Math.round(canvasHeight * dpr)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+    const resizeObserver = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(resizeMagicCanvas)
+      : null
+    resizeObserver?.observe(stage)
+    window.addEventListener('resize', resizeMagicCanvas)
+    resizeMagicCanvas()
+
+    const addMagicDust = (x: number, y: number, amount: number, subtle = false) => {
+      for (let j = 0; j < amount && dust.length < MAX_DUST; j++) {
+        const angle = Math.random() * Math.PI * 2
+        const speed = subtle ? .12 + Math.random() * .45 : .35 + Math.random() * 1.35
+        dust.push({
+          x: x + (Math.random() - .5) * (subtle ? 8 : 6),
+          y: y + (Math.random() - .5) * (subtle ? 4 : 6),
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - (subtle ? .20 : .48),
+          life: 0,
+          maxLife: subtle ? 36 + Math.random() * 42 : 23 + Math.random() * 24,
+          size: subtle ? 1.0 + Math.random() * 1.5 : 1.45 + Math.random() * 2.3,
+          hue: palette[Math.floor(Math.random() * palette.length)],
+          angle: Math.random() * Math.PI * 2,
+          spin: (Math.random() - .5) * .14,
+        })
+      }
+    }
+    const drawFourPointStar = (size: number) => {
+      if (!ctx) return
+      ctx.beginPath()
+      ctx.moveTo(0, -size)
+      ctx.quadraticCurveTo(size * .17, -size * .17, size, 0)
+      ctx.quadraticCurveTo(size * .17, size * .17, 0, size)
+      ctx.quadraticCurveTo(-size * .17, size * .17, -size, 0)
+      ctx.quadraticCurveTo(-size * .17, -size * .17, 0, -size)
+      ctx.closePath()
+      ctx.fill()
+    }
+    const drawInkInsideBottle = (time: number) => {
+      if (!ctx || !inkReady) return
+      const stageRect = stage.getBoundingClientRect()
+      const potRect = pot.getBoundingClientRect()
+      const left = potRect.left - stageRect.left
+      const top = potRect.top - stageRect.top
+      const w = potRect.width, h = potRect.height
+      if (!w || !h) return
+      const t = time * .001
+
+      // Restrict the animated liquid to the round bottle chamber.
+      const cx = left + w * .50, cy = top + h * .79
+      ctx.save()
+      ctx.beginPath()
+      ctx.ellipse(cx, cy, w * .34, h * .105, 0, 0, Math.PI * 2)
+      ctx.clip()
+      const inner = ctx.createRadialGradient(
+        cx + Math.sin(t * .76) * w * .10, cy + Math.cos(t * .89) * h * .028,
+        1, cx, cy, w * .35
+      )
+      inner.addColorStop(0, `rgba(255,198,95,${.25 + .07 * Math.sin(t * 1.6)})`)
+      inner.addColorStop(.32, 'rgba(216,77,245,.19)')
+      inner.addColorStop(.64, 'rgba(55,150,255,.13)')
+      inner.addColorStop(1, 'rgba(45,80,180,0)')
+      ctx.fillStyle = inner
+      ctx.fillRect(cx - w * .4, cy - h * .15, w * .8, h * .30)
+      ctx.lineWidth = Math.max(0.75, w * .008)
+      for (let i = 0; i < 2; i++) {
+        const phase = t * (.78 + i * .13) + i * 2.2
+        const orbitY = cy + Math.sin(phase) * h * .035
+        ctx.beginPath()
+        ctx.ellipse(cx, orbitY, w * (.20 + i * .048), h * (.018 + i * .008),
+          Math.sin(phase) * .12, 0, Math.PI * 2)
+        ctx.strokeStyle = i
+          ? 'rgba(108,206,255,.22)'
+          : 'rgba(255,219,120,.27)'
+        ctx.stroke()
+      }
+      ctx.restore()
+
+      // A faint magical ring exactly over the bottle's OPEN MOUTH.
+      const mx = left + w * .52, my = top + h * .43
+      const shimmer = .22 + .08 * Math.sin(t * 2.1)
+      ctx.save()
+      ctx.beginPath()
+      ctx.ellipse(mx, my, w * .16, Math.max(1.3, h * .013), -.08, 0, Math.PI * 2)
+      ctx.strokeStyle = `rgba(133,219,255,${shimmer})`
+      ctx.lineWidth = Math.max(1, w * .011)
+      ctx.stroke()
+      ctx.restore()
+
+      // Very occasional miniature points inside the ink, never a heavy firework.
+      if (time - lastGlowFrame > 150) {
+        lastGlowFrame = time
+        const ax = cx + (Math.random() - .5) * w * .47
+        const ay = cy + (Math.random() - .5) * h * .095
+        addMagicDust(ax, ay, 1, true)
+        if (Math.random() > .54) addMagicDust(mx, my, 1, true)
+      }
+    }
+    const drawMagicFrame = (time: number) => {
+      if (cancelled || !ctx || reduced) return
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+      ctx.globalCompositeOperation = 'lighter'
+      if (inkReady) drawInkInsideBottle(time)
+      if (particleTrailActive && nibKnown && time - lastEmit > 38) {
+        lastEmit = time
+        addMagicDust(magicNibX + 1, magicNibY - 2, 3)
+      }
+      for (let i = dust.length - 1; i >= 0; i--) {
+        const p = dust[i]
+        p.life++
+        if (p.life >= p.maxLife) { dust.splice(i, 1); continue }
+        const progress = p.life / p.maxLife
+        p.x += p.vx; p.y += p.vy
+        p.vx *= .98; p.vy += .017; p.angle += p.spin
+        const alpha = Math.pow(1 - progress, 1.25)
+        const r = p.size * (1 - progress * .55)
+        ctx.save()
+        ctx.translate(p.x, p.y)
+        ctx.rotate(p.angle)
+        ctx.fillStyle = `hsla(${p.hue},100%,68%,${alpha * .12})`
+        ctx.beginPath()
+        ctx.arc(0, 0, r * 2.4, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = `hsla(${p.hue},100%,78%,${alpha * .66})`
+        drawFourPointStar(r)
+        ctx.restore()
+      }
+      ctx.globalCompositeOperation = 'source-over'
+      canvasFrame = requestAnimationFrame(drawMagicFrame)
+    }
+    if (ctx) canvasFrame = requestAnimationFrame(drawMagicFrame)
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const ease = (v: number) => v * v * (3 - 2 * v)
     const animate = (el: Element, keyframes: Keyframe[], duration: number, easing = 'ease-in-out') => {
@@ -85,6 +241,11 @@ function MagicalScroll({ article }: { article: Article }) {
       const nibX = x + quill.offsetWidth * .014
       const nibY = y + quill.offsetHeight * .993
       spark.style.transform = `translate(${nibX - 11}px, ${nibY - 12}px)`
+      nibKnown = true
+      // Feed the real nib position directly to the particle renderer.
+      // No CSS layer clips these sparks.
+      magicNibX = nibX
+      magicNibY = nibY
     }
     const getTarget = (x: number, y: number, inkpotRest = false) => {
       const bounds = stage.getBoundingClientRect()
@@ -98,6 +259,7 @@ function MagicalScroll({ article }: { article: Article }) {
     }
     const move = (x: number, y: number, duration: number, opts: { pot?: boolean; writing?: boolean } = {}) =>
       new Promise<void>(resolve => {
+        particleTrailActive = true
         const target = getTarget(x, y, Boolean(opts.pot))
         const fromX = px
         const fromY = py
@@ -221,6 +383,8 @@ function MagicalScroll({ article }: { article: Article }) {
       text.style.visibility = 'hidden'
       pot.style.opacity = '0'
       quill.style.opacity = '0'
+      inkReady = false
+      particleTrailActive = false
       spark.style.opacity = '0'
       const blocks = [...text.querySelectorAll('h2,h3,p,li,blockquote,div.whitespace-pre-wrap')]
         .filter((node): node is HTMLElement => node instanceof HTMLElement && Boolean(node.textContent?.trim()))
@@ -248,6 +412,7 @@ function MagicalScroll({ article }: { article: Article }) {
       setOpened(true)
       await animate(pot, [{opacity: 0}, {opacity: 1}], 650)
       if (cancelled) return
+      inkReady = true
 
       const b = pot.getBoundingClientRect()
       const s = stage.getBoundingClientRect()
@@ -279,11 +444,13 @@ function MagicalScroll({ article }: { article: Article }) {
       await move(mouth.left + mouth.width * .52, mouth.top + mouth.height * .43, 1150, {pot:true})
       spark.style.opacity = '0'
       if (cancelled) return
+      particleTrailActive = false
       putFeather(Number(quill.dataset.x), Number(quill.dataset.y), 0)
     }
     void run().catch(error => {
       if (cancelled) return
       console.error('Magical Scroll writing animation:', error)
+      particleTrailActive = false
       // A rendering error must never leave the Urdu article invisible.
       paper.style.height = 'auto'
       paper.style.overflow = 'visible'
@@ -300,6 +467,9 @@ function MagicalScroll({ article }: { article: Article }) {
       frameIds.forEach(id => cancelAnimationFrame(id))
       timerIds.forEach(id => clearTimeout(id))
       animations.forEach(animation => animation.cancel())
+      cancelAnimationFrame(canvasFrame)
+      resizeObserver?.disconnect()
+      window.removeEventListener('resize', resizeMagicCanvas)
     }
   }, [article.id, article.body, article.title, article.excerpt])
 
@@ -325,6 +495,7 @@ function MagicalScroll({ article }: { article: Article }) {
         <img ref={potRef} className="original-scroll-pot" src="/magical-scroll/inkpot.png" alt="" draggable={false}/>
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
         <span ref={sparkleRef} className="original-scroll-nib-sparks" aria-hidden="true"><i/><i/><i/><i/><i/></span>
+        <canvas ref={magicCanvasRef} className="original-scroll-magic-canvas" aria-hidden="true" />
         {opened && <span className="sr-only">Scroll opened</span>}
       </div>
     </article>
@@ -517,6 +688,7 @@ export function ArticleBrowser() {
         .original-scroll-pot{position:absolute;z-index:1000;width:19.15%;height:auto;right:1%;bottom:0;opacity:0;pointer-events:none;filter:drop-shadow(0 0 8px #5e8cff99)}
         .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform;transform-origin:1.4% 99.3%}
         /* Small, soft sparks follow the ACTUAL nib; not the top of the feather. */
+        .original-scroll-magic-canvas{position:absolute;inset:0;display:block;width:100%;height:100%;z-index:1500;pointer-events:none;overflow:visible}
         .original-scroll-nib-sparks{position:absolute;left:0;top:0;width:22px;height:22px;z-index:1200;opacity:0;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 0 5px #f7d8a477)}
         .original-scroll-nib-sparks i{position:absolute;left:9px;top:9px;width:4px;height:4px;display:block;border-radius:50%;background:#ffeeb4;box-shadow:0 0 5px #efb763aa;animation:subtleNibSpark .9s ease-out infinite}
         .original-scroll-nib-sparks i:nth-child(2){animation-delay:.28s;background:#dd92e5;box-shadow:0 0 5px #c57fe899}
