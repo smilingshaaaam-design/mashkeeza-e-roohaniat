@@ -85,12 +85,12 @@ export function ArticleBrowser() {
       <section
         dir="rtl"
         aria-label="مضامین"
-        className="absolute inset-0 z-20 mx-auto w-full max-w-7xl overflow-visible px-3 pt-2 pb-4 sm:px-5 sm:pt-3 md:pt-4"
+        className="relative z-20 mx-auto w-full max-w-7xl min-h-[62.5vw] overflow-visible px-3 pt-2 pb-12 sm:px-5 sm:pt-3 md:min-h-[50vw] md:pt-4"
       >
-        <div className="grid h-full grid-cols-[minmax(110px,25%)_minmax(0,1fr)] items-start gap-3 sm:gap-6 lg:grid-cols-[minmax(0,250px)_minmax(0,1fr)] lg:gap-10">
+        <div className="grid min-h-[62.5vw] grid-cols-[minmax(110px,25%)_minmax(0,1fr)] items-start gap-3 sm:gap-6 md:min-h-[50vw] lg:grid-cols-[minmax(0,250px)_minmax(0,1fr)] lg:gap-10">
           <aside
             aria-label="مضامین کی فہرست"
-            className="min-w-0 max-h-full overflow-y-auto bg-transparent [scrollbar-width:thin]"
+            className="min-w-0 max-h-[55vw] overflow-y-auto bg-transparent [scrollbar-width:thin] md:max-h-[42vw]"
           >
             <h2 className="gold-text mb-1 text-sm font-bold leading-[2] sm:text-xl">
               مضامین
@@ -142,9 +142,7 @@ export function ArticleBrowser() {
 
           <div
             id="selected-article"
-            className={magical
-              ? "min-w-0 max-h-full overflow-visible bg-transparent"
-              : "min-w-0 max-h-full overflow-y-auto bg-transparent [scrollbar-width:thin]"}
+            className="min-w-0 overflow-visible bg-transparent"
             aria-live="polite"
           >
             {selected && (
