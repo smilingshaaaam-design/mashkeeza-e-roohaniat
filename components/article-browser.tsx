@@ -49,8 +49,8 @@ function MagicalScroll({ article }: { article: Article }) {
       return a.finished.catch(() => undefined)
     }
     // Shift only the feather's resting position at the inkpot to the right.
-    // 96 CSS pixels is approximately one screen inch on desktop.
-    const potRestRightShift = Math.min(96, stage.clientWidth * .15)
+    // Adjust the inkpot resting X position 10 px left of the previous version.
+    const potRestRightShift = Math.max(0, Math.min(96, stage.clientWidth * .15) - 10)
     const flyTo = (x: number, y: number, duration: number, inkpotRest = false) => {
       const bounds = stage.getBoundingClientRect()
       // Use untransformed dimensions: getBoundingClientRect changes during rotation.
