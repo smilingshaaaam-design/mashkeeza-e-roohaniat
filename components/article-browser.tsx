@@ -48,7 +48,10 @@ function MagicalScroll({ article }: { article: Article }) {
       const a = el.animate(keyframes, { duration, easing, fill: 'forwards' }); animations.push(a)
       return a.finished.catch(() => undefined)
     }
-    const flyTo = (x: number, y: number, duration: number) => {
+    // Shift only the feather's resting position at the inkpot to the right.
+    // 96 CSS pixels is approximately one screen inch on desktop.
+    const potRestRightShift = Math.min(96, stage.clientWidth * .15)
+    const flyTo = (x: number, y: number, duration: number, inkpotRest = false) => {
       const bounds = stage.getBoundingClientRect()
       // Use untransformed dimensions: getBoundingClientRect changes during rotation.
       const qw = quill.offsetWidth, qh = quill.offsetHeight
@@ -56,7 +59,8 @@ function MagicalScroll({ article }: { article: Article }) {
       const fromY = parseFloat(quill.dataset.y || '0')
       // The image points at bottom-left and extends upward/right.
       // Keep the complete feather inside the article viewing area.
-      const toX = Math.max(0, Math.min(x - bounds.left - qw * .014, bounds.width - qw - 8))
+      const baseX = Math.max(0, Math.min(x - bounds.left - qw * .014, bounds.width - qw - 8))
+      const toX = baseX + (inkpotRest ? potRestRightShift : 0)
       const toY = Math.max(0, Math.min(y - bounds.top - qh * .993, bounds.height - qh - 4))
       quill.dataset.x = String(toX); quill.dataset.y = String(toY)
       return animate(quill, [
@@ -85,7 +89,7 @@ function MagicalScroll({ article }: { article: Article }) {
       const potTipX = potBounds.left + potBounds.width * .52
       // The inkpot image has transparent smoke above it: the actual mouth is near 43% of image height.
       const potTipY = potBounds.top + potBounds.height * .43
-      const startX = Math.max(0, Math.min(potTipX - stageBounds.left - qWidth * .014, stageBounds.width - qWidth - 8))
+      const startX = Math.max(0, Math.min(potTipX - stageBounds.left - qWidth * .014, stageBounds.width - qWidth - 8)) + potRestRightShift
       const startY = Math.max(0, potTipY - stageBounds.top - qHeight * .993)
       quill.dataset.x = String(startX); quill.dataset.y = String(startY)
       quill.style.transform = `translate(${startX}px, ${startY}px)`
@@ -111,7 +115,7 @@ function MagicalScroll({ article }: { article: Article }) {
       }
       if (cancelled) return
       const mouth = pot.getBoundingClientRect()
-      await flyTo(mouth.left + mouth.width * .52, mouth.top + mouth.height * .43, 1100)
+      await flyTo(mouth.left + mouth.width * .52, mouth.top + mouth.height * .43, 1100, true)
       if (cancelled) return
       // Rest the nib at the visible opening, not the base of the bottle.
       quill.style.transform = `translate(${quill.dataset.x}px, ${quill.dataset.y}px) rotate(0deg)`
