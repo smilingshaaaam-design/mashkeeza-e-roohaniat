@@ -305,11 +305,14 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     let inkX = 0, inkY = 0
     const ctx = dustCanvas.getContext('2d', { alpha: true })
     const dpi = Math.min(window.devicePixelRatio || 1, 2)
-    dustCanvas.width = Math.round(120 * dpi)
-    dustCanvas.height = Math.round(120 * dpi)
+    dustCanvas.width = Math.round(240 * dpi)
+    dustCanvas.height = Math.round(240 * dpi)
     ctx?.setTransform(dpi, 0, 0, dpi, 0, 0)
-    type Fleck = { x: number; y: number; vx: number; vy: number; born: number; ttl: number; color: string; size: number; trail?: boolean; tail?: number }
+    type Fleck = { x: number; y: number; vx: number; vy: number; born: number; ttl: number; color: string; size: number }
     const flecks: Fleck[] = []
+    type Streak = { x: number; y: number; dx: number; dy: number; length: number; born: number; ttl: number; color: string }
+    const streaks: Streak[] = []
+    let lastStreakEmission = 0
     const colours = ['#ffe38a', '#ffb347', '#f7a3e9', '#d29aff', '#9e8eff', '#62caff', '#dbf7ff']
     const sparkleBoost = 1.5
     let lastEmission = 0
@@ -318,7 +321,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const drawFlecks = (time: number) => {
       dustFrame = 0
       if (cancelled || !ctx) return
-      ctx.clearRect(0, 0, 220, 220)
+      ctx.clearRect(0, 0, 240, 240)
       for (let i = flecks.length - 1; i >= 0; i--) {
         const particle = flecks[i]
         const life = (time - particle.born) / particle.ttl
@@ -329,55 +332,76 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         particle.vx *= .98
         ctx.save()
         ctx.translate(particle.x, particle.y)
-        const alpha = .83 * Math.pow(1 - life, 1.35)
         ctx.strokeStyle = particle.color
-        ctx.fillStyle = particle.color
-        ctx.globalAlpha = alpha
+        ctx.globalAlpha = .83 * Math.pow(1 - life, 1.35)
+        ctx.lineWidth = 1.18
         ctx.shadowColor = particle.color
-        ctx.shadowBlur = particle.trail ? 14 : 8
+        ctx.shadowBlur = 8
         const r = particle.size * (1 - life * .4)
-        if (particle.trail) {
-          const speed = Math.max(0.001, Math.hypot(particle.vx, particle.vy))
-          const ux = particle.vx / speed
-          const uy = particle.vy / speed
-          const tail = (particle.tail ?? 92) * (1 - life * .22)
-          const grad = ctx.createLinearGradient(0, 0, -ux * tail, -uy * tail)
-          grad.addColorStop(0, particle.color)
-          grad.addColorStop(.35, particle.color)
-          grad.addColorStop(1, 'rgba(255,255,255,0)')
-          ctx.strokeStyle = grad
-          ctx.lineCap = 'round'
-          ctx.lineWidth = Math.max(1.6, r * .95)
-          ctx.beginPath()
-          ctx.moveTo(0, 0)
-          ctx.lineTo(-ux * tail, -uy * tail)
-          ctx.stroke()
-          ctx.globalAlpha = Math.min(1, alpha * 1.12)
-          ctx.beginPath()
-          ctx.arc(0, 0, Math.max(1.4, r * .9), 0, Math.PI * 2)
-          ctx.fill()
-        } else {
-          ctx.lineWidth = 1.18
-          ctx.beginPath()
-          ctx.moveTo(-r, 0); ctx.lineTo(r, 0)
-          ctx.moveTo(0, -r); ctx.lineTo(0, r)
-          ctx.stroke()
-        }
+        ctx.beginPath()
+        ctx.moveTo(-r, 0); ctx.lineTo(r, 0)
+        ctx.moveTo(0, -r); ctx.lineTo(0, r)
+        ctx.stroke()
         ctx.restore()
       }
-      if (flecks.length && !cancelled) dustFrame = requestAnimationFrame(drawFlecks)
+      // Only the return flight emits graceful, direction-aware comet streaks.
+      for (let i = streaks.length - 1; i >= 0; i--) {
+        const st = streaks[i]
+        const life = (time - st.born) / st.ttl
+        if (life >= 1) { streaks.splice(i, 1); continue }
+        const fade = Math.pow(1 - life, 1.7)
+        const len = st.length * (.65 + .35 * fade)
+        const endX = st.x - st.dx * len
+        const endY = st.y - st.dy * len
+        const gradient = ctx.createLinearGradient(st.x, st.y, endX, endY)
+        gradient.addColorStop(0, st.color)
+        gradient.addColorStop(.35, st.color)
+        gradient.addColorStop(1, 'rgba(255,255,255,0)')
+        ctx.save()
+        ctx.globalAlpha = .55 * fade
+        ctx.lineCap = 'round'
+        ctx.strokeStyle = gradient
+        ctx.lineWidth = 2.0
+        ctx.shadowColor = st.color
+        ctx.shadowBlur = 8
+        ctx.beginPath()
+        ctx.moveTo(st.x, st.y)
+        ctx.lineTo(endX, endY)
+        ctx.stroke()
+        ctx.restore()
+      }
+      if ((flecks.length || streaks.length) && !cancelled) dustFrame = requestAnimationFrame(drawFlecks)
     }
     const drawAtNib = (x: number, y: number) => {
-      dustCanvas.style.transform = `translate3d(${x - 110}px,${y - 110}px,0)`
+      dustCanvas.style.transform = `translate3d(${x - 120}px,${y - 120}px,0)`
+      const movementX = Number.isFinite(lastNibX) ? x - lastNibX : 0
+      const movementY = Number.isFinite(lastNibY) ? y - lastNibY : 0
       if (Number.isFinite(lastNibX)) {
-        const dx = x - lastNibX, dy = y - lastNibY
-        for (const f of flecks) { f.x -= dx; f.y -= dy }
+        for (const f of flecks) { f.x -= movementX; f.y -= movementY }
+        for (const st of streaks) { st.x -= movementX; st.y -= movementY }
       }
       lastNibX = x; lastNibY = y
       if (!engraved || !ctx) return
       const now = performance.now()
       if (now - lastEmission < 24) return
       lastEmission = now
+      // Flight streaks are sparse and follow the actual feather velocity.
+      const motion = Math.hypot(movementX, movementY)
+      if (returnFlight && motion > .3 && now - lastStreakEmission > 95 && streaks.length < 10) {
+        lastStreakEmission = now
+        const ux = movementX / motion, uy = movementY / motion
+        const side = (Math.random() - .5) * 13
+        streaks.push({
+          x: 120 - uy * side,
+          y: 120 + ux * side,
+          dx: ux,
+          dy: uy,
+          length: 76 + Math.random() * 32,
+          born: now,
+          ttl: 380 + Math.random() * 170,
+          color: colours[Math.floor(Math.random() * colours.length)],
+        })
+      }
       // Glitter/sparkles boosted by 50%, especially during writing.
       // Writing: 7 -> 11 particles per burst. Return flight: 42 -> 63 particles
       // per 5 bursts (12.6 average), while preserving the same burst cadence.
@@ -390,18 +414,15 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         ? Math.round(106 * sparkleBoost)
         : Math.round(88 * sparkleBoost)
       for (let i = 0; i < burstSize && flecks.length < particleCap; i++) {
-        const trail = returnFlight
         flecks.push({
-          x: 110 + (Math.random() - .5) * (trail ? 10 : 5),
-          y: 110 + (Math.random() - .5) * (trail ? 10 : 5),
-          vx: trail ? -(2.2 + Math.random() * 3.9) : (Math.random() - .5) * 3.8,
-          vy: trail ? -(.3 + Math.random() * 1.7) : -(.55 + Math.random() * 1.85),
+          x: 120 + (Math.random() - .5) * 5,
+          y: 120 + (Math.random() - .5) * 5,
+          vx: (Math.random() - .5) * 3.8,
+          vy: -(.55 + Math.random() * 1.85),
           born: now,
-          ttl: trail ? 520 + Math.random() * 320 : 420 + Math.random() * 360,
+          ttl: 420 + Math.random() * 360,
           color: colours[Math.floor(Math.random() * colours.length)],
-          size: trail ? 2.4 + Math.random() * 2.8 : 1.9 + Math.random() * 3.05,
-          trail,
-          tail: trail ? 78 + Math.random() * 38 : undefined,
+          size: 1.9 + Math.random() * 3.05,
         })
       }
       if (!dustFrame) dustFrame = requestAnimationFrame(drawFlecks)
@@ -921,6 +942,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       cancelAnimationFrame(dustFrame)
       finishPending?.()
       flecks.length=0
+      streaks.length=0
     }
   }, [article.id,article.body,article.title,article.excerpt,visitEpoch])
 
@@ -979,7 +1001,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-fluid-canvas.is-open{opacity:.98}
         .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform;transform-origin:1.4% 99.3%}
         /* Light, localized engraving flecks — separate from the feather's z-index. */
-        .original-scroll-engraving-dust{position:absolute;left:0;top:0;width:220px;height:220px;z-index:1250;pointer-events:none;overflow:visible;will-change:transform}
+        .original-scroll-engraving-dust{position:absolute;left:0;top:0;width:240px;height:240px;z-index:1250;pointer-events:none;overflow:visible;will-change:transform}
         /* Small, soft sparks follow the ACTUAL nib; not the top of the feather. */
         .original-scroll-nib-sparks{position:absolute;left:0;top:0;width:36px;height:36px;z-index:1200;opacity:0;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 0 12px #f7d8a4aa)}
         .original-scroll-nib-sparks i{position:absolute;left:15px;top:15px;width:5px;height:5px;display:block;border-radius:50%;background:#ffeeb4;box-shadow:0 0 10px #efb763cc;animation:subtleNibSpark 1s ease-out infinite}
