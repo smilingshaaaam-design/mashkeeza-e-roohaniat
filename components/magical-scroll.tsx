@@ -620,209 +620,175 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     }
 
     const swingHome = async () => {
-      // ONLY the completed-writing return flight changes in this version.
-      // The approved resolveReadyRest() formula and final zero-rotation pose
-      // are intentionally unchanged. All other animation code remains intact.
+      // Feather-only return flight. The parchment, writing, inkpot and the
+      // approved resolveReadyRest() / landing pose are never changed.
       const home = resolveReadyRest()
-      const stageWidth = stage.clientWidth
-      const stageHeight = Math.max(stage.clientHeight, 420)
+      const stageRect = rectOfStage()
+      const paperRect = paper.getBoundingClientRect()
+      const potRect = pot.getBoundingClientRect()
       type Point = { x: number; y: number }
-      type AirStyle = {
-        name: string
-        // Each flight has an actually DIFFERENT, canvas-spanning route.
-        // Normalized coordinates are mapped to the entire visible stage.
-        route: [number, number][]
-        cycles: number
-        sway: number
-        bank: number
-        roll: number
-        pitch: number
-        lift: number
-        pace: number
-      }
+      const paperLeft = paperRect.left - stageRect.left
+      const paperRight = paperRect.right - stageRect.left
+      const paperBottom = paperRect.bottom - stageRect.top
+      const stageW = stage.clientWidth
+      const stageH = stage.clientHeight
+      const margin = Math.max(10, stageW * .012)
+      const rightLane = Math.max(paperRight + margin, stageW * .86)
+      const leftLane = Math.min(paperLeft - quillWidth - margin, stageW * .02)
+      const start: Point = { x: featherX, y: featherY }
+      const potCenterY = potRect.top - stageRect.top + potRect.height * .45
+      const belowPaperY = Math.max(paperBottom + quillHeight * .12 + 12, potCenterY + 8)
+      const openTopY = Math.max(8, paperRect.top - stageRect.top + 14)
+      const openBottomY = Math.min(Math.max(openTopY + 70, belowPaperY), stageH + 20)
 
-      // 17 independent scenic choreographies, not 17 slight adjustments
-      // to one hard-coded left/top/right trajectory. They explore the
-      // breadth AND height of the stage, always returning to the same pot.
-      const airStyles: AirStyle[] = [
-        { name:'Wide Sky Arc', route:[[.12,.78],[.07,.49],[.28,.13],[.71,.10],[.88,.41],[.58,.65]], cycles:2.0,sway:39,bank:32,roll:21,pitch:10,lift:18,pace:1.00 },
-        { name:'Moon Crescent', route:[[.20,.83],[.08,.60],[.11,.20],[.48,.08],[.83,.24],[.91,.58]], cycles:2.4,sway:44,bank:36,roll:25,pitch:11,lift:17,pace:1.04 },
-        { name:'Double S Breeze', route:[[.76,.72],[.19,.66],[.77,.44],[.20,.27],[.65,.12],[.87,.35]], cycles:2.7,sway:42,bank:35,roll:24,pitch:10,lift:21,pace:1.05 },
-        { name:'Rolling Crosswind', route:[[.10,.76],[.85,.62],[.13,.48],[.77,.34],[.23,.19],[.85,.11]], cycles:2.5,sway:45,bank:34,roll:26,pitch:12,lift:20,pace:1.01 },
-        { name:'Clockwise Grand Orbit', route:[[.09,.76],[.14,.17],[.79,.11],[.90,.74],[.43,.84],[.13,.55],[.77,.33]], cycles:2.2,sway:42,bank:41,roll:28,pitch:13,lift:19,pace:1.08 },
-        { name:'Counterclockwise Orbit', route:[[.88,.67],[.82,.16],[.17,.12],[.09,.70],[.44,.81],[.73,.47]], cycles:2.3,sway:43,bank:38,roll:23,pitch:12,lift:18,pace:1.06 },
-        { name:'Drifting Leaf Cascade', route:[[.12,.19],[.81,.27],[.22,.42],[.79,.58],[.30,.76],[.77,.81]], cycles:2.8,sway:48,bank:34,roll:25,pitch:12,lift:24,pace:1.02 },
-        { name:'Upper Sky Swirl', route:[[.08,.62],[.21,.18],[.53,.08],[.82,.17],[.72,.35],[.40,.32],[.27,.52],[.81,.63]], cycles:3.0,sway:42,bank:36,roll:24,pitch:10,lift:22,pace:1.09 },
-        { name:'Low Floating Spiral', route:[[.70,.79],[.32,.82],[.11,.62],[.34,.49],[.74,.61],[.87,.41],[.44,.18]], cycles:2.6,sway:43,bank:38,roll:25,pitch:13,lift:17,pace:1.03 },
-        { name:'Twin Air Loops', route:[[.18,.57],[.38,.24],[.70,.53],[.39,.75],[.18,.44],[.64,.17],[.87,.49]], cycles:3.1,sway:40,bank:43,roll:27,pitch:12,lift:20,pace:1.10 },
-        { name:'Soft Inner Whirl', route:[[.76,.76],[.26,.70],[.13,.40],[.40,.14],[.78,.21],[.70,.45],[.42,.50],[.50,.33],[.81,.37]], cycles:2.6,sway:39,bank:37,roll:23,pitch:11,lift:19,pace:1.04 },
-        { name:'Layered Golden Wind', route:[[.13,.82],[.80,.62],[.18,.44],[.82,.26],[.22,.12],[.68,.09],[.89,.42]], cycles:2.9,sway:46,bank:36,roll:28,pitch:11,lift:21,pace:1.07 },
-        { name:'Floating Crown', route:[[.15,.70],[.13,.32],[.40,.14],[.65,.26],[.86,.12],[.85,.51],[.55,.62]], cycles:2.2,sway:42,bank:35,roll:24,pitch:10,lift:17,pace:1.00 },
-        { name:'Canvas Perimeter Drift', route:[[.12,.84],[.08,.16],[.48,.08],[.89,.15],[.84,.79],[.47,.84],[.20,.54],[.76,.42]], cycles:2.5,sway:40,bank:40,roll:26,pitch:13,lift:20,pace:1.12 },
-        { name:'Wandering Violet Loop', route:[[.13,.69],[.54,.76],[.77,.50],[.50,.35],[.21,.50],[.27,.20],[.75,.13],[.90,.42]], cycles:3.2,sway:45,bank:39,roll:27,pitch:12,lift:23,pace:1.09 },
-        { name:'Long Horizon Glide', route:[[.76,.81],[.11,.66],[.25,.34],[.75,.17],[.89,.39],[.32,.60],[.72,.75]], cycles:2.4,sway:44,bank:34,roll:22,pitch:10,lift:19,pace:1.06 },
-        { name:'Grand Wandering Leaf', route:[[.12,.80],[.83,.21],[.18,.18],[.77,.74],[.19,.57],[.81,.43],[.59,.15],[.87,.52]], cycles:3.0,sway:47,bank:42,roll:28,pitch:13,lift:24,pace:1.13 },
-      ]
-
-      // Shuffle bag: all 17 distinctive routes appear in unpredictable order
-      // before any repeat. Persist during same browser session/new page visits.
-      // Prevent an immediate repeat when a new bag starts.
-      const bagKey = 'mashkeeza:feather:flight-bag:17:v2'
-      const lastKey = 'mashkeeza:feather:last-flight:17:v2'
+      // 17 genuinely distinct natural wind personalities, selected in a
+      // shuffled bag so every route is used before any repeat.
+      const winds = [
+        [1.15,.25,.16, 1.6,  .1], [1.65,.30,.22, 1.8,  .5],
+        [1.95,.36,.18, 2.1,  .8], [1.32,.18,.28, 1.7, 1.1],
+        [2.35,.27,.26, 2.4, 1.5], [1.72,.39,.19, 2.0, 1.8],
+        [2.60,.33,.31, 2.6, 2.2], [1.43,.42,.17, 1.9, 2.6],
+        [2.08,.24,.35, 2.2, 2.9], [1.88,.38,.29, 2.3, 3.2],
+        [2.82,.30,.22, 2.8, 3.5], [1.53,.22,.33, 1.9, 3.8],
+        [2.18,.44,.24, 2.5, 4.1], [1.27,.34,.37, 1.8, 4.4],
+        [2.48,.26,.30, 2.7, 4.8], [1.77,.41,.27, 2.1, 5.1],
+        [2.94,.35,.34, 2.9, 5.5],
+      ] as const
+      const bagKey = 'mashkeeza:feather:safe-flight-bag:17:v1'
+      const lastKey = 'mashkeeza:feather:safe-flight-last:17:v1'
       let bag: number[] = []
       let last = lastFeatherFlightStyle
       try {
-        const parsed: unknown = JSON.parse(sessionStorage.getItem(bagKey) || '[]')
-        if (Array.isArray(parsed) && new Set(parsed).size === parsed.length &&
-            parsed.every(index => Number.isInteger(index) && index >= 0 && index < airStyles.length)) {
-          bag = parsed as number[]
+        const stored: unknown = JSON.parse(sessionStorage.getItem(bagKey) || '[]')
+        if (Array.isArray(stored) && new Set(stored).size === stored.length &&
+          stored.every(v => Number.isInteger(v) && v >= 0 && v < winds.length)) {
+          bag = stored as number[]
         }
-        const previous = Number(sessionStorage.getItem(lastKey))
-        if (sessionStorage.getItem(lastKey) !== null && Number.isInteger(previous)) last = previous
-      } catch { /* Safe for privacy-restricted browsers. */ }
+        const prior = sessionStorage.getItem(lastKey)
+        if (prior !== null && Number.isInteger(Number(prior))) last = Number(prior)
+      } catch { /* Private browsing must not stop the animation. */ }
       if (!bag.length) {
-        bag = airStyles.map((_, i) => i)
+        bag = winds.map((_, i) => i)
         for (let i = bag.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1))
           ;[bag[i], bag[j]] = [bag[j], bag[i]]
         }
       }
       if (bag.length > 1 && bag[0] === last) {
-        const different = bag.findIndex(index => index !== last)
+        const different = bag.findIndex(i => i !== last)
         ;[bag[0], bag[different]] = [bag[different], bag[0]]
       }
-      const nextIndex = bag.shift() as number
-      lastFeatherFlightStyle = nextIndex
+      const styleIndex = bag.shift() as number
+      lastFeatherFlightStyle = styleIndex
       try {
         sessionStorage.setItem(bagKey, JSON.stringify(bag))
-        sessionStorage.setItem(lastKey, String(nextIndex))
-      } catch { /* Flight still works when storage is blocked. */ }
-      const breeze = airStyles[nextIndex]
+        sessionStorage.setItem(lastKey, String(styleIndex))
+      } catch { /* No storage required. */ }
+      const [cycles, swayRatio, flutterRatio, durationRatio, phase] = winds[styleIndex]
 
-      // Work in stage coordinates (not viewport coordinates) so the route
-      // covers the canvas on desktop and the mobile desktop-width view alike.
-      const minX = Math.max(3, stageWidth * .015)
-      const maxX = Math.max(minX + 2, stageWidth - quillWidth - Math.max(4,stageWidth * .015))
-      const minY = 2
-      const maxY = Math.max(minY + 2, stageHeight - quillHeight - 24)
-      const fromNormalized = ([nx, ny]: [number,number]): Point => ({
-        x: minX + nx * (maxX - minX),
-        y: minY + ny * (maxY - minY),
-      })
-      const points: Point[] = [
-        { x: featherX, y: featherY },
-        ...breeze.route.map(fromNormalized),
-        home, // EXACT current approved rest coordinate, never recalculated.
+      // The last letter can be anywhere on the paper. Exit through its
+      // nearest side FIRST, then fly in the open margin, not over the text.
+      const nibX = start.x + quillWidth * .014
+      const goLeft = Math.abs(nibX - paperLeft) < Math.abs(paperRight - nibX)
+      const laneX = goLeft ? leftLane : rightLane
+      const exitY = clamp(start.y, openTopY, Math.max(openTopY, paperBottom - quillHeight))
+      const exit: Point = { x: laneX, y: exitY }
+      const verticalSpan = Math.max(100, openBottomY - openTopY)
+      const firstY = clamp(exitY - verticalSpan * (.20 + .07 * swayRatio), openTopY, openBottomY)
+      const secondY = clamp(exitY + verticalSpan * (.22 + .12 * flutterRatio), openTopY, openBottomY)
+      const thirdY = clamp(openTopY + verticalSpan * (.23 + .48 * (styleIndex % 5) / 4), openTopY, openBottomY)
+      const lastY = clamp(belowPaperY + 14, openTopY, openBottomY)
+      const rightX = rightLane + (stageW - rightLane) * .07
+      const lane: Point[] = [
+        exit,
+        { x: laneX, y: firstY },
+        { x: laneX, y: secondY },
+        { x: laneX, y: thirdY },
+        { x: laneX, y: lastY },
       ]
+      // A left-side flight crosses toward the pot ONLY below the parchment.
+      if (goLeft) lane.push({ x: rightX, y: lastY })
+      lane.push({ x: rightX, y: Math.max(lastY, home.y + quillHeight * .22) })
+      lane.push(home)
 
-      // C1-continuous Hermite spline with matched entry/exit tangents.
-      // There are no independent point-to-point tweens or sudden stops.
-      const tangents: Point[] = points.map((p,i) => {
-        if (i === 0 || i === points.length - 1) return { x:0, y:0 }
-        return {
-          x: (points[i+1].x - points[i-1].x) * .36,
-          y: (points[i+1].y - points[i-1].y) * .36,
-        }
-      })
-      const curve = (u: number): Point => {
+      // Continuous Catmull-Rom / cubic-Hermite curve; no sharp zigzags.
+      const smooth = (v: number) => v * v * (3 - 2 * v)
+      const curve = (points: Point[], u: number): Point => {
         if (u >= 1) return points[points.length - 1]
-        const s = Math.max(0,u) * (points.length - 1)
-        const i = Math.floor(s)
-        const t = s - i
-        const t2 = t*t, t3 = t2*t
-        const h00 = 2*t3 - 3*t2 + 1
-        const h10 = t3 - 2*t2 + t
-        const h01 = -2*t3 + 3*t2
-        const h11 = t3 - t2
-        return {
-          x: h00*points[i].x + h10*tangents[i].x + h01*points[i+1].x + h11*tangents[i+1].x,
-          y: h00*points[i].y + h10*tangents[i].y + h01*points[i+1].y + h11*tangents[i+1].y,
-        }
+        const z = clamp(u, 0, 1) * (points.length - 1)
+        const i = Math.floor(z)
+        const t = z - i
+        const p = points[i], q = points[i + 1]
+        const a = points[Math.max(0, i - 1)]
+        const b = points[Math.min(points.length - 1, i + 2)]
+        const m0x = (q.x - a.x) * .30, m0y = (q.y - a.y) * .30
+        const m1x = (b.x - p.x) * .30, m1y = (b.y - p.y) * .30
+        const t2 = t * t, t3 = t2 * t
+        const h0 = 2 * t3 - 3 * t2 + 1
+        const h1 = t3 - 2 * t2 + t
+        const h2 = -2 * t3 + 3 * t2
+        const h3 = t3 - t2
+        return { x: h0*p.x + h1*m0x + h2*q.x + h3*m1x,
+                 y: h0*p.y + h1*m0y + h2*q.y + h3*m1y }
       }
-
-      // Arc-length lookup prevents a fast-looking feather at short bends.
-      const SAMPLES = 720
-      const distances: number[] = [0]
-      let previous = curve(0)
-      for (let i=1; i<=SAMPLES; i++) {
-        const next = curve(i/SAMPLES)
-        distances.push(distances[i-1] + Math.hypot(next.x-previous.x,next.y-previous.y))
+      const scenic = [exit, ...lane.slice(1)]
+      const samples = 600
+      const distances = [0]
+      let previous = curve(scenic, 0)
+      for (let i = 1; i <= samples; i++) {
+        const next = curve(scenic, i / samples)
+        distances.push(distances[i-1] + Math.hypot(next.x - previous.x, next.y - previous.y))
         previous = next
       }
-      const length = distances[SAMPLES]
-      const sampleByDistance = (ratio: number) => {
-        const target = ratio*length
-        let lo=0, hi=SAMPLES
+      const length = distances[samples]
+      const atDistance = (ratio: number): Point => {
+        const target = clamp(ratio, 0, 1) * length
+        let lo = 0, hi = samples
         while (lo < hi) {
-          const mid = (lo+hi)>>1
-          if (distances[mid]<target) lo=mid+1
-          else hi=mid
+          const mid = (lo + hi) >> 1
+          if (distances[mid] < target) lo = mid + 1
+          else hi = mid
         }
-        const high=Math.max(1,lo), low=high-1
-        const span=distances[high]-distances[low]
-        return (low + (span>0?(target-distances[low])/span:0))/SAMPLES
+        const high = Math.max(1, lo), low = high - 1
+        const d = distances[high] - distances[low]
+        return curve(scenic, (low + (d ? (target - distances[low]) / d : 0)) / samples)
       }
 
-      // TRUE PERSPECTIVE-STYLE LEAF TUMBLE (the source feather is still a 2D image):
-      // 17 original paths + shuffle bag stay untouched. In flight the image turns
-      // through depth (Y), tips forward/back (X), rolls (Z), and gently flexes.
-      // No jump at takeoff/landing: every extra motion has a smooth zero envelope.
-      // Some air currents make one slow complete 3D turn; others rock edge-on.
-      const threeDTurns = [1, 0, -1, 0, 1, -1, 0, 1, 0, -1, 1, 0, -1, 0, 1, 0, -1]
-      const turns = threeDTurns[nextIndex]
-      const scale = clamp(stageWidth / 1000, .67, 1.35)
-      const direction = Math.random() < .5 ? -1 : 1
-      const phase = Math.random() * Math.PI * 2
-      const duration = clamp(length * 6.0, 13000, 24500) * breeze.pace
       engraved = true
-      spark.style.opacity = '.98' // Original colorful nib-glitter trail, unchanged.
-      await tween(duration, t => {
-        // Gently depart the last letter; land almost imperceptibly in the pot.
-        const progress = .5 - .5*Math.cos(Math.PI*t)
-        const u = sampleByDistance(progress)
-        const position = curve(u)
-        const before = curve(Math.max(0,u-.0018))
-        const after = curve(Math.min(1,u+.0018))
-        const dx=after.x-before.x, dy=after.y-before.y
-        const speed = Math.max(1, Math.hypot(dx,dy))
-        const nx=-dy/speed, ny=dx/speed
-        const tx=dx/speed, ty=dy/speed
-        const envelope = Math.pow(Math.sin(Math.PI*t),1.1)
-        const wind = phase + direction*2*Math.PI*breeze.cycles*t
-        const drift = (Math.sin(wind)*breeze.sway +
-          Math.sin(wind*.51+.8)*breeze.sway*.23)*envelope*scale
-        const gentleFlutter = Math.sin(wind*2.15+.25)*breeze.sway*.10*envelope*scale
-        const subtleHold = Math.cos(wind*.63+.40)*breeze.sway*.16*envelope*scale
-        const rise = (Math.sin(wind*.8-.25)*breeze.lift +
-          Math.cos(wind*.42+.8)*breeze.lift*.36)*envelope*scale
-
-        // Slow physical-looking tumble: 3-dimensional heading, not a 2D spin.
-        // The full-turn styles complete exactly +/-360 degrees: this is the same
-        // visual orientation as zero at arrival, avoiding a final snap.
-        const slowTurn = turns * 360 * progress
-        const roll = (Math.sin(wind+.5)*breeze.roll*1.25 +
-          Math.sin(wind*2.15+.25)*breeze.roll*.22)*envelope
-        const bank = slowTurn + (Math.sin(wind*.91-.25)*breeze.bank*1.85 +
-          Math.sin(wind*.48+.7)*breeze.bank*.33)*envelope
-        const pitch = (Math.cos(wind*.78+.2)*breeze.pitch*2.55 +
-          Math.sin(wind*1.43-.5)*breeze.pitch*.55)*envelope
-
-        setPose(
-          position.x + nx*(drift+gentleFlutter) + tx*subtleHold,
-          position.y + ny*(drift+gentleFlutter) + ty*subtleHold - rise,
-          roll, bank, pitch,
-        )
-
-        // Subtle bend of the feather vanes. Applied AFTER setPose only while
-        // airborne; rest and writing transforms remain byte-for-byte unchanged.
-        // The existing 1.4% / 99.3% nib pivot also anchors these transforms.
-        const bend = Math.sin(wind*1.36-.3)*5.2*envelope
-        const vaneFlex = 1 - .06*(.5 + .5*Math.sin(wind*1.75+.6))*envelope
-        quill.style.transform += ` skewX(${bend.toFixed(3)}deg) scaleX(${vaneFlex.toFixed(4)})`
+      spark.style.opacity = '.98'
+      // First leave the written line promptly and smoothly; only after the
+      // exit does the slow leaf-like scenic motion begin.
+      await tween(clamp(Math.abs(exit.x-start.x)*1.6, 380, 1050), t => {
+        const e = smooth(t)
+        setPose(start.x + (exit.x-start.x)*e,
+          start.y + (exit.y-start.y)*e,
+          Math.sin(Math.PI*t)*5)
       })
+      if (cancelled) return
 
+      const amplitude = Math.max(5, Math.min(14, Math.abs(stageW * .018)))
+      const duration = clamp(length * (5.8 + durationRatio), 10500, 25000)
+      await tween(duration, t => {
+        const progress = .5 - .5 * Math.cos(Math.PI * t)
+        const position = atDistance(progress)
+        const envelope = Math.pow(Math.sin(Math.PI * t), 1.4)
+        const wave = phase + t * cycles * Math.PI * 2
+        // Natural drifting wind, damped near the paper boundary and landing.
+        const lateral = (Math.sin(wave) * swayRatio +
+          Math.sin(wave * .49 + 1.2) * flutterRatio) * amplitude * envelope
+        const lift = Math.cos(wave * .7) * amplitude * .65 * envelope
+        const safeX = goLeft && position.x < paperLeft
+          ? Math.min(position.x + lateral, paperLeft - quillWidth - margin)
+          : position.x > paperRight
+            ? Math.max(position.x + lateral, paperRight + margin)
+            : position.x + lateral
+        const roll = (Math.sin(wave) * 18 + Math.sin(wave*1.9)*5) * envelope
+        const bank = (Math.cos(wave*.83)*34 + Math.sin(wave*1.7)*9) * envelope
+        const pitch = (Math.sin(wave*.66)*15 + Math.cos(wave*1.45)*5) * envelope
+        setPose(safeX, position.y - lift, roll, bank, pitch)
+      })
       if (!cancelled) {
-        // The old, approved inkpot rest position and angle are EXACTLY intact.
+        // Exactly the same landing/rest formula as the original file.
         setPose(home.x, home.y, 0)
         engraved = false
         spark.style.opacity = '0'
