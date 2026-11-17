@@ -5,7 +5,7 @@ import { ArticleRichBody } from './article-rich-body'
 import type { ArticleAppearance } from './article-background'
 
 // Shared between the homepage ArticleBrowser and public CMS pages.
-// The approved feather position, paper and rollers remain unchanged.
+// The approved feather position, paper, rollers and blue flame are unchanged.
 export type MagicalArticle = ArticleAppearance & {
   id: string
   title: string
@@ -40,7 +40,6 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
   const paperRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLDivElement>(null)
   const quillRef = useRef<HTMLImageElement>(null)
-  const glitterRef = useRef<HTMLDivElement>(null)
   const potRef = useRef<HTMLImageElement>(null)
   const sparkleRef = useRef<HTMLSpanElement>(null)
   const engravingCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -59,11 +58,10 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const paper = paperRef.current
     const text = textRef.current
     const quill = quillRef.current
-    const glitter = glitterRef.current
     const pot = potRef.current
     const spark = sparkleRef.current
     const dustCanvas = engravingCanvasRef.current
-    if (!stage || !paper || !text || !quill || !glitter || !pot || !spark || !dustCanvas) return
+    if (!stage || !paper || !text || !quill || !pot || !spark || !dustCanvas) return
 
     let cancelled = false
     let completed = false
@@ -79,7 +77,9 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n))
     const rectOfStage = () => stage.getBoundingClientRect()
 
-    // Feather rest is anchored directly to the rendered inkpot, not viewport width.
+    // The user-approved inkpot coordinates MUST NOT drift between start/end.
+    // These values come from the last correctly aligned build.
+    const approvedRightShift = Math.max(0, Math.min(96, stage.clientWidth * .15) - 10)
     let quillWidth = 0, quillHeight = 0
     let featherX = 0, featherY = 0
     let engraved = false
@@ -91,7 +91,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     ctx?.setTransform(dpi, 0, 0, dpi, 0, 0)
     type Fleck = { x: number; y: number; vx: number; vy: number; born: number; ttl: number; color: string; size: number }
     const flecks: Fleck[] = []
-    const colours = ['#ffe38a', '#f7a3e9', '#9e8eff', '#62caff', '#ffd1a1']
+    const colours = ['#ffe38a', '#ffb347', '#f7a3e9', '#d29aff', '#9e8eff', '#62caff', '#dbf7ff']
     let lastEmission = 0
     let lastNibX = NaN, lastNibY = NaN
 
@@ -111,9 +111,9 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         ctx.translate(particle.x, particle.y)
         ctx.strokeStyle = particle.color
         ctx.globalAlpha = .83 * Math.pow(1 - life, 1.35)
-        ctx.lineWidth = 1.05
+        ctx.lineWidth = 1.18
         ctx.shadowColor = particle.color
-        ctx.shadowBlur = 6
+        ctx.shadowBlur = 8
         const r = particle.size * (1 - life * .4)
         ctx.beginPath()
         ctx.moveTo(-r, 0); ctx.lineTo(r, 0)
@@ -132,18 +132,18 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       lastNibX = x; lastNibY = y
       if (!engraved || !ctx) return
       const now = performance.now()
-      if (now - lastEmission < 32) return
+      if (now - lastEmission < 24) return
       lastEmission = now
-      for (let i = 0; i < 5 && flecks.length < 56; i++) {
+      for (let i = 0; i < 7 && flecks.length < 88; i++) {
         flecks.push({
           x: 60 + (Math.random() - .5) * 5,
           y: 60 + (Math.random() - .5) * 5,
-          vx: (Math.random() - .5) * 3.0,
-          vy: -(.40 + Math.random() * 1.55),
+          vx: (Math.random() - .5) * 3.8,
+          vy: -(.55 + Math.random() * 1.85),
           born: now,
-          ttl: 330 + Math.random() * 260,
+          ttl: 420 + Math.random() * 360,
           color: colours[Math.floor(Math.random() * colours.length)],
-          size: 1.5 + Math.random() * 2.55,
+          size: 1.9 + Math.random() * 3.05,
         })
       }
       if (!dustFrame) dustFrame = requestAnimationFrame(drawFlecks)
@@ -156,7 +156,6 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       quill.dataset.x = String(x)
       quill.dataset.y = String(y)
       quill.style.transform = `translate3d(${x}px,${y}px,0) rotate(${angle}deg)`
-      glitter.style.transform = `translate3d(${x}px,${y}px,0)`
       const nibX = x + quillWidth * .014
       const nibY = y + quillHeight * .993
       spark.style.transform = `translate3d(${nibX - 11}px,${nibY - 12}px,0)`
@@ -165,11 +164,10 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const resolveReadyRest = () => {
       const stageRect = rectOfStage()
       const potRect = pot.getBoundingClientRect()
-      // Match the actual inkpot mouth to the feather nib in stage coordinates.
-      // No viewport-based shift or right-edge clamp: both introduce drift in
-      // mobile browsers with Desktop Site enabled.
-      const x = potRect.left + potRect.width * .52 - stageRect.left - quillWidth * .014
-      const y = potRect.top + potRect.height * .43 - stageRect.top - quillHeight * .993
+      // This is the EXACT formula accepted before the later buggy revisions.
+      const x = clamp(potRect.left + potRect.width * .52 - stageRect.left - quillWidth * .014,
+        0, stageRect.width - quillWidth - 8) + approvedRightShift
+      const y = Math.max(0, potRect.top + potRect.height * .43 - stageRect.top - quillHeight * .993)
       return { x, y }
     }
     const landAtApprovedRest = () => {
@@ -177,7 +175,6 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       setPose(rest.x, rest.y, 0)
       engraved = false
       spark.style.opacity = '0'
-      stage.classList.add('is-quill-resting')
     }
     const toPoseFromPage = (pageX: number, pageY: number) => {
       const stageRect = rectOfStage()
@@ -218,7 +215,6 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       activeTimeout = window.setTimeout(() => { activeTimeout = 0; resolve() }, ms)
     })
     const moveTo = async (destination: { x: number; y: number }, duration: number) => {
-      stage.classList.remove('is-quill-resting')
       const sx = featherX, sy = featherY
       engraved = true
       spark.style.opacity = '.68'
@@ -403,31 +399,62 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     }
 
     const swingHome = async () => {
-      stage.classList.remove('is-quill-resting')
-      // One resting coordinate object for BOTH trajectory end and final pose.
-      // No extra +shift, no separate clamp formula, no landing jump.
+      // EXACT approved rest point stays untouched. Only the scenic return path changes.
       const home = resolveReadyRest()
-      const sx = featherX, sy = featherY
-      const dx = home.x - sx, dy = home.y - sy
-      const radiusX = Math.min(62, Math.max(20, stage.clientWidth * .07))
-      const radiusY = radiusX * .74
+      const stageWidth = stage.clientWidth
+      const stageHeight = Math.max(stage.clientHeight, 420)
+      const scenicMove = async (
+        from: { x: number; y: number },
+        to: { x: number; y: number },
+        duration: number,
+        swayX: number,
+        swayY: number,
+        tilt = 1,
+      ) => {
+        await tween(duration, t => {
+          const e = ease(t)
+          const wave = Math.sin(t * Math.PI * 2.2)
+          const envelope = Math.sin(Math.PI * t)
+          const driftX = wave * swayX * envelope
+          const driftY = -Math.sin(t * Math.PI) * swayY * envelope + Math.cos(t * Math.PI * 3.1) * swayY * .18 * envelope
+          setPose(
+            from.x + (to.x - from.x) * e + driftX,
+            from.y + (to.y - from.y) * e + driftY,
+            wave * 11 * envelope * tilt,
+          )
+        })
+        if (!cancelled) setPose(to.x, to.y, 0)
+      }
+
+      const leftWaypoint = {
+        x: Math.max(-quillWidth * .06, stageWidth * .11 - quillWidth * .18),
+        y: clamp(home.y - Math.min(48, stageHeight * .08), 18, stageHeight * .72),
+      }
+      const topWaypoint = {
+        x: clamp(stageWidth * .44 - quillWidth * .12, -quillWidth * .04, stageWidth - quillWidth - 8),
+        y: Math.max(-quillHeight * .24, 2),
+      }
+      const rightWaypoint = {
+        x: clamp(stageWidth * .82 - quillWidth * .1, 0, stageWidth - quillWidth - 8),
+        y: clamp(home.y - Math.min(86, stageHeight * .16), 12, stageHeight * .68),
+      }
+
       engraved = true
-      spark.style.opacity = '.62'
-      await tween(1950, t => {
-        const e = ease(t)
-        const envelope = Math.sin(Math.PI * t) ** 2
-        const circle = t * Math.PI * 2
-        const loopX = Math.cos(circle) * radiusX * envelope
-        const loopY = Math.sin(circle) * radiusY * envelope - envelope * radiusY * .55
-        setPose(sx + dx * e + loopX,
-          sy + dy * e + loopY,
-          Math.sin(circle * 1.5) * 9 * envelope)
-      })
+      spark.style.opacity = '.96'
+
+      const start = { x: featherX, y: featherY }
+      await scenicMove(start, leftWaypoint, 760, 16, 22, -1)
+      if (cancelled) return
+      await scenicMove(leftWaypoint, topWaypoint, 720, 20, 30, 1)
+      if (cancelled) return
+      await scenicMove(topWaypoint, rightWaypoint, 840, 18, 24, 1)
+      if (cancelled) return
+      await scenicMove(rightWaypoint, home, 620, 10, 14, -1)
+
       if (!cancelled) {
         setPose(home.x,home.y,0)
         engraved = false
         spark.style.opacity='0'
-        stage.classList.add('is-quill-resting')
       }
     }
 
@@ -453,7 +480,6 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       pot.style.opacity = '0'
       quill.style.opacity = '0'
       spark.style.opacity = '0'
-      stage.classList.remove('is-quill-resting')
       await unfold()
       if (cancelled) return
       // Fade in the inkpot, independent of the quill animation.
@@ -505,7 +531,6 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     })
     return () => {
       cancelled = true
-      stage.classList.remove('is-quill-resting')
       window.clearInterval(watchdog)
       window.clearTimeout(activeTimeout)
       cancelAnimationFrame(activeFrame)
@@ -537,8 +562,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           </div>
         </div>
         <img ref={potRef} className="original-scroll-pot" src="/magical-scroll/inkpot.png" alt="" draggable={false}/>
-        {/* V5: design-matched motion — illuminate the inkpot's own galaxy glass,
-            its existing golden orbit and the blue flame. No extra star emblems. */}
+        {/* Independent, lightweight blue-flame shimmer. No JS animation loop or feather edits. */}
         <svg
           className={`original-scroll-flame-overlay${opened ? ' is-open' : ''}`}
           viewBox="0 0 180 255"
@@ -546,94 +570,64 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           aria-hidden="true"
         >
           <defs>
-            <linearGradient id="mashkeeza-v5-flame" x1="0" y1="1" x2=".2" y2="0">
-              <stop offset="0%" stopColor="#18b9ff" stopOpacity=".95" />
-              <stop offset="43%" stopColor="#42d9ff" stopOpacity=".72" />
-              <stop offset="78%" stopColor="#665aff" stopOpacity=".45" />
-              <stop offset="100%" stopColor="#b4a1ff" stopOpacity="0" />
-            </linearGradient>
-            <radialGradient id="mashkeeza-v5-galaxy" cx="50%" cy="52%" r="55%">
-              <stop offset="0%" stopColor="#ff61ca" stopOpacity=".42" />
-              <stop offset="43%" stopColor="#9853ef" stopOpacity=".24" />
-              <stop offset="75%" stopColor="#2d9dff" stopOpacity=".22" />
-              <stop offset="100%" stopColor="#0b61ff" stopOpacity="0" />
+            <radialGradient id="mashkeeza-pot-core" cx="50%" cy="62%" r="38%">
+              <stop offset="0%" stopColor="#fff2b8" stopOpacity=".95" />
+              <stop offset="18%" stopColor="#ffcc71" stopOpacity=".85" />
+              <stop offset="36%" stopColor="#ff6fd8" stopOpacity=".78" />
+              <stop offset="63%" stopColor="#7f6bff" stopOpacity=".68" />
+              <stop offset="100%" stopColor="#1fa9ff" stopOpacity="0" />
             </radialGradient>
-            <linearGradient id="mashkeeza-v5-orbit" x1="0" y1="0" x2="1" y2=".8">
-              <stop offset="0%" stopColor="#ff9d35" stopOpacity="0" />
-              <stop offset="27%" stopColor="#ffcf62" stopOpacity=".7" />
-              <stop offset="52%" stopColor="#ffef9b" stopOpacity=".95" />
-              <stop offset="80%" stopColor="#ff7e36" stopOpacity=".55" />
-              <stop offset="100%" stopColor="#ffb641" stopOpacity="0" />
+            <radialGradient id="mashkeeza-pot-halo" cx="50%" cy="62%" r="62%">
+              <stop offset="0%" stopColor="#8fd8ff" stopOpacity=".34" />
+              <stop offset="52%" stopColor="#925fff" stopOpacity=".20" />
+              <stop offset="100%" stopColor="#925fff" stopOpacity="0" />
+            </radialGradient>
+            <linearGradient id="mashkeeza-flame-light" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stopColor="#20b4ff" stopOpacity=".88" />
+              <stop offset="45%" stopColor="#84e6ff" stopOpacity=".70" />
+              <stop offset="100%" stopColor="#9a83ff" stopOpacity=".18" />
             </linearGradient>
-            <filter id="mashkeeza-v5-softlight" x="-60%" y="-60%" width="220%" height="220%">
-              <feGaussianBlur stdDeviation="3.2" />
-            </filter>
-            <clipPath id="mashkeeza-v5-glass-area">
-              <ellipse cx="90" cy="181" rx="61" ry="40" />
-            </clipPath>
+            <linearGradient id="mashkeeza-ring-gold" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#ffeeb0" stopOpacity=".98" />
+              <stop offset="34%" stopColor="#ffd56f" stopOpacity=".95" />
+              <stop offset="68%" stopColor="#ff9b37" stopOpacity=".9" />
+              <stop offset="100%" stopColor="#fff3bb" stopOpacity=".96" />
+            </linearGradient>
           </defs>
-          {/* Light within the existing colorful glass; no extra solid bottle drawn. */}
-          <g className="ink-v5-glass-light" clipPath="url(#mashkeeza-v5-glass-area)">
-            <ellipse cx="91" cy="179" rx="61" ry="40" fill="url(#mashkeeza-v5-galaxy)" />
-            <ellipse className="ink-v5-liquid-shimmer" cx="93" cy="189" rx="48" ry="19" fill="#d82fff" opacity=".10" filter="url(#mashkeeza-v5-softlight)" />
-            {Array.from({length: 18}, (_, i) => (
-              <circle key={i} className="ink-v5-glass-point" cx={44 + (i * 29) % 95} cy={149 + (i * 19) % 62}
-                r={i % 4 === 0 ? 1.25 : .7}
-                fill={['#8defff','#ffb6fb','#f9cf8c','#997aff'][i % 4]}
-                style={{animationDelay:`${-(i * .37)}s`,animationDuration:`${2.5 + (i % 5) * .6}s`}} />
-            ))}
+
+          <g className="pot-energy-core">
+            <ellipse cx="89" cy="179" rx="45" ry="32" fill="url(#mashkeeza-pot-halo)" />
+            <ellipse cx="89" cy="177" rx="32" ry="23" fill="url(#mashkeeza-pot-core)" />
+            <ellipse cx="74" cy="167" rx="14" ry="10" fill="#9de8ff" opacity=".28" />
+            <ellipse cx="104" cy="186" rx="15" ry="10" fill="#ff6fd8" opacity=".22" />
+            <ellipse cx="88" cy="191" rx="16" ry="9" fill="#ffbf55" opacity=".24" />
           </g>
-          {/* Gold orbit: light travels ALONG the ring visible in the source art. */}
-          <g className="ink-v5-orbit">
-            <path d="M22 207 C40 225 131 240 158 209 C173 187 142 168 114 167" fill="none" stroke="url(#mashkeeza-v5-orbit)" strokeWidth="2" opacity=".65" />
-            <path d="M25 214 C54 235 140 233 162 204" fill="none" stroke="#ffc968" strokeWidth="1" opacity=".3" />
-            <circle r="2" fill="#fff3b5" filter="url(#mashkeeza-v5-softlight)">
-              <animateMotion dur="4.8s" repeatCount="indefinite" path="M22 207 C40 225 131 240 158 209 C173 187 142 168 114 167" />
-              <animate attributeName="opacity" values="0;.85;.65;0" dur="4.8s" repeatCount="indefinite" />
-            </circle>
-            <circle r="1.4" fill="#ffe0a0">
-              <animateMotion dur="6.1s" begin="-2.1s" repeatCount="indefinite" path="M25 214 C54 235 140 233 162 204" />
-              <animate attributeName="opacity" values="0;.8;.5;0" dur="6.1s" begin="-2.1s" repeatCount="indefinite" />
-            </circle>
+
+          <g className="golden-energy-rings">
+            <ellipse className="ring ring-back" cx="89" cy="190" rx="55" ry="18" fill="none" stroke="url(#mashkeeza-ring-gold)" strokeWidth="4.1" strokeLinecap="round" strokeDasharray="34 18 20 14" />
+            <ellipse className="ring ring-mid" cx="91" cy="182" rx="49" ry="15" fill="none" stroke="url(#mashkeeza-ring-gold)" strokeWidth="3" strokeLinecap="round" strokeDasharray="26 14 18 12" />
+            <path className="ring-sweep" d="M40 196 C58 175 87 164 120 168 C138 171 149 178 160 189" fill="none" stroke="url(#mashkeeza-ring-gold)" strokeWidth="4.6" strokeLinecap="round" />
           </g>
-          {/* The same flame silhouette as the inkpot image, with flowing highlights. */}
-          <g className="ink-v5-blue-flame">
-            <path d="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3"
-              stroke="url(#mashkeeza-v5-flame)" strokeWidth="5.1" fill="none" strokeLinecap="round" opacity=".55" filter="url(#mashkeeza-v5-softlight)" />
-            <path className="ink-v5-flame-ribbon" d="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3"
-              stroke="url(#mashkeeza-v5-flame)" strokeWidth="2.8" fill="none" strokeLinecap="round" />
-            <path className="ink-v5-flame-ribbon ink-v5-flame-ribbon-alt" d="M96 105 C129 82 109 67 87 61 C59 56 49 41 62 32 C58 22 80 13 77 7"
-              stroke="#94eeff" strokeWidth="1.4" strokeOpacity=".6" fill="none" strokeLinecap="round" />
-            {Array.from({length: 12}, (_,i) => (
-              <circle key={i} r={i % 4 === 0 ? 1.1 : .65}
-                fill={['#9df6ff','#5ecfff','#b09aff'][i % 3]} opacity="0">
-                <animateMotion dur={`${2.8 + i * .23}s`} begin={`${-i * .48}s`} repeatCount="indefinite"
-                  path={i % 2 === 0 ? 'M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3' : 'M96 105 C129 82 109 67 87 61 C59 56 49 41 62 32 C58 22 80 13 77 7'} />
-                <animate attributeName="opacity" values="0;.2;.7;.3;0" dur={`${2.8 + i * .23}s`} begin={`${-i * .48}s`} repeatCount="indefinite" />
-              </circle>
-            ))}
+
+          <g className="flame-light-waves">
+            <path className="flame-stream stream-main" d="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3" stroke="url(#mashkeeza-flame-light)" strokeWidth="4.3" fill="none" />
+            <path className="flame-stream stream-second" d="M86 107 C112 87 111 72 92 63 C69 56 57 46 64 34 C65 22 84 17 82 7" stroke="#86e4ff" strokeOpacity=".72" strokeWidth="2.2" fill="none" />
+            <path className="flame-stream stream-inner" d="M98 106 C130 84 109 67 87 61 C59 56 49 41 62 32 C58 22 80 13 77 7" stroke="#d7f7ff" strokeOpacity=".44" strokeWidth="1.55" fill="none" />
+          </g>
+
+          <g className="flame-particles">
+            <circle r="1.8" fill="#dbfaff">
+              <animateMotion dur="3.1s" repeatCount="indefinite" path="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3"/>
+              <animate attributeName="opacity" values="0;.72;.45;0" dur="3.1s" repeatCount="indefinite"/>
+            </circle>
+            <circle r="1.25" fill="#c0aaff">
+              <animateMotion dur="3.7s" begin="-1.4s" repeatCount="indefinite" path="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3"/>
+              <animate attributeName="opacity" values="0;.56;.30;0" dur="3.7s" repeatCount="indefinite"/>
+            </circle>
           </g>
         </svg>
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
-        {/* Glitter falls FROM the feather only when it is resting in the inkpot.
-            Follows the feather's exact coordinates, without changing its pose. */}
-        <div ref={glitterRef} className="original-scroll-feather-glitter" aria-hidden="true">
-          {Array.from({ length: 42 }, (_, i) => {
-            const pos = (i * 37 + 11) % 100
-            const top = 7 + ((i * 23) % 62)
-            const drift = -22 + ((i * 17) % 45)
-            const duration = 1.95 + (i % 8) * .22
-            const delay = -((i * .41) % 3.1)
-            const size = 1.6 + (i % 4) * .75
-            const hue = [195, 275, 315, 45, 175, 235][i % 6]
-            return <i key={i} style={{
-              '--gx': `${pos}%`, '--gy': `${top}%`, '--drift': `${drift}px`,
-              '--duration': `${duration}s`, '--delay': `${delay}s`,
-              '--size': `${size}px`, '--hue': String(hue),
-            } as CSSProperties} />
-          })}
-        </div>
-        <span ref={sparkleRef} className="original-scroll-nib-sparks" aria-hidden="true"><i/><i/><i/><i/><i/></span>
+        <span ref={sparkleRef} className="original-scroll-nib-sparks" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/></span>
         <canvas ref={engravingCanvasRef} className="original-scroll-engraving-dust" aria-hidden="true" />
         {opened && <span className="sr-only">Scroll opened</span>}
       </div>
@@ -641,10 +635,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       <style jsx global>{`
         .original-mashkeeza-scroll{font-family:'Noto Nastaliq Urdu',serif;color:#422410;width:100%;position:relative;z-index:100;overflow:visible}
         .original-scroll-stage{position:relative;z-index:101;width:100%;min-height:max-content;padding:8px 0 145px;overflow:visible;isolation:auto}
-        /* Approved 40% expansion, symmetrically centered on the stage.
-           Symmetric physical margins keep centering stable in RTL and Desktop Site mode.
-           The viewport cap prevents excess horizontal overflow on narrow screens. */
-        .original-scroll-assembly{--scroll-wide-width:min(140%, calc(100vw - 16px));width:var(--scroll-wide-width);margin-left:calc((100% - var(--scroll-wide-width)) / 2);margin-right:calc((100% - var(--scroll-wide-width)) / 2);left:auto;transform:none;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
+        .original-scroll-assembly{width:100%;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
         .original-scroll-roller{width:100%;height:auto;position:relative;z-index:3;flex-shrink:0;display:block;pointer-events:none;user-select:none}
         .original-scroll-paper{width:63.6%;margin:-1px 0 0;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
         /* Bottom roller sits in front of the parchment edge, like the top roller. */
@@ -662,48 +653,26 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-excerpt{font-size:.9em;text-align:center}
         .original-scroll-pot{position:absolute;z-index:1000;width:19.15%;height:auto;right:1%;bottom:0;opacity:0;pointer-events:none;filter:drop-shadow(0 0 8px #5e8cff99)}
         .original-scroll-flame-overlay{position:absolute;right:1%;bottom:0;width:19.15%;height:auto;aspect-ratio:180 / 255;z-index:1001;pointer-events:none;overflow:visible;opacity:0;mix-blend-mode:screen;transition:opacity 1.3s ease}
-        .original-scroll-flame-overlay.is-open{opacity:.9}
-        /* V5 follows the inkpot's existing blue flame and golden galaxy rings. */
-        .original-scroll-flame-overlay .ink-v5-glass-light{animation:inkV5GalaxyBreathe 5.7s ease-in-out infinite alternate;transform-origin:90px 180px}
-        .original-scroll-flame-overlay .ink-v5-liquid-shimmer{animation:inkV5GalaxyDrift 7s ease-in-out infinite alternate;transform-origin:93px 189px}
-        .original-scroll-flame-overlay .ink-v5-glass-point{animation:inkV5GlassTwinkle 3.2s ease-in-out infinite;opacity:.12}
-        .original-scroll-flame-overlay .ink-v5-orbit{animation:inkV5OrbitBreathe 5.4s ease-in-out infinite alternate;transform-origin:90px 201px}
-        .original-scroll-flame-overlay .ink-v5-blue-flame{transform-origin:94px 106px;animation:inkV5FlameSway 4.9s ease-in-out infinite alternate}
-        .original-scroll-flame-overlay .ink-v5-flame-ribbon{stroke-dasharray:16 12;animation:inkV5FlameCurrent 4.6s linear infinite,inkV5FlameGlow 3.7s ease-in-out infinite}
-        .original-scroll-flame-overlay .ink-v5-flame-ribbon-alt{animation-duration:5.8s,4.6s;animation-direction:reverse,normal}
-        .original-scroll-stage.is-quill-resting .original-scroll-flame-overlay .ink-v5-blue-flame{filter:drop-shadow(0 0 3px #48d5ff99)}
-        @keyframes inkV5GalaxyBreathe{from{opacity:.48;transform:scale(.98)}to{opacity:.9;transform:scale(1.015)}}
-        @keyframes inkV5GalaxyDrift{from{opacity:.16;transform:translateX(-4px) rotate(-5deg)}to{opacity:.42;transform:translateX(5px) rotate(6deg)}}
-        @keyframes inkV5GlassTwinkle{0%,100%{opacity:.04}45%{opacity:.74}70%{opacity:.21}}
-        @keyframes inkV5OrbitBreathe{from{opacity:.45}to{opacity:.9}}
-        @keyframes inkV5FlameSway{0%{opacity:.61;transform:translateX(-1.5px) rotate(-1.8deg) scaleX(.97)}45%{opacity:.94;transform:translate(1px,-2px) rotate(1.4deg) scaleX(1.025)}100%{opacity:.75;transform:translate(-1px,-3px) rotate(-.7deg) scaleX(.99)}}
-        @keyframes inkV5FlameCurrent{to{stroke-dashoffset:-112}}
-        @keyframes inkV5FlameGlow{0%,100%{opacity:.35}52%{opacity:.85}}
+        .original-scroll-flame-overlay.is-open{opacity:1}
+        .original-scroll-flame-overlay .pot-energy-core{transform-origin:50% 68%;animation:potCorePulse 2.8s ease-in-out infinite alternate}.original-scroll-flame-overlay .golden-energy-rings{transform-origin:50% 72%;filter:drop-shadow(0 0 6px rgba(255,203,96,.52)) drop-shadow(0 0 13px rgba(255,153,55,.35));animation:potRingFloat 3.6s ease-in-out infinite alternate}.original-scroll-flame-overlay .ring{animation:ringDash 4.3s linear infinite}.original-scroll-flame-overlay .ring-mid{animation-duration:3.4s;animation-direction:reverse}.original-scroll-flame-overlay .ring-sweep{filter:drop-shadow(0 0 6px rgba(255,209,110,.55));animation:ringSweep 2.7s ease-in-out infinite alternate}.original-scroll-flame-overlay .flame-light-waves{transform-origin:50% 42%;animation:inkFlameBreathe 2.7s ease-in-out infinite alternate}
+        .original-scroll-flame-overlay .flame-stream{stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:6 3;animation:inkFlameFlow 3.5s linear infinite}
+        .original-scroll-flame-overlay .stream-main{filter:drop-shadow(0 0 6px #5abaffcc) drop-shadow(0 0 12px #875cff88)}
+        .original-scroll-flame-overlay .stream-second{filter:drop-shadow(0 0 4px rgba(110,220,255,.55));animation-duration:2.9s}.original-scroll-flame-overlay .stream-inner{animation-duration:2.4s;animation-direction:reverse}
+        @keyframes potCorePulse{from{opacity:.82;transform:scale(.96)}to{opacity:1;transform:scale(1.06)}}@keyframes potRingFloat{from{opacity:.76;transform:translateY(1.5px) scale(.985)}to{opacity:1;transform:translateY(-1.5px) scale(1.02)}}@keyframes ringDash{to{stroke-dashoffset:-92}}@keyframes ringSweep{from{opacity:.68;transform:translateY(0) scale(.985)}to{opacity:1;transform:translateY(-2px) scale(1.02)}}@keyframes inkFlameBreathe{from{opacity:.52;transform:translate(-1px,1px) rotate(-1deg) scale(.985)}to{opacity:1;transform:translate(1.5px,-2px) rotate(1.8deg) scale(1.02)}}
+        @keyframes inkFlameFlow{to{stroke-dashoffset:-74}}
         .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform;transform-origin:1.4% 99.3%}
-        /* A subtle jewel-like chromatic charge on a RESTING feather only. */
-        .original-scroll-stage.is-quill-resting .original-scroll-quill{animation:quillChargedGlow 4.8s ease-in-out infinite alternate}
-        @keyframes quillChargedGlow{0%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 3px #40bfff88)}30%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 7px #72efffcc)}62%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 7px #997effbb)}100%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 7px #e9a6eaaa)}}
-        /* Glitter follows the feather position, not screen coordinates.
-           Individual particles gently shed downward like SparkleCursor. */
-        .original-scroll-feather-glitter{position:absolute;left:0;top:0;width:17%;aspect-ratio:1 / 1.35;z-index:1150;pointer-events:none;opacity:0;will-change:transform;transition:opacity .35s ease}
-        .original-scroll-stage.is-quill-resting .original-scroll-feather-glitter{opacity:1}
-        .original-scroll-feather-glitter i{position:absolute;left:var(--gx);top:var(--gy);width:var(--size);height:var(--size);display:block;opacity:0;transform:rotate(45deg);border-radius:1px;background:hsl(var(--hue) 100% 84%);box-shadow:0 0 5px 1px hsl(var(--hue) 100% 65% / .85),0 0 11px hsl(var(--hue) 100% 70% / .55);animation:featherGlitterFall var(--duration) var(--delay) cubic-bezier(.28,.08,.57,1) infinite;animation-play-state:paused}
-        .original-scroll-stage.is-quill-resting .original-scroll-feather-glitter i{animation-play-state:running}
-        .original-scroll-feather-glitter i:nth-child(3n){border-radius:50%}
-        .original-scroll-feather-glitter i:nth-child(4n){clip-path:polygon(50% 0,63% 38%,100% 50%,63% 62%,50% 100%,37% 62%,0 50%,37% 38%)}
-        @keyframes featherGlitterFall{0%{opacity:0;transform:translate3d(0,-4px,0) rotate(0deg) scale(.2)}13%{opacity:.95}42%{opacity:.82;transform:translate3d(calc(var(--drift) * .3),17px,0) rotate(44deg) scale(1)}72%{opacity:.62}100%{opacity:0;transform:translate3d(var(--drift),76px,0) rotate(155deg) scale(.12)}}
         /* Light, localized engraving flecks — separate from the feather's z-index. */
         .original-scroll-engraving-dust{position:absolute;left:0;top:0;width:120px;height:120px;z-index:1250;pointer-events:none;overflow:visible;will-change:transform}
         /* Small, soft sparks follow the ACTUAL nib; not the top of the feather. */
-        .original-scroll-nib-sparks{position:absolute;left:0;top:0;width:22px;height:22px;z-index:1200;opacity:0;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 0 7px #f7d8a4aa)}
-        .original-scroll-nib-sparks i{position:absolute;left:9px;top:9px;width:4px;height:4px;display:block;border-radius:50%;background:#ffeeb4;box-shadow:0 0 7px #efb763cc;animation:subtleNibSpark .9s ease-out infinite}
+        .original-scroll-nib-sparks{position:absolute;left:0;top:0;width:30px;height:30px;z-index:1200;opacity:0;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 0 10px #f7d8a4aa)}
+        .original-scroll-nib-sparks i{position:absolute;left:13px;top:13px;width:5px;height:5px;display:block;border-radius:50%;background:#ffeeb4;box-shadow:0 0 10px #efb763cc;animation:subtleNibSpark 1s ease-out infinite}
         .original-scroll-nib-sparks i:nth-child(2){animation-delay:.28s;background:#dd92e5;box-shadow:0 0 5px #c57fe899}
         .original-scroll-nib-sparks i:nth-child(3){animation-delay:.55s;background:#80d5ff;box-shadow:0 0 5px #82caff66}
         .original-scroll-nib-sparks i:nth-child(4){animation-delay:.14s;background:#fff4c1;box-shadow:0 0 4px #fff0a388;animation-duration:.75s}
-        .original-scroll-nib-sparks i:nth-child(5){animation-delay:.42s;background:#d29aff;box-shadow:0 0 4px #c47cff66;animation-duration:1.1s}
-        @keyframes subtleNibSpark{from{transform:translate(0,0) scale(.85);opacity:.86}to{transform:translate(7px,-11px) scale(.17);opacity:0}}
+        .original-scroll-nib-sparks i:nth-child(5){animation-delay:.42s;background:#d29aff;box-shadow:0 0 5px #c47cff99;animation-duration:1.1s}.original-scroll-nib-sparks i:nth-child(6){animation-delay:.62s;background:#ffd17d;box-shadow:0 0 6px #ffb347aa;animation-duration:.88s}.original-scroll-nib-sparks i:nth-child(7){animation-delay:.22s;background:#9ce7ff;box-shadow:0 0 6px #62caffaa;animation-duration:1.18s}
+        @keyframes subtleNibSpark{from{transform:translate(0,0) scale(.92);opacity:.96}20%{opacity:1}to{transform:translate(10px,-16px) scale(.14);opacity:0}}
         @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:11% 10% 17%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
-        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-nib-sparks i,.original-scroll-flame-overlay .ink-v5-glass-light,.original-scroll-flame-overlay .ink-v5-liquid-shimmer,.original-scroll-flame-overlay .ink-v5-glass-point,.original-scroll-flame-overlay .ink-v5-orbit,.original-scroll-flame-overlay .ink-v5-blue-flame,.original-scroll-flame-overlay .ink-v5-flame-ribbon{animation:none}.original-scroll-stage.is-quill-resting .original-scroll-quill,.original-scroll-feather-glitter i{animation:none}.original-scroll-feather-glitter{display:none}}
+        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-nib-sparks i,.original-scroll-flame-overlay .pot-energy-core,.original-scroll-flame-overlay .golden-energy-rings,.original-scroll-flame-overlay .ring,.original-scroll-flame-overlay .ring-sweep,.original-scroll-flame-overlay .flame-light-waves,.original-scroll-flame-overlay .flame-stream{animation:none}.original-scroll-flame-overlay .flame-particles{display:none}}
       `}</style>
     </>
   )
