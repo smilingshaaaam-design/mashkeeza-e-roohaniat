@@ -570,7 +570,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         /* Balanced 20% expansion: equal 10% overhang on left and right.
            Symmetric physical margins keep centering stable in RTL and Desktop Site mode.
            The viewport cap prevents excess horizontal overflow on narrow screens. */
-        .original-scroll-assembly{--scroll-wide-width:min(120%, calc(100vw - 16px));width:var(--scroll-wide-width);margin-left:calc((100% - var(--scroll-wide-width)) / 2);margin-right:calc((100% - var(--scroll-wide-width)) / 2);left:auto;transform:none;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
+        .original-scroll-assembly{--scroll-wide-width:min(140%, calc(100vw - 16px));width:var(--scroll-wide-width);margin-left:calc((100% - var(--scroll-wide-width)) / 2);margin-right:calc((100% - var(--scroll-wide-width)) / 2);left:auto;transform:none;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
         .original-scroll-roller{width:100%;height:auto;position:relative;z-index:3;flex-shrink:0;display:block;pointer-events:none;user-select:none}
         .original-scroll-paper{width:63.6%;margin:-1px 0 0;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
         /* Bottom roller sits in front of the parchment edge, like the top roller. */
