@@ -427,10 +427,10 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
                 fallingSparks.push({
                   x:px,
                   y:py,
-                  vx:(Math.random()-.5)*.28,
-                  vy:.35 + Math.random()*.42,
+                  vx:(Math.random()-.5)*.012,
+                  vy:.008 + Math.random()*.011,
                   born:now,
-                  ttl:900 + Math.random()*650,
+                  ttl:2800 + Math.random()*1700,
                   color,
                   size:largerStar ? 1.35 + Math.random()*.5 : .75 + Math.random()*.6,
                   phase:Math.random()*Math.PI*2,
@@ -484,27 +484,28 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         const age = now - p.born
         if (age > p.ttl) { fallingSparks.splice(i, 1); continue }
         const t = age / p.ttl
-        const px = stageBounds.left + p.x + p.vx * age + Math.sin(age * .006 + p.phase) * .9
-        const py = stageBounds.top + p.y + p.vy * age + age * age * .000085
+        // Very slow downward float, with gentle sideways airflow instead of falling quickly.
+        const px = stageBounds.left + p.x + p.vx * age + Math.sin(age * .0017 + p.phase) * 4.2
+        const py = stageBounds.top + p.y + p.vy * age + age * age * .0000013 + Math.sin(age * .0012 + p.phase) * 1.8
         const fade = Math.max(0, 1 - t)
-        const twinkle = .42 + .58 * Math.sin(now * (p.largerStar ? .016 : .022) + p.phase) ** 2
-        c.globalAlpha = Math.min(.85, fade * twinkle * .75)
+        const twinkle = .38 + .62 * Math.sin(now * (p.largerStar ? .010 : .013) + p.phase) ** 2
+        c.globalAlpha = Math.min(.9, fade * twinkle * .85)
         c.fillStyle = p.color
         c.shadowColor = p.color
         c.shadowBlur = 4.5
         c.beginPath()
         c.arc(px, py, p.size, 0, Math.PI * 2)
         c.fill()
-        if (p.largerStar) {
-          const arm = 2.1 + twinkle * .9
-          c.globalAlpha = Math.min(.82, fade * twinkle * .62)
-          c.lineWidth = .7
-          c.strokeStyle = p.color
-          c.beginPath()
-          c.moveTo(px-arm, py); c.lineTo(px+arm, py)
-          c.moveTo(px, py-arm); c.lineTo(px, py+arm)
-          c.stroke()
-        }
+        // Cursor-style star glints: tiny crosses on every falling glitter,
+        // with only the rare larger stars showing slightly longer rays.
+        const arm = p.largerStar ? 2.6 + twinkle * .7 : 1.35 + twinkle * .65
+        c.globalAlpha = Math.min(.88, fade * twinkle * .72)
+        c.lineWidth = p.largerStar ? .8 : .55
+        c.strokeStyle = p.color
+        c.beginPath()
+        c.moveTo(px-arm, py); c.lineTo(px+arm, py)
+        c.moveTo(px, py-arm); c.lineTo(px, py+arm)
+        c.stroke()
       }
       c.restore()
     }
