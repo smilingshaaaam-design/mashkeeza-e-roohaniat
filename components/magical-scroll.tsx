@@ -18,6 +18,8 @@ export type MagicalArticle = ArticleAppearance & {
 }
 
 const openedScrollKeys = new Set<string>()
+// Keeps consecutive completed flights from choosing the same choreography.
+let lastFeatherFlightStyle = -1
 
 // A new full-page visit starts fresh. This also handles browser Back restoring
 // the document from the back/forward cache without reloading JavaScript.
@@ -399,33 +401,94 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     }
 
     const swingHome = async () => {
-      // EXACT approved rest point stays untouched. Only the scenic return path changes.
+      // KEEP the exact, user-approved resting point. No modifications to
+      // resolveReadyRest(), landAtApprovedRest(), or the final landing pose.
       const home = resolveReadyRest()
       const stageWidth = stage.clientWidth
       const stageHeight = Math.max(stage.clientHeight, 420)
+
+      // Seventeen controlled, visibly different flying styles. Every curve
+      // begins and ends at the same waypoints, so nothing can move the rest point.
+      type FlightStyle = {
+        name: string
+        kind: number
+        amplitudeX: number
+        amplitudeY: number
+        turns: number
+        rotation: number
+        speed: number
+      }
+      const flightStyles: FlightStyle[] = [
+        {name:'Silk Sway',       kind:0,  amplitudeX:16, amplitudeY:14, turns:1.0, rotation: 8, speed:1.03},
+        {name:'Moon Crescent',   kind:1,  amplitudeX:22, amplitudeY:26, turns:1.0, rotation:11, speed:1.10},
+        {name:'Double Ribbon',   kind:2,  amplitudeX:24, amplitudeY:21, turns:2.0, rotation:14, speed: .96},
+        {name:'Amber Spiral',    kind:3,  amplitudeX:24, amplitudeY:25, turns:2.0, rotation:16, speed:1.15},
+        {name:'Floating Eight',  kind:4,  amplitudeX:30, amplitudeY:19, turns:2.0, rotation:18, speed:1.08},
+        {name:'Soft Zigzag',     kind:5,  amplitudeX:21, amplitudeY:24, turns:3.0, rotation:13, speed: .95},
+        {name:'Celestial Wave',  kind:6,  amplitudeX:25, amplitudeY:28, turns:1.5, rotation:12, speed:1.06},
+        {name:'Sapphire Loop',   kind:7,  amplitudeX:33, amplitudeY:26, turns:1.0, rotation:20, speed:1.13},
+        {name:'Golden Comet',    kind:8,  amplitudeX:18, amplitudeY:33, turns:1.0, rotation:10, speed: .88},
+        {name:'Violet Waltz',    kind:9,  amplitudeX:27, amplitudeY:22, turns:2.5, rotation:17, speed:1.12},
+        {name:'Gentle Hover',    kind:10, amplitudeX:19, amplitudeY:18, turns:3.0, rotation: 9, speed:1.22},
+        {name:'Mystic S-Curve',  kind:11, amplitudeX:32, amplitudeY:24, turns:1.5, rotation:18, speed:1.00},
+        {name:'Twin Crescents',  kind:12, amplitudeX:24, amplitudeY:33, turns:2.0, rotation:16, speed:1.09},
+        {name:'Pearl Orbit',     kind:13, amplitudeX:31, amplitudeY:26, turns:3.0, rotation:19, speed:1.14},
+        {name:'Royal Glide',     kind:14, amplitudeX:16, amplitudeY:30, turns:1.0, rotation:10, speed: .92},
+        {name:'Starlit Ribbon',  kind:15, amplitudeX:34, amplitudeY:21, turns:2.5, rotation:20, speed:1.08},
+        {name:'Dreaming Flame',  kind:16, amplitudeX:22, amplitudeY:32, turns:3.5, rotation:15, speed:1.18},
+      ]
+      // Select a new style on EVERY completed-post flight. Avoid immediate repeats.
+      const nextIndex = lastFeatherFlightStyle < 0
+        ? Math.floor(Math.random() * flightStyles.length)
+        : (lastFeatherFlightStyle + 1 + Math.floor(Math.random() * (flightStyles.length - 1))) % flightStyles.length
+      lastFeatherFlightStyle = nextIndex
+      const style = flightStyles[nextIndex]
+      const TAU = Math.PI * 2
+
+      // All perturbations are multiplied by sin(pi*t), which becomes exactly
+      // zero at t=0 and t=1: seamless segment endpoints, no landing jump.
       const scenicMove = async (
         from: { x: number; y: number },
         to: { x: number; y: number },
         duration: number,
-        swayX: number,
-        swayY: number,
-        tilt = 1,
+        segment: number,
       ) => {
-        await tween(duration, t => {
+        await tween(Math.round(duration * style.speed), t => {
           const e = ease(t)
-          const wave = Math.sin(t * Math.PI * 2.2)
           const envelope = Math.sin(Math.PI * t)
-          const driftX = wave * swayX * envelope
-          const driftY = -Math.sin(t * Math.PI) * swayY * envelope + Math.cos(t * Math.PI * 3.1) * swayY * .18 * envelope
+          const phase = TAU * style.turns * t + segment * .8
+          let wx = 0
+          let wy = 0
+          switch (style.kind) {
+            case 0:  wx = Math.sin(phase); wy = -.6 * Math.sin(Math.PI * t); break
+            case 1:  wx = .45 * Math.sin(phase); wy = -1.25 * Math.sin(Math.PI * t); break
+            case 2:  wx = Math.sin(phase * 2); wy = .7 * Math.cos(phase); break
+            case 3:  wx = Math.cos(phase); wy = Math.sin(phase); break
+            case 4:  wx = Math.sin(phase); wy = .8 * Math.sin(phase * 2); break
+            case 5:  wx = Math.sin(phase * 2.2); wy = .7 * Math.cos(phase * 1.2); break
+            case 6:  wx = .65 * Math.sin(phase); wy = -1.15 * Math.sin(Math.PI * t) + .25 * Math.cos(phase); break
+            case 7:  wx = Math.cos(phase * .9); wy = Math.sin(phase * 1.3); break
+            case 8:  wx = .55 * Math.sin(phase); wy = -1.3 * Math.sin(Math.PI * t); break
+            case 9:  wx = Math.sin(phase) + .25 * Math.sin(phase * 2); wy = Math.cos(phase * .8); break
+            case 10: wx = .45 * Math.cos(phase * 1.6); wy = .55 * Math.sin(phase * 2); break
+            case 11: wx = Math.sin(phase * .8) + .35 * Math.sin(phase * 2.5); wy = .8 * Math.cos(phase); break
+            case 12: wx = Math.sin(phase * 2); wy = -1.1 * Math.abs(Math.sin(phase * .7)); break
+            case 13: wx = Math.cos(phase * 1.3); wy = Math.sin(phase * 1.7); break
+            case 14: wx = .45 * Math.sin(phase); wy = -1.2 * Math.sin(Math.PI * t) + .2 * Math.cos(phase); break
+            case 15: wx = Math.sin(phase * 1.4); wy = .6 * Math.sin(phase * 2.2); break
+            default: wx = .7 * Math.sin(phase) + .3 * Math.sin(phase * 3); wy = Math.cos(phase * 1.4); break
+          }
+          const flutter = Math.sin(phase * 1.15) * style.rotation * envelope
           setPose(
-            from.x + (to.x - from.x) * e + driftX,
-            from.y + (to.y - from.y) * e + driftY,
-            wave * 11 * envelope * tilt,
+            from.x + (to.x - from.x) * e + wx * style.amplitudeX * envelope,
+            from.y + (to.y - from.y) * e + wy * style.amplitudeY * envelope,
+            flutter,
           )
         })
         if (!cancelled) setPose(to.x, to.y, 0)
       }
 
+      // The requested route is ALWAYS preserved: left -> top -> right -> pot.
       const leftWaypoint = {
         x: Math.max(-quillWidth * .06, stageWidth * .11 - quillWidth * .18),
         y: clamp(home.y - Math.min(48, stageHeight * .08), 18, stageHeight * .72),
@@ -439,19 +502,20 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         y: clamp(home.y - Math.min(86, stageHeight * .16), 12, stageHeight * .68),
       }
 
+      // Writing sparkle engine follows the ACTUAL feather nib throughout flight.
       engraved = true
       spark.style.opacity = '.96'
-
       const start = { x: featherX, y: featherY }
-      await scenicMove(start, leftWaypoint, 760, 16, 22, -1)
+      await scenicMove(start, leftWaypoint, 760, 0)
       if (cancelled) return
-      await scenicMove(leftWaypoint, topWaypoint, 720, 20, 30, 1)
+      await scenicMove(leftWaypoint, topWaypoint, 720, 1)
       if (cancelled) return
-      await scenicMove(topWaypoint, rightWaypoint, 840, 18, 24, 1)
+      await scenicMove(topWaypoint, rightWaypoint, 840, 2)
       if (cancelled) return
-      await scenicMove(rightWaypoint, home, 620, 10, 14, -1)
+      await scenicMove(rightWaypoint, home, 620, 3)
 
       if (!cancelled) {
+        // EXACT final resting coordinates + angle, irrespective of flight style.
         setPose(home.x,home.y,0)
         engraved = false
         spark.style.opacity='0'
