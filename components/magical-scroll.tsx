@@ -37,6 +37,220 @@ export function isMagicalScrollEnabled(value: MagicalArticle['use_magical_scroll
   return value === true || value === 1
 }
 
+// Transparent GPU fluid overlay. The actual inkpot image remains unmodified.
+// The shader renders layered, irregular moving light, not SVG stroke outlines.
+function LivingInkEnergy({ active }: { active: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    if (!active || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const gl = canvas.getContext('webgl', {
+      alpha: true,
+      premultipliedAlpha: false,
+      antialias: false,
+      depth: false,
+      stencil: false,
+      powerPreference: 'low-power',
+    })
+    if (!gl) return // The original illustrated inkpot remains visible.
+
+    const vertexSource = `
+      attribute vec2 aPosition;
+      varying vec2 vUV;
+      void main() {
+        vUV = (aPosition + 1.0) * 0.5;
+        gl_Position = vec4(aPosition, 0.0, 1.0);
+      }
+    `
+    const fragmentSource = `
+      precision highp float;
+      varying vec2 vUV;
+      uniform float uTime;
+
+      float hash21(vec2 p) {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+      }
+      float noise(vec2 p) {
+        vec2 i = floor(p), f = fract(p);
+        f = f*f*(3.0-2.0*f);
+        return mix(mix(hash21(i),hash21(i+vec2(1.0,0.0)),f.x),
+                   mix(hash21(i+vec2(0.0,1.0)),hash21(i+vec2(1.0,1.0)),f.x),f.y);
+      }
+      float fbm(vec2 p) {
+        float v = 0.0, a = 0.55;
+        for (int i=0; i<4; i++) {
+          v += a*noise(p);
+          p = mat2(1.62,-1.16,1.16,1.62)*p + vec2(5.2,1.8);
+          a *= 0.5;
+        }
+        return v;
+      }
+      float gaussian(float x, float spread) {
+        return exp(-(x*x)/(spread*spread));
+      }
+
+      void main() {
+        // Artwork coordinate space: x=0..1 left-to-right, y=0..1 top-to-bottom.
+        vec2 p = vec2(vUV.x, 1.0 - vUV.y);
+        float t = uTime;
+        vec3 light = vec3(0.0);
+        float alpha = 0.0;
+
+        // A flowing, organically advected nebula INSIDE the glass bowl.
+        vec2 q = p*vec2(5.0,7.0);
+        vec2 flow = vec2(fbm(q + vec2(t*.17,-t*.11)),
+                         fbm(q*1.14 + vec2(-t*.13,t*.16) + vec2(8.2,1.7)));
+        vec2 warp = q + (flow-.5)*1.45 + vec2(t*.08,-t*.12);
+        float marble = fbm(warp*1.25);
+        float veil = fbm(warp*.76 + vec2(11.0,-3.0));
+        vec2 glass = (p-vec2(.50,.707))/vec2(.255,.132);
+        float glassDist = length(glass) + (marble-.5)*.095;
+        float glassMask = 1.0-smoothstep(.82,1.03,glassDist);
+        float magenta = smoothstep(.31,.77,marble);
+        float cyan = smoothstep(.30,.76,veil);
+        vec3 ink = mix(vec3(.08,.32,1.0),vec3(1.0,.16,.70),magenta);
+        ink = mix(ink,vec3(.20,1.0,1.0),cyan*.48);
+        float molten = pow(max(0.0,sin(marble*11.0 + veil*4.0 + t*.29)),5.0);
+        ink += vec3(1.0,.58,.24)*molten*.42;
+        float glassStrength = glassMask*(.22 + .42*marble + .20*veil);
+        light += ink*glassStrength;
+        alpha += glassStrength*.83;
+
+        // Hot microscopic light caustics, moving UNDER the glass illustration.
+        float glint = pow(max(0.0,sin(veil*19.0+marble*10.0-t*.60)),11.0);
+        light += vec3(.58,.88,1.0)*glint*glassMask*.30;
+        alpha += glint*glassMask*.10;
+
+        // The magical blue fire is a soft VOLUMETRIC plume, never drawn lines.
+        float h = clamp((.47-p.y)/.435,0.0,1.0);
+        float flameGate = smoothstep(.0,.09,h)*(1.0-smoothstep(.88,1.0,h));
+        vec2 fireNoiseCoord = vec2(p.x*7.7 + t*.23, p.y*11.0-t*.66);
+        float turbulent = fbm(fireNoiseCoord);
+        float center = .51 + .064*sin(h*6.6+t*.61)
+                            + .043*sin(h*12.3-t*.43)
+                            + (turbulent-.5)*.060;
+        float radius = (.100-.057*h) * (.85+.24*turbulent);
+        float dist = abs(p.x-center);
+        float flame = gaussian(dist,radius)*flameGate;
+        float core = gaussian(dist-.008*sin(h*17.0+t*.40),radius*.32)*flameGate;
+        float breath = .66 + .34*fbm(fireNoiseCoord + vec2(2.3,6.0));
+        vec3 blueFire = mix(vec3(.13,.40,1.0),vec3(.30,.88,1.0),
+                            smoothstep(.25,.79,turbulent));
+        blueFire += vec3(.34,.08,.65)*(1.0-h)*.24;
+        light += blueFire*flame*breath*.75;
+        light += vec3(.50,.93,1.0)*core*.22;
+        alpha += flame*.48 + core*.14;
+        float fireHalo = gaussian(dist,radius*2.8)*flameGate;
+        light += vec3(.08,.32,.88)*fireHalo*.20;
+        alpha += fireHalo*.10;
+
+        // Moving light reflects across the ring artwork. No solid drawn rings.
+        vec2 r1 = (p-vec2(.50,.797))/vec2(.367,.081);
+        float ang1 = atan(r1.y,r1.x);
+        float ring1 = gaussian(length(r1)-1.0,.085);
+        float spark1 = pow(max(0.0,cos(ang1*2.0-t*1.40)),13.0);
+        vec2 r2 = (p-vec2(.50,.754))/vec2(.313,.068);
+        float ang2 = atan(r2.y,r2.x);
+        float ring2 = gaussian(length(r2)-1.0,.095);
+        float spark2 = pow(max(0.0,cos(ang2*2.0+t*1.04)),13.0);
+        float gold = ring1*(.07+.66*spark1) + ring2*(.04+.44*spark2);
+        light += vec3(1.0,.68,.23)*gold;
+        light += vec3(1.0,.95,.66)*(spark1*ring1+spark2*ring2)*.30;
+        alpha += gold*.50;
+
+        // Layered light, NOT an opaque painted patch over the original image.
+        gl_FragColor = vec4(clamp(light,0.0,1.0), clamp(alpha,0.0,.78));
+      }
+    `
+
+    const makeShader = (kind: number, source: string): WebGLShader | null => {
+      const shader = gl.createShader(kind)
+      if (!shader) return null
+      gl.shaderSource(shader, source)
+      gl.compileShader(shader)
+      if (gl.getShaderParameter(shader, gl.COMPILE_STATUS)) return shader
+      console.warn('Magical ink shader:', gl.getShaderInfoLog(shader))
+      gl.deleteShader(shader)
+      return null
+    }
+
+    const vertex = makeShader(gl.VERTEX_SHADER, vertexSource)
+    const fragment = makeShader(gl.FRAGMENT_SHADER, fragmentSource)
+    if (!vertex || !fragment) {
+      if (vertex) gl.deleteShader(vertex)
+      if (fragment) gl.deleteShader(fragment)
+      return
+    }
+    const program = gl.createProgram()
+    if (!program) { gl.deleteShader(vertex); gl.deleteShader(fragment); return }
+    gl.attachShader(program, vertex)
+    gl.attachShader(program, fragment)
+    gl.linkProgram(program)
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.warn('Magical ink shader link:', gl.getProgramInfoLog(program))
+      gl.deleteProgram(program); gl.deleteShader(vertex); gl.deleteShader(fragment)
+      return
+    }
+    const buffer = gl.createBuffer()
+    if (!buffer) { gl.deleteProgram(program); gl.deleteShader(vertex); gl.deleteShader(fragment); return }
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW)
+    gl.useProgram(program)
+    const pos = gl.getAttribLocation(program, 'aPosition')
+    const timeUniform = gl.getUniformLocation(program, 'uTime')
+    gl.enableVertexAttribArray(pos)
+    gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0)
+    gl.disable(gl.DEPTH_TEST)
+    gl.disable(gl.BLEND)
+
+    let frame = 0
+    let live = true
+    let visible = true
+    let lastDraw = 0
+    const observer = typeof IntersectionObserver !== 'undefined'
+      ? new IntersectionObserver(entries => { visible = entries[0]?.isIntersecting ?? true }, { rootMargin: '120px' })
+      : null
+    observer?.observe(canvas)
+
+    const render = (now: number) => {
+      if (!live) return
+      frame = requestAnimationFrame(render)
+      if (!visible || document.visibilityState !== 'visible' || now-lastDraw < 40) return
+      lastDraw = now
+      const bounds = canvas.getBoundingClientRect()
+      if (bounds.width < 1 || bounds.height < 1) return
+      const density = Math.min(window.devicePixelRatio || 1, 1.7)
+      const width = Math.min(520, Math.ceil(bounds.width*density))
+      const height = Math.min(740, Math.ceil(bounds.height*density))
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width; canvas.height = height
+      }
+      gl.viewport(0, 0, width, height)
+      gl.clearColor(0, 0, 0, 0)
+      gl.clear(gl.COLOR_BUFFER_BIT)
+      gl.useProgram(program)
+      gl.uniform1f(timeUniform, now*.001)
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+    }
+    frame = requestAnimationFrame(render)
+
+    return () => {
+      live = false
+      cancelAnimationFrame(frame)
+      observer?.disconnect()
+      gl.deleteBuffer(buffer)
+      gl.deleteProgram(program)
+      gl.deleteShader(vertex)
+      gl.deleteShader(fragment)
+    }
+  }, [active])
+
+  return <canvas ref={canvasRef} className={`original-scroll-fluid-canvas${active ? ' is-open' : ''}`} aria-hidden="true" />
+}
+
 export function MagicalScroll({ article }: { article: MagicalArticle }) {
   const stageRef = useRef<HTMLDivElement>(null)
   const paperRef = useRef<HTMLDivElement>(null)
@@ -401,123 +615,115 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     }
 
     const swingHome = async () => {
-      // KEEP the exact, user-approved resting point. No modifications to
-      // resolveReadyRest(), landAtApprovedRest(), or the final landing pose.
+      // KEEP resolveReadyRest() and the approved final angle untouched.
+      // Flight is one C1-smooth spline, not four separate start/stop tweens.
       const home = resolveReadyRest()
       const stageWidth = stage.clientWidth
       const stageHeight = Math.max(stage.clientHeight, 420)
 
-      // Seventeen controlled, visibly different flying styles. Every curve
-      // begins and ends at the same waypoints, so nothing can move the rest point.
-      type FlightStyle = {
-        name: string
-        kind: number
-        amplitudeX: number
-        amplitudeY: number
-        turns: number
-        rotation: number
-        speed: number
-      }
-      const flightStyles: FlightStyle[] = [
-        {name:'Silk Sway',       kind:0,  amplitudeX:16, amplitudeY:14, turns:1.0, rotation: 8, speed:1.03},
-        {name:'Moon Crescent',   kind:1,  amplitudeX:22, amplitudeY:26, turns:1.0, rotation:11, speed:1.10},
-        {name:'Double Ribbon',   kind:2,  amplitudeX:24, amplitudeY:21, turns:2.0, rotation:14, speed: .96},
-        {name:'Amber Spiral',    kind:3,  amplitudeX:24, amplitudeY:25, turns:2.0, rotation:16, speed:1.15},
-        {name:'Floating Eight',  kind:4,  amplitudeX:30, amplitudeY:19, turns:2.0, rotation:18, speed:1.08},
-        {name:'Soft Zigzag',     kind:5,  amplitudeX:21, amplitudeY:24, turns:3.0, rotation:13, speed: .95},
-        {name:'Celestial Wave',  kind:6,  amplitudeX:25, amplitudeY:28, turns:1.5, rotation:12, speed:1.06},
-        {name:'Sapphire Loop',   kind:7,  amplitudeX:33, amplitudeY:26, turns:1.0, rotation:20, speed:1.13},
-        {name:'Golden Comet',    kind:8,  amplitudeX:18, amplitudeY:33, turns:1.0, rotation:10, speed: .88},
-        {name:'Violet Waltz',    kind:9,  amplitudeX:27, amplitudeY:22, turns:2.5, rotation:17, speed:1.12},
-        {name:'Gentle Hover',    kind:10, amplitudeX:19, amplitudeY:18, turns:3.0, rotation: 9, speed:1.22},
-        {name:'Mystic S-Curve',  kind:11, amplitudeX:32, amplitudeY:24, turns:1.5, rotation:18, speed:1.00},
-        {name:'Twin Crescents',  kind:12, amplitudeX:24, amplitudeY:33, turns:2.0, rotation:16, speed:1.09},
-        {name:'Pearl Orbit',     kind:13, amplitudeX:31, amplitudeY:26, turns:3.0, rotation:19, speed:1.14},
-        {name:'Royal Glide',     kind:14, amplitudeX:16, amplitudeY:30, turns:1.0, rotation:10, speed: .92},
-        {name:'Starlit Ribbon',  kind:15, amplitudeX:34, amplitudeY:21, turns:2.5, rotation:20, speed:1.08},
-        {name:'Dreaming Flame',  kind:16, amplitudeX:22, amplitudeY:32, turns:3.5, rotation:15, speed:1.18},
+      // 17 AERODYNAMIC variations (only soft wind/buoyancy changes, no loops).
+      type AirStyle = { drift: number; flutter: number; frequency: number; pace: number; lift: number }
+      const airStyles: AirStyle[] = [
+        {drift:5,  flutter:5.2, frequency:1.35, pace:1.03, lift:6},
+        {drift:7,  flutter:6.1, frequency:1.16, pace:.99, lift:8},
+        {drift:9,  flutter:5.6, frequency:1.52, pace:1.08, lift:10},
+        {drift:6,  flutter:6.8, frequency:1.27, pace:.97, lift:7},
+        {drift:10, flutter:5.0, frequency:1.42, pace:1.07, lift:11},
+        {drift:8,  flutter:7.0, frequency:1.21, pace:1.02, lift:9},
+        {drift:6,  flutter:5.8, frequency:1.62, pace:1.04, lift:8},
+        {drift:9,  flutter:6.4, frequency:1.33, pace:.96, lift:12},
+        {drift:7,  flutter:5.4, frequency:1.48, pace:1.11, lift:7},
+        {drift:10, flutter:6.7, frequency:1.14, pace:1.06, lift:10},
+        {drift:8,  flutter:5.3, frequency:1.57, pace:.95, lift:9},
+        {drift:6,  flutter:6.2, frequency:1.24, pace:1.01, lift:6},
+        {drift:11, flutter:5.9, frequency:1.39, pace:1.05, lift:10},
+        {drift:7,  flutter:7.1, frequency:1.19, pace:1.08, lift:7},
+        {drift:9,  flutter:5.7, frequency:1.46, pace:1.00, lift:11},
+        {drift:5,  flutter:6.5, frequency:1.32, pace:1.10, lift:8},
+        {drift:8,  flutter:5.5, frequency:1.54, pace:.98, lift:9},
       ]
-      // Select a new style on EVERY completed-post flight. Avoid immediate repeats.
       const nextIndex = lastFeatherFlightStyle < 0
-        ? Math.floor(Math.random() * flightStyles.length)
-        : (lastFeatherFlightStyle + 1 + Math.floor(Math.random() * (flightStyles.length - 1))) % flightStyles.length
+        ? Math.floor(Math.random()*airStyles.length)
+        : (lastFeatherFlightStyle + 1 + Math.floor(Math.random()*(airStyles.length-1))) % airStyles.length
       lastFeatherFlightStyle = nextIndex
-      const style = flightStyles[nextIndex]
-      const TAU = Math.PI * 2
+      const breeze = airStyles[nextIndex]
 
-      // All perturbations are multiplied by sin(pi*t), which becomes exactly
-      // zero at t=0 and t=1: seamless segment endpoints, no landing jump.
-      const scenicMove = async (
-        from: { x: number; y: number },
-        to: { x: number; y: number },
-        duration: number,
-        segment: number,
-      ) => {
-        await tween(Math.round(duration * style.speed), t => {
-          const e = ease(t)
-          const envelope = Math.sin(Math.PI * t)
-          const phase = TAU * style.turns * t + segment * .8
-          let wx = 0
-          let wy = 0
-          switch (style.kind) {
-            case 0:  wx = Math.sin(phase); wy = -.6 * Math.sin(Math.PI * t); break
-            case 1:  wx = .45 * Math.sin(phase); wy = -1.25 * Math.sin(Math.PI * t); break
-            case 2:  wx = Math.sin(phase * 2); wy = .7 * Math.cos(phase); break
-            case 3:  wx = Math.cos(phase); wy = Math.sin(phase); break
-            case 4:  wx = Math.sin(phase); wy = .8 * Math.sin(phase * 2); break
-            case 5:  wx = Math.sin(phase * 2.2); wy = .7 * Math.cos(phase * 1.2); break
-            case 6:  wx = .65 * Math.sin(phase); wy = -1.15 * Math.sin(Math.PI * t) + .25 * Math.cos(phase); break
-            case 7:  wx = Math.cos(phase * .9); wy = Math.sin(phase * 1.3); break
-            case 8:  wx = .55 * Math.sin(phase); wy = -1.3 * Math.sin(Math.PI * t); break
-            case 9:  wx = Math.sin(phase) + .25 * Math.sin(phase * 2); wy = Math.cos(phase * .8); break
-            case 10: wx = .45 * Math.cos(phase * 1.6); wy = .55 * Math.sin(phase * 2); break
-            case 11: wx = Math.sin(phase * .8) + .35 * Math.sin(phase * 2.5); wy = .8 * Math.cos(phase); break
-            case 12: wx = Math.sin(phase * 2); wy = -1.1 * Math.abs(Math.sin(phase * .7)); break
-            case 13: wx = Math.cos(phase * 1.3); wy = Math.sin(phase * 1.7); break
-            case 14: wx = .45 * Math.sin(phase); wy = -1.2 * Math.sin(Math.PI * t) + .2 * Math.cos(phase); break
-            case 15: wx = Math.sin(phase * 1.4); wy = .6 * Math.sin(phase * 2.2); break
-            default: wx = .7 * Math.sin(phase) + .3 * Math.sin(phase * 3); wy = Math.cos(phase * 1.4); break
-          }
-          const flutter = Math.sin(phase * 1.15) * style.rotation * envelope
-          setPose(
-            from.x + (to.x - from.x) * e + wx * style.amplitudeX * envelope,
-            from.y + (to.y - from.y) * e + wy * style.amplitudeY * envelope,
-            flutter,
-          )
-        })
-        if (!cancelled) setPose(to.x, to.y, 0)
+      // Keep previously requested order: left of page -> up -> right -> pot.
+      const points = [
+        {x:featherX, y:featherY},
+        {x:Math.max(-quillWidth*.06,stageWidth*.11-quillWidth*.18),
+         y:clamp(home.y-Math.min(48,stageHeight*.08),18,stageHeight*.72)},
+        {x:clamp(stageWidth*.44-quillWidth*.12,-quillWidth*.04,stageWidth-quillWidth-8),
+         y:Math.max(-quillHeight*.24,2)},
+        {x:clamp(stageWidth*.82-quillWidth*.10,0,stageWidth-quillWidth-8),
+         y:clamp(home.y-Math.min(86,stageHeight*.16),12,stageHeight*.68)},
+        home,
+      ]
+      type Point = {x:number;y:number}
+      // Cubic Hermite interpolation with shared tangent at joins.
+      // Endpoints' zero tangents yield quiet takeoff and quiet landing.
+      const tangents: Point[] = points.map((p,i) => {
+        if (i===0 || i===points.length-1) return {x:0,y:0}
+        return {
+          x:(points[i+1].x-points[i-1].x)*.46,
+          y:(points[i+1].y-points[i-1].y)*.46,
+        }
+      })
+      const curve = (u:number):Point => {
+        const scaled = Math.min(points.length-1-1e-8, Math.max(0,u)*(points.length-1))
+        const i = Math.floor(scaled)
+        const t = scaled-i
+        const t2=t*t,t3=t2*t
+        const h00=2*t3-3*t2+1,h10=t3-2*t2+t,h01=-2*t3+3*t2,h11=t3-t2
+        return {
+          x:h00*points[i].x+h10*tangents[i].x+h01*points[i+1].x+h11*tangents[i+1].x,
+          y:h00*points[i].y+h10*tangents[i].y+h01*points[i+1].y+h11*tangents[i+1].y,
+        }
       }
 
-      // The requested route is ALWAYS preserved: left -> top -> right -> pot.
-      const leftWaypoint = {
-        x: Math.max(-quillWidth * .06, stageWidth * .11 - quillWidth * .18),
-        y: clamp(home.y - Math.min(48, stageHeight * .08), 18, stageHeight * .72),
+      // Arc-length lookup makes the motion glide at an even speed over
+      // all differently sized sections, instead of lurching at waypoints.
+      const SAMPLES=300
+      const distances:number[]=[0]
+      let previous=curve(0)
+      for(let i=1;i<=SAMPLES;i++){
+        const now=curve(i/SAMPLES)
+        distances.push(distances[i-1]+Math.hypot(now.x-previous.x,now.y-previous.y))
+        previous=now
       }
-      const topWaypoint = {
-        x: clamp(stageWidth * .44 - quillWidth * .12, -quillWidth * .04, stageWidth - quillWidth - 8),
-        y: Math.max(-quillHeight * .24, 2),
+      const length=distances[SAMPLES]
+      const sampleByDistance=(ratio:number):number=>{
+        const target=ratio*length
+        let lo=0,hi=SAMPLES
+        while(lo<hi){const mid=(lo+hi)>>1;if(distances[mid]<target)lo=mid+1;else hi=mid}
+        const high=Math.max(1,lo),low=high-1
+        const span=distances[high]-distances[low]
+        return (low+(span>0?(target-distances[low])/span:0))/SAMPLES
       }
-      const rightWaypoint = {
-        x: clamp(stageWidth * .82 - quillWidth * .1, 0, stageWidth - quillWidth - 8),
-        y: clamp(home.y - Math.min(86, stageHeight * .16), 12, stageHeight * .68),
-      }
+      const duration=clamp(length*4.4,6300,11800)*breeze.pace
+      const startPhase=Math.random()*Math.PI*2
 
-      // Writing sparkle engine follows the ACTUAL feather nib throughout flight.
-      engraved = true
-      spark.style.opacity = '.96'
-      const start = { x: featherX, y: featherY }
-      await scenicMove(start, leftWaypoint, 760, 0)
-      if (cancelled) return
-      await scenicMove(leftWaypoint, topWaypoint, 720, 1)
-      if (cancelled) return
-      await scenicMove(topWaypoint, rightWaypoint, 840, 2)
-      if (cancelled) return
-      await scenicMove(rightWaypoint, home, 620, 3)
+      engraved=true
+      spark.style.opacity='.98'
+      await tween(duration,t=>{
+        // Single ease over the COMPLETE flight: no stopping at the corners.
+        const distanceProgress=.5-.5*Math.cos(Math.PI*t)
+        const u=sampleByDistance(distanceProgress)
+        const pos=curve(u)
+        const envelope=Math.pow(Math.sin(Math.PI*t),1.5)
+        const floatPhase=2*Math.PI*breeze.frequency*t+startPhase
+        const gentleWind=Math.sin(floatPhase)*breeze.drift*envelope
+          +Math.sin(floatPhase*.57+.8)*breeze.drift*.36*envelope
+        const buoyancy=Math.sin(floatPhase*.84+.7)*breeze.lift*envelope
+        const roll=(Math.sin(floatPhase-.5)*breeze.flutter
+          +Math.sin(floatPhase*.53+1.1)*2.1)*envelope
+        setPose(pos.x+gentleWind,pos.y+buoyancy,roll)
+      })
 
       if (!cancelled) {
-        // EXACT final resting coordinates + angle, irrespective of flight style.
+        // The only landing pose is EXACTLY the existing inkpot rest formula.
         setPose(home.x,home.y,0)
-        engraved = false
+        engraved=false
         spark.style.opacity='0'
       }
     }
@@ -626,91 +832,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           </div>
         </div>
         <img ref={potRef} className="original-scroll-pot" src="/magical-scroll/inkpot.png" alt="" draggable={false}/>
-        {/* Fluid light overlays follow the inkpot image; no feather positioning changes. */}
-        <svg
-          className={`original-scroll-flame-overlay${opened ? ' is-open' : ''}`}
-          viewBox="0 0 180 255"
-          preserveAspectRatio="xMidYMid meet"
-          aria-hidden="true"
-        >
-          <defs>
-            <clipPath id="mashkeeza-glass-mask">
-              <ellipse cx="89" cy="177" rx="36" ry="24" />
-            </clipPath>
-            <radialGradient id="mashkeeza-liquid-depth" cx="49%" cy="61%" r="65%">
-              <stop offset="0%" stopColor="#ffdc96" stopOpacity=".65" />
-              <stop offset="27%" stopColor="#ff53c8" stopOpacity=".64" />
-              <stop offset="58%" stopColor="#6550ff" stopOpacity=".42" />
-              <stop offset="100%" stopColor="#16baff" stopOpacity="0" />
-            </radialGradient>
-            <linearGradient id="mashkeeza-liquid-stream" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#3aeaff" stopOpacity="0" />
-              <stop offset="30%" stopColor="#82f7ff" stopOpacity=".86" />
-              <stop offset="58%" stopColor="#ff81e3" stopOpacity=".84" />
-              <stop offset="79%" stopColor="#ffd980" stopOpacity=".91" />
-              <stop offset="100%" stopColor="#997aff" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="mashkeeza-flame-living" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%" stopColor="#38c9ff" stopOpacity=".9" />
-              <stop offset="38%" stopColor="#3b8eff" stopOpacity=".85" />
-              <stop offset="72%" stopColor="#9a6cff" stopOpacity=".62" />
-              <stop offset="100%" stopColor="#84eaff" stopOpacity=".05" />
-            </linearGradient>
-            <linearGradient id="mashkeeza-gold-flow" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#ffc55d" stopOpacity=".03" />
-              <stop offset="33%" stopColor="#ffe8a5" stopOpacity=".92" />
-              <stop offset="53%" stopColor="#ffffff" stopOpacity="1" />
-              <stop offset="71%" stopColor="#ffad37" stopOpacity=".8" />
-              <stop offset="100%" stopColor="#ffd574" stopOpacity=".04" />
-            </linearGradient>
-            <filter id="mashkeeza-fluid-distort" x="-30%" y="-30%" width="160%" height="160%" colorInterpolationFilters="sRGB">
-              <feTurbulence type="fractalNoise" baseFrequency="0.013 0.026" numOctaves="2" seed="7" result="waves">
-                <animate attributeName="baseFrequency" values="0.013 0.026;0.020 0.035;0.011 0.024;0.013 0.026" dur="6s" repeatCount="indefinite" />
-                <animate attributeName="seed" values="7;8;9;7" dur="14s" repeatCount="indefinite" calcMode="discrete" />
-              </feTurbulence>
-              <feDisplacementMap in="SourceGraphic" in2="waves" scale="8" xChannelSelector="R" yChannelSelector="G" />
-            </filter>
-            <filter id="mashkeeza-flame-blur" x="-70%" y="-30%" width="240%" height="165%">
-              <feGaussianBlur stdDeviation="5" />
-            </filter>
-          </defs>
-
-          {/* Lit fluid motion is clipped inside the existing inkpot glass silhouette. */}
-          <g clipPath="url(#mashkeeza-glass-mask)" className="mashkeeza-glass-fluid">
-            <ellipse cx="89" cy="177" rx="36" ry="24" fill="url(#mashkeeza-liquid-depth)" />
-            <g className="mashkeeza-glass-current" filter="url(#mashkeeza-fluid-distort)">
-              <path d="M38 186 C61 161 82 166 96 179 S127 194 145 161" stroke="url(#mashkeeza-liquid-stream)" strokeWidth="16" strokeLinecap="round" fill="none" />
-              <path d="M48 163 C74 188 88 164 108 163 S136 182 145 198" stroke="#44d9ff" strokeOpacity=".45" strokeWidth="10" strokeLinecap="round" fill="none" />
-              <path d="M47 197 C76 165 104 198 137 160" stroke="#ff72c7" strokeOpacity=".38" strokeWidth="9" strokeLinecap="round" fill="none" />
-            </g>
-            <ellipse className="mashkeeza-liquid-hotspot" cx="93" cy="179" rx="16" ry="13" fill="#ffbb71" opacity=".4" />
-          </g>
-
-          {/* Flowing fire is wispy and wavy, not a set of rigid straight strokes. */}
-          <g className="mashkeeza-flame-living" filter="url(#mashkeeza-fluid-distort)">
-            <path className="mashkeeza-flame-glow" d="M91 113 C135 84 121 68 93 61 C52 52 48 38 69 23 C80 13 78 6 75 0" stroke="#319eff" strokeOpacity=".66" strokeWidth="16" fill="none" filter="url(#mashkeeza-flame-blur)" />
-            <path className="mashkeeza-flame-primary" d="M91 112 C135 84 121 68 93 61 C52 52 48 38 69 23 C80 13 78 6 75 0" stroke="url(#mashkeeza-flame-living)" strokeWidth="7.5" strokeLinecap="round" fill="none" />
-            <path className="mashkeeza-flame-secondary" d="M85 110 C115 88 119 72 93 62 C73 54 57 48 61 31 C62 21 77 16 79 4" stroke="#8ceaff" strokeOpacity=".79" strokeWidth="3.1" strokeLinecap="round" fill="none" />
-            <path className="mashkeeza-flame-inner" d="M97 104 C116 84 110 69 87 61 C66 55 53 40 65 29 C75 20 78 11 77 6" stroke="#d4f9ff" strokeOpacity=".56" strokeWidth="1.6" strokeLinecap="round" fill="none" />
-          </g>
-          <g className="mashkeeza-flame-embers">
-            <circle r="1.7" fill="#9beaff">
-              <animateMotion dur="3.1s" repeatCount="indefinite" path="M91 112 C135 84 121 68 93 61 C52 52 48 38 69 23 C80 13 78 6 75 0" />
-              <animate attributeName="opacity" values="0;.8;.36;0" dur="3.1s" repeatCount="indefinite" />
-            </circle>
-            <circle r="1.2" fill="#be95ff">
-              <animateMotion dur="4.1s" begin="-2s" repeatCount="indefinite" path="M85 110 C115 88 119 72 93 62 C73 54 57 48 61 31 C62 21 77 16 79 4" />
-              <animate attributeName="opacity" values="0;.5;.3;0" dur="4.1s" repeatCount="indefinite" />
-            </circle>
-          </g>
-
-          {/* These moving highlights follow the golden loops in the inkpot image. */}
-          <g className="mashkeeza-golden-current">
-            <ellipse className="mashkeeza-ring-current ring-one" cx="89" cy="191" rx="55" ry="18" fill="none" stroke="url(#mashkeeza-gold-flow)" strokeWidth="3.6" strokeLinecap="round" strokeDasharray="25 320" />
-            <ellipse className="mashkeeza-ring-current ring-two" cx="91" cy="183" rx="49" ry="15" fill="none" stroke="#ffe6a0" strokeOpacity=".74" strokeWidth="2.3" strokeLinecap="round" strokeDasharray="18 290" />
-            <path className="mashkeeza-ring-current ring-three" d="M38 197 C60 175 91 165 119 169 C140 172 151 180 159 191" fill="none" stroke="#ffd77f" strokeOpacity=".7" strokeWidth="2.8" strokeLinecap="round" strokeDasharray="14 170" />
-          </g>
-        </svg>
+        {/* Procedural liquid/light renderer sits over the existing inkpot image. */}
+        <LivingInkEnergy active={opened} />
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
         <span ref={sparkleRef} className="original-scroll-nib-sparks" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/></span>
         <canvas ref={engravingCanvasRef} className="original-scroll-engraving-dust" aria-hidden="true" />
@@ -737,23 +860,9 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-writing img{max-width:100%;object-fit:contain}
         .original-scroll-excerpt{font-size:.9em;text-align:center}
         .original-scroll-pot{position:absolute;z-index:1000;width:19.15%;height:auto;right:1%;bottom:0;opacity:0;pointer-events:none;filter:drop-shadow(0 0 8px #5e8cff99)}
-        .original-scroll-flame-overlay{position:absolute;right:1%;bottom:0;width:19.15%;height:auto;aspect-ratio:180 / 255;z-index:1001;pointer-events:none;overflow:visible;opacity:0;mix-blend-mode:screen;transition:opacity 1.3s ease}
-        .original-scroll-flame-overlay.is-open{opacity:1}
-        /* Slow overlapping movement creates a current inside the original glass. */
-        .original-scroll-flame-overlay .mashkeeza-glass-current{transform-origin:50% 70%;animation:mashkeezaLiquidOrbit 5.6s ease-in-out infinite alternate}
-        .original-scroll-flame-overlay .mashkeeza-glass-fluid{filter:drop-shadow(0 0 4px rgba(93,190,255,.3))}
-        .original-scroll-flame-overlay .mashkeeza-liquid-hotspot{animation:mashkeezaLiquidGlow 3.7s ease-in-out infinite alternate;transform-origin:50% 70%}
-        .original-scroll-flame-overlay .mashkeeza-flame-living{transform-origin:51% 43%;animation:mashkeezaFlameSway 3.8s ease-in-out infinite alternate}
-        .original-scroll-flame-overlay .mashkeeza-flame-primary{filter:drop-shadow(0 0 5px rgba(49,167,255,.9)) drop-shadow(0 0 11px rgba(125,76,255,.55));animation:mashkeezaFlameBreath 2.9s ease-in-out infinite alternate}
-        .original-scroll-flame-overlay .mashkeeza-flame-secondary{animation:mashkeezaFlameBreath 2.3s ease-in-out infinite alternate-reverse}
-        .original-scroll-flame-overlay .mashkeeza-ring-current{animation:mashkeezaRingFlow 3.1s linear infinite;filter:drop-shadow(0 0 5px rgba(255,196,82,.8))}
-        .original-scroll-flame-overlay .ring-two{animation-duration:4s;animation-direction:reverse}
-        .original-scroll-flame-overlay .ring-three{animation-duration:2.7s}
-        @keyframes mashkeezaLiquidOrbit{0%{transform:translate(-3px,1px) rotate(-6deg) scale(1.02)}50%{transform:translate(2px,-2px) rotate(1deg) scale(1.06)}100%{transform:translate(4px,1px) rotate(7deg) scale(1.02)}}
-        @keyframes mashkeezaLiquidGlow{0%{opacity:.22;transform:translate(-6px,2px) scale(.82)}100%{opacity:.65;transform:translate(5px,-2px) scale(1.18)}}
-        @keyframes mashkeezaFlameSway{0%{transform:translate(-1px,2px) rotate(-2deg) scale(.99)}50%{transform:translate(2px,-1px) rotate(1deg) scale(1.02)}100%{transform:translate(-2px,-3px) rotate(2.8deg) scale(1)}}
-        @keyframes mashkeezaFlameBreath{0%{opacity:.65}100%{opacity:1}}
-        @keyframes mashkeezaRingFlow{to{stroke-dashoffset:-360}}
+        /* Aligned 1:1 with the existing inkpot image: NO inkpot or feather movement. */
+        .original-scroll-fluid-canvas{position:absolute;right:1%;bottom:0;width:19.15%;height:auto;aspect-ratio:180 / 255;z-index:1001;opacity:0;pointer-events:none;mix-blend-mode:screen;transition:opacity .65s ease}
+        .original-scroll-fluid-canvas.is-open{opacity:.98}
         .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform;transform-origin:1.4% 99.3%}
         /* Light, localized engraving flecks — separate from the feather's z-index. */
         .original-scroll-engraving-dust{position:absolute;left:0;top:0;width:120px;height:120px;z-index:1250;pointer-events:none;overflow:visible;will-change:transform}
@@ -766,7 +875,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-nib-sparks i:nth-child(5){animation-delay:.42s;background:#d29aff;box-shadow:0 0 5px #c47cff99;animation-duration:1.1s}.original-scroll-nib-sparks i:nth-child(6){animation-delay:.62s;background:#ffd17d;box-shadow:0 0 6px #ffb347aa;animation-duration:.88s}.original-scroll-nib-sparks i:nth-child(7){animation-delay:.22s;background:#9ce7ff;box-shadow:0 0 6px #62caffaa;animation-duration:1.18s}
         @keyframes subtleNibSpark{from{transform:translate(0,0) scale(.92);opacity:.96}20%{opacity:1}to{transform:translate(10px,-16px) scale(.14);opacity:0}}
         @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:11% 10% 17%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
-        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-nib-sparks i,.original-scroll-flame-overlay .mashkeeza-glass-current,.original-scroll-flame-overlay .mashkeeza-liquid-hotspot,.original-scroll-flame-overlay .mashkeeza-flame-living,.original-scroll-flame-overlay .mashkeeza-flame-primary,.original-scroll-flame-overlay .mashkeeza-flame-secondary,.original-scroll-flame-overlay .mashkeeza-ring-current{animation:none}.original-scroll-flame-overlay .mashkeeza-flame-embers{display:none}}
+        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-nib-sparks i{animation:none}.original-scroll-fluid-canvas{display:none}}
       `}</style>
     </>
   )
