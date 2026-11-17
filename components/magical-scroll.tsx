@@ -763,14 +763,19 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         return (low + (span>0?(target-distances[low])/span:0))/SAMPLES
       }
 
-      // The falling-leaf sway is visible, continuous, and independent of
-      // the route shape. Smoothly fades in/out; ends at ZERO rotation.
+      // TRUE PERSPECTIVE-STYLE LEAF TUMBLE (the source feather is still a 2D image):
+      // 17 original paths + shuffle bag stay untouched. In flight the image turns
+      // through depth (Y), tips forward/back (X), rolls (Z), and gently flexes.
+      // No jump at takeoff/landing: every extra motion has a smooth zero envelope.
+      // Some air currents make one slow complete 3D turn; others rock edge-on.
+      const threeDTurns = [1, 0, -1, 0, 1, -1, 0, 1, 0, -1, 1, 0, -1, 0, 1, 0, -1]
+      const turns = threeDTurns[nextIndex]
       const scale = clamp(stageWidth / 1000, .67, 1.35)
       const direction = Math.random() < .5 ? -1 : 1
       const phase = Math.random() * Math.PI * 2
       const duration = clamp(length * 6.0, 13000, 24500) * breeze.pace
       engraved = true
-      spark.style.opacity = '.98' // Reuse existing colorful nib glitter trail.
+      spark.style.opacity = '.98' // Original colorful nib-glitter trail, unchanged.
       await tween(duration, t => {
         // Gently depart the last letter; land almost imperceptibly in the pot.
         const progress = .5 - .5*Math.cos(Math.PI*t)
@@ -790,16 +795,30 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         const subtleHold = Math.cos(wind*.63+.40)*breeze.sway*.16*envelope*scale
         const rise = (Math.sin(wind*.8-.25)*breeze.lift +
           Math.cos(wind*.42+.8)*breeze.lift*.36)*envelope*scale
-        const roll = (Math.sin(wind+.5)*breeze.roll +
-          Math.sin(wind*2.15+.25)*breeze.roll*.12)*envelope
-        const bank = (Math.sin(wind*.91-.25)*breeze.bank +
-          Math.sin(wind*.48+.7)*breeze.bank*.14)*envelope
-        const pitch = Math.cos(wind*.78+.2)*breeze.pitch*envelope
+
+        // Slow physical-looking tumble: 3-dimensional heading, not a 2D spin.
+        // The full-turn styles complete exactly +/-360 degrees: this is the same
+        // visual orientation as zero at arrival, avoiding a final snap.
+        const slowTurn = turns * 360 * progress
+        const roll = (Math.sin(wind+.5)*breeze.roll*1.25 +
+          Math.sin(wind*2.15+.25)*breeze.roll*.22)*envelope
+        const bank = slowTurn + (Math.sin(wind*.91-.25)*breeze.bank*1.85 +
+          Math.sin(wind*.48+.7)*breeze.bank*.33)*envelope
+        const pitch = (Math.cos(wind*.78+.2)*breeze.pitch*2.55 +
+          Math.sin(wind*1.43-.5)*breeze.pitch*.55)*envelope
+
         setPose(
           position.x + nx*(drift+gentleFlutter) + tx*subtleHold,
           position.y + ny*(drift+gentleFlutter) + ty*subtleHold - rise,
-          roll,bank,pitch,
+          roll, bank, pitch,
         )
+
+        // Subtle bend of the feather vanes. Applied AFTER setPose only while
+        // airborne; rest and writing transforms remain byte-for-byte unchanged.
+        // The existing 1.4% / 99.3% nib pivot also anchors these transforms.
+        const bend = Math.sin(wind*1.36-.3)*5.2*envelope
+        const vaneFlex = 1 - .06*(.5 + .5*Math.sin(wind*1.75+.6))*envelope
+        quill.style.transform += ` skewX(${bend.toFixed(3)}deg) scaleX(${vaneFlex.toFixed(4)})`
       })
 
       if (!cancelled) {
