@@ -316,12 +316,15 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const sparkleBoost = 1.5
     let lastEmission = 0
     let lastNibX = NaN, lastNibY = NaN
-    // One continuous shooting-star tail, not independent random streaks.
+    // Cursor-style trailing glitter: individual stars shed from the feather nib.
+    // No ribbon, broad glow, flame, or connecting stroke is ever drawn.
     const cometCtx = cometCanvas.getContext('2d', { alpha: true })
-    type TrailPoint = { x: number; y: number }
-    const tailHistory: TrailPoint[] = []
-    const tailLengthPx = 125 // approximately 1–1.5 inches at standard CSS pixel density
+    type TrailSpark = { x: number; y: number; born: number; hue: number; size: number; seed: number }
+    const trailSparks: TrailSpark[] = []
+    const tailLengthPx = 125 // 1–1.5 inches in CSS pixels, based on actual movement
     let cometScale = 1
+    let glitterLastX = NaN, glitterLastY = NaN
+    let glitterDistance = 0
     const prepareComet = () => {
       if (!cometCtx) return
       const w = Math.max(1, stage.clientWidth)
@@ -330,96 +333,82 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       cometCanvas.width = Math.round(w * cometScale)
       cometCanvas.height = Math.round(h * cometScale)
       cometCtx.setTransform(cometScale, 0, 0, cometScale, 0, 0)
-      tailHistory.length = 0
+      trailSparks.length = 0
+      glitterDistance = 0
+      glitterLastX = NaN
+      glitterLastY = NaN
     }
     const clearComet = () => {
-      tailHistory.length = 0
+      trailSparks.length = 0
+      glitterDistance = 0
+      glitterLastX = NaN
+      glitterLastY = NaN
       cometCtx?.clearRect(0, 0, cometCanvas.width / cometScale, cometCanvas.height / cometScale)
     }
     const drawComet = (x: number, y: number) => {
       if (!cometCtx || !cometCanvas.width) return
-      const last = tailHistory[tailHistory.length - 1]
-      if (!last || Math.hypot(last.x - x, last.y - y) > 0.65) tailHistory.push({ x, y })
-      // Retain only the last 125 CSS pixels of the ACTUAL curved flight path.
-      let distance = 0
-      for (let i = tailHistory.length - 1; i > 0; i--) {
-        distance += Math.hypot(tailHistory[i].x - tailHistory[i - 1].x,
-          tailHistory[i].y - tailHistory[i - 1].y)
-        if (distance > tailLengthPx) {
-          tailHistory.splice(0, i)
-          break
+      const now = performance.now()
+      if (Number.isFinite(glitterLastX)) {
+        const dx = x - glitterLastX, dy = y - glitterLastY
+        const dist = Math.hypot(dx, dy)
+        // One glitter cluster every ~4 CSS px travelled, including fast frames.
+        // Fixed world positions make them appear to shed / fall behind the nib.
+        if (dist > .05 && dist < 250) {
+          const n = Math.min(75, Math.floor((glitterDistance + dist) / 4))
+          for (let j = 0; j < n; j++) {
+            const along = (4 * (j + 1) - glitterDistance) / dist
+            const px = glitterLastX + dx * along
+            const py = glitterLastY + dy * along
+            for (let k = 0; k < 2; k++) {
+              const scatter = (Math.random() - .5) * 6
+              trailSparks.push({
+                x: px - dy / dist * scatter,
+                y: py + dx / dist * scatter,
+                born: now - (1 - along) * 15,
+                hue: Math.floor(Math.random() * 6),
+                size: .8 + Math.random() * 1.8,
+                seed: Math.random() * 6.283,
+              })
+            }
+          }
+          glitterDistance = (glitterDistance + dist) % 4
         }
       }
+      glitterLastX = x; glitterLastY = y
       cometCtx.clearRect(0, 0, cometCanvas.width / cometScale, cometCanvas.height / cometScale)
-      if (tailHistory.length < 2) return
-      const colors = ['#70dfff', '#a58aff', '#ee8cff', '#ffe0a1']
-      const count = tailHistory.length - 1
-      // Three nested passes make ONE continuous luminous ribbon with a sharp core.
-      for (const pass of [0, 1, 2]) {
-        cometCtx.save()
-        cometCtx.lineCap = 'round'
-        cometCtx.lineJoin = 'round'
-        cometCtx.globalCompositeOperation = 'lighter'
-        for (let i = 1; i < tailHistory.length; i++) {
-          const age = i / count // 0 at tail tip, 1 at feather nib
-          const a = tailHistory[i - 1], b = tailHistory[i]
-          const gradientIndex = Math.min(colors.length - 1, Math.floor(age * colors.length))
-          cometCtx.strokeStyle = pass === 2 ? '#fffde9' : colors[gradientIndex]
-          cometCtx.globalAlpha = (pass === 0 ? 0.14 : pass === 1 ? 0.46 : 0.94) * Math.pow(age, 1.2)
-          cometCtx.lineWidth = (pass === 0 ? 24 : pass === 1 ? 8 : 2.5) * (0.10 + 0.90 * age)
-          cometCtx.shadowBlur = pass === 2 ? 9 : pass === 1 ? 14 : 20
-          cometCtx.shadowColor = colors[gradientIndex]
-          cometCtx.beginPath()
-          cometCtx.moveTo(a.x, a.y)
-          cometCtx.lineTo(b.x, b.y)
-          cometCtx.stroke()
-        }
-        cometCtx.restore()
-      }
-      // Cursor-trail style: colorful twinkling glitter lives INSIDE the
-      // continuous shooting-star ribbon, never as independent long streaks.
-      // Spread points across the actual curved tail with a small perpendicular
-      // offset and let each one pulse at its own frequency.
-      const clock = performance.now() * .001
+      const palette = ['#ffe58e', '#ff8dd8', '#b58aff', '#63dfff', '#fff9df', '#9ef5ef']
       cometCtx.save()
       cometCtx.globalCompositeOperation = 'lighter'
-      for (let i = 1; i < tailHistory.length; i++) {
-        const a = tailHistory[i - 1], b = tailHistory[i]
-        const dx = b.x - a.x, dy = b.y - a.y
-        const segmentLength = Math.hypot(dx, dy)
-        if (segmentLength < .001) continue
-        const age = i / count
-        // Approximately 1-2 embedded specks per 8px of visible ribbon.
-        const specks = Math.max(1, Math.ceil(segmentLength / 7))
-        for (let j = 0; j < specks; j++) {
-          const seed = Math.sin(i * 127.1 + j * 311.7) * 43758.5453
-          const random = seed - Math.floor(seed)
-          const phase = random * Math.PI * 2
-          const u = (j + .3 + random * .4) / specks
-          const nx = -dy / segmentLength, ny = dx / segmentLength
-          const offset = (random - .5) * (2 + 5 * age)
-          const px = a.x + dx * u + nx * offset
-          const py = a.y + dy * u + ny * offset
-          const twinkle = .35 + .65 * Math.pow(.5 + .5 * Math.sin(clock * (5 + random * 7) + phase), 3)
-          const alpha = Math.pow(age, 1.15) * twinkle
-          const radius = (.65 + random * 1.25) * (.45 + .55 * age)
-          const color = colours[(i + j * 3) % colours.length]
-          cometCtx.fillStyle = color
-          cometCtx.strokeStyle = color
-          cometCtx.globalAlpha = alpha
-          cometCtx.shadowBlur = 7 + 7 * random
-          cometCtx.shadowColor = color
+      // Distance filter ensures the tail follows the curved path and is 125px long.
+      // Time filter prevents lingering when motion stops.
+      for (let i = trailSparks.length - 1; i >= 0; i--) {
+        const s = trailSparks[i]
+        const age = now - s.born
+        const dist = Math.hypot(x - s.x, y - s.y)
+        if (age > 900 || dist > tailLengthPx) { trailSparks.splice(i, 1); continue }
+        const fade = Math.pow(1 - Math.max(age / 900, dist / tailLengthPx), 1.25)
+        const pulse = .65 + .35 * Math.sin(now * .018 + s.seed)
+        const radius = s.size * (.6 + .4 * fade)
+        const px = s.x + Math.sin(age * .005 + s.seed) * Math.min(2, age * .004)
+        const py = s.y + Math.min(12, age * age * .000017) // glitter gently falling
+        const color = palette[s.hue]
+        cometCtx.fillStyle = color
+        cometCtx.strokeStyle = color
+        cometCtx.globalAlpha = Math.min(1, fade * pulse)
+        cometCtx.shadowBlur = 4 + 4 * fade
+        cometCtx.shadowColor = color
+        cometCtx.beginPath()
+        cometCtx.arc(px, py, radius, 0, Math.PI * 2)
+        cometCtx.fill()
+        // Occasional tiny four-point twinkles, never long light streaks.
+        if (s.size > 2.05) {
+          cometCtx.lineWidth = .65
           cometCtx.beginPath()
-          cometCtx.arc(px, py, radius, 0, Math.PI * 2)
-          cometCtx.fill()
-          if (random > .75) {
-            const ray = radius * 2.7
-            cometCtx.lineWidth = .7
-            cometCtx.beginPath()
-            cometCtx.moveTo(px - ray, py); cometCtx.lineTo(px + ray, py)
-            cometCtx.moveTo(px, py - ray); cometCtx.lineTo(px, py + ray)
-            cometCtx.stroke()
-          }
+          cometCtx.moveTo(px - radius * 2.0, py)
+          cometCtx.lineTo(px + radius * 2.0, py)
+          cometCtx.moveTo(px, py - radius * 2.0)
+          cometCtx.lineTo(px, py + radius * 2.0)
+          cometCtx.stroke()
         }
       }
       cometCtx.restore()
