@@ -174,6 +174,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       setPose(rest.x, rest.y, 0)
       engraved = false
       spark.style.opacity = '0'
+      stage.classList.add('is-quill-resting')
     }
     const toPoseFromPage = (pageX: number, pageY: number) => {
       const stageRect = rectOfStage()
@@ -214,6 +215,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       activeTimeout = window.setTimeout(() => { activeTimeout = 0; resolve() }, ms)
     })
     const moveTo = async (destination: { x: number; y: number }, duration: number) => {
+      stage.classList.remove('is-quill-resting')
       const sx = featherX, sy = featherY
       engraved = true
       spark.style.opacity = '.68'
@@ -398,6 +400,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     }
 
     const swingHome = async () => {
+      stage.classList.remove('is-quill-resting')
       // One resting coordinate object for BOTH trajectory end and final pose.
       // No extra +shift, no separate clamp formula, no landing jump.
       const home = resolveReadyRest()
@@ -421,6 +424,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         setPose(home.x,home.y,0)
         engraved = false
         spark.style.opacity='0'
+        stage.classList.add('is-quill-resting')
       }
     }
 
@@ -446,6 +450,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       pot.style.opacity = '0'
       quill.style.opacity = '0'
       spark.style.opacity = '0'
+      stage.classList.remove('is-quill-resting')
       await unfold()
       if (cancelled) return
       // Fade in the inkpot, independent of the quill animation.
@@ -497,6 +502,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     })
     return () => {
       cancelled = true
+      stage.classList.remove('is-quill-resting')
       window.clearInterval(watchdog)
       window.clearTimeout(activeTimeout)
       cancelAnimationFrame(activeFrame)
@@ -557,6 +563,24 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
               <animate attributeName="opacity" values="0;.42;.32;0" dur="4.1s" repeatCount="indefinite"/>
             </circle>
           </g>
+          {/* Resting-only charge: energy rises from the existing inkpot mouth.
+              It shares the inkpot overlay coordinates, so there is no new
+              viewport/desktop/mobile positioning calculation. */}
+          <g className="original-scroll-rest-charge">
+            <ellipse cx="94" cy="108" rx="17" ry="7" fill="#25aaff" opacity=".28" className="charge-mouth-halo" />
+            <path className="charge-electric charge-electric-a" d="M94 113 C81 99 115 90 91 77 S77 53 87 36 S104 19 94 4" stroke="#62e8ff" strokeWidth="3" fill="none" />
+            <path className="charge-electric charge-electric-b" d="M97 109 C119 94 68 81 100 62 S113 39 83 22" stroke="#c09cff" strokeWidth="2.1" fill="none" />
+            <path className="charge-electric charge-electric-c" d="M90 109 C67 92 109 77 77 58 S98 34 75 12" stroke="#ff8fe5" strokeWidth="1.5" fill="none" />
+            <circle className="charge-energy-orb charge-orb-a" r="2.7" fill="#a7f5ff">
+              <animateMotion dur="2.5s" repeatCount="indefinite" path="M94 113 C81 99 115 90 91 77 S77 53 87 36 S104 19 94 4" />
+            </circle>
+            <circle className="charge-energy-orb charge-orb-b" r="2.2" fill="#ffc2f4">
+              <animateMotion dur="2.9s" begin="-1.3s" repeatCount="indefinite" path="M97 109 C119 94 68 81 100 62 S113 39 83 22" />
+            </circle>
+            <circle className="charge-energy-orb charge-orb-c" r="2.3" fill="#e2b8ff">
+              <animateMotion dur="3.1s" begin="-.8s" repeatCount="indefinite" path="M90 109 C67 92 109 77 77 58 S98 34 75 12" />
+            </circle>
+          </g>
         </svg>
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
         <span ref={sparkleRef} className="original-scroll-nib-sparks" aria-hidden="true"><i/><i/><i/><i/><i/></span>
@@ -596,6 +620,21 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         @keyframes inkFlameBreathe{from{opacity:.38;transform:translate(-1px,1px) rotate(-1deg)}to{opacity:.83;transform:translate(1px,-1.5px) rotate(1.5deg)}}
         @keyframes inkFlameFlow{to{stroke-dashoffset:-64}}
         .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform;transform-origin:1.4% 99.3%}
+        /* Charging plays ONLY when the quill is seated in the inkpot.
+           No width, translate or rotation modifications to the feather. */
+        .original-scroll-rest-charge{opacity:0;transition:opacity .6s ease;pointer-events:none}
+        .original-scroll-stage.is-quill-resting .original-scroll-rest-charge{opacity:1}
+        .original-scroll-rest-charge .charge-electric{stroke-linecap:round;stroke-dasharray:9 11;filter:drop-shadow(0 0 4px #5bdcff);animation:quillChargeFlow 2.15s linear infinite,quillChargeFlicker 2.7s ease-in-out infinite}
+        .original-scroll-rest-charge .charge-electric-b{animation-duration:2.65s,3.2s;animation-direction:reverse,normal}
+        .original-scroll-rest-charge .charge-electric-c{animation-duration:3.1s,2.35s}
+        .original-scroll-rest-charge .charge-mouth-halo{transform-origin:94px 108px;animation:quillChargeHalo 2.8s ease-in-out infinite}
+        .original-scroll-rest-charge .charge-energy-orb{filter:drop-shadow(0 0 5px #8aeaff);animation:quillChargeOrbs 2s ease-in-out infinite alternate}
+        .original-scroll-stage.is-quill-resting .original-scroll-quill{animation:quillChargedGlow 3.5s ease-in-out infinite alternate}
+        @keyframes quillChargeFlow{to{stroke-dashoffset:-100}}
+        @keyframes quillChargeFlicker{0%,100%{opacity:.40}45%{opacity:.90}70%{opacity:.58}}
+        @keyframes quillChargeHalo{0%,100%{opacity:.14;transform:scale(.8)}50%{opacity:.56;transform:scale(1.18)}}
+        @keyframes quillChargeOrbs{from{opacity:.35}to{opacity:1}}
+        @keyframes quillChargedGlow{0%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 3px #53c8ff99)}35%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 8px #8eeaffcc)}70%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 10px #d395ffcc)}100%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 9px #ff9bd7aa)}}
         /* Light, localized engraving flecks — separate from the feather's z-index. */
         .original-scroll-engraving-dust{position:absolute;left:0;top:0;width:120px;height:120px;z-index:1250;pointer-events:none;overflow:visible;will-change:transform}
         /* Small, soft sparks follow the ACTUAL nib; not the top of the feather. */
@@ -609,7 +648,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-sparkles{position:absolute;right:8%;bottom:13%;z-index:1001;pointer-events:none;color:#ffe88e;text-shadow:0 0 10px #e752ff,0 0 18px #21c8ff;animation:scrollSparkle 1.7s ease-in-out infinite alternate}
         @keyframes scrollSparkle{from{opacity:.25;transform:translateY(5px) scale(.8)}to{opacity:1;transform:translateY(-7px) scale(1.2)}}
         @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:11% 10% 17%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
-        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-sparkles,.original-scroll-nib-sparks i,.original-scroll-flame-overlay .flame-light-waves,.original-scroll-flame-overlay .flame-stream{animation:none}.original-scroll-flame-overlay .flame-floating-stars{display:none}}
+        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-sparkles,.original-scroll-nib-sparks i,.original-scroll-flame-overlay .flame-light-waves,.original-scroll-flame-overlay .flame-stream{animation:none}.original-scroll-flame-overlay .flame-floating-stars,.original-scroll-rest-charge .charge-energy-orb{display:none}.original-scroll-rest-charge .charge-electric,.original-scroll-rest-charge .charge-mouth-halo,.original-scroll-stage.is-quill-resting .original-scroll-quill{animation:none}}
       `}</style>
     </>
   )
