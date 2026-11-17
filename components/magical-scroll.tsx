@@ -567,7 +567,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       <style jsx global>{`
         .original-mashkeeza-scroll{font-family:'Noto Nastaliq Urdu',serif;color:#422410;width:100%;position:relative;z-index:100;overflow:visible}
         .original-scroll-stage{position:relative;z-index:101;width:100%;min-height:max-content;padding:8px 0 145px;overflow:visible;isolation:auto}
-        .original-scroll-assembly{width:100%;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
+        /* 20% wider rollers + parchment together; cap at viewport on narrow screens. */
+        .original-scroll-assembly{width:min(120%, calc(100vw - 16px));left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
         .original-scroll-roller{width:100%;height:auto;position:relative;z-index:3;flex-shrink:0;display:block;pointer-events:none;user-select:none}
         .original-scroll-paper{width:63.6%;margin:-1px 0 0;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
         /* Bottom roller sits in front of the parchment edge, like the top roller. */
