@@ -77,9 +77,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const clamp = (n: number, a: number, b: number) => Math.min(b, Math.max(a, n))
     const rectOfStage = () => stage.getBoundingClientRect()
 
-    // The user-approved inkpot coordinates MUST NOT drift between start/end.
-    // These values come from the last correctly aligned build.
-    const approvedRightShift = Math.max(0, Math.min(96, stage.clientWidth * .15) - 10)
+    // Feather rest is anchored directly to the rendered inkpot, not viewport width.
     let quillWidth = 0, quillHeight = 0
     let featherX = 0, featherY = 0
     let engraved = false
@@ -164,10 +162,11 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const resolveReadyRest = () => {
       const stageRect = rectOfStage()
       const potRect = pot.getBoundingClientRect()
-      // This is the EXACT formula accepted before the later buggy revisions.
-      const x = clamp(potRect.left + potRect.width * .52 - stageRect.left - quillWidth * .014,
-        0, stageRect.width - quillWidth - 8) + approvedRightShift
-      const y = Math.max(0, potRect.top + potRect.height * .43 - stageRect.top - quillHeight * .993)
+      // Match the actual inkpot mouth to the feather nib in stage coordinates.
+      // No viewport-based shift or right-edge clamp: both introduce drift in
+      // mobile browsers with Desktop Site enabled.
+      const x = potRect.left + potRect.width * .52 - stageRect.left - quillWidth * .014
+      const y = potRect.top + potRect.height * .43 - stageRect.top - quillHeight * .993
       return { x, y }
     }
     const landAtApprovedRest = () => {
@@ -612,4 +611,3 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     </>
   )
 }
-
