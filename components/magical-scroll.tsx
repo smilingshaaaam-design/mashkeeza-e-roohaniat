@@ -5,7 +5,7 @@ import { ArticleRichBody } from './article-rich-body'
 import type { ArticleAppearance } from './article-background'
 
 // Shared between the homepage ArticleBrowser and public CMS pages.
-// The approved feather position, paper, rollers and blue flame are unchanged.
+// The approved feather position, paper and rollers remain unchanged.
 export type MagicalArticle = ArticleAppearance & {
   id: string
   title: string
@@ -40,6 +40,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
   const paperRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLDivElement>(null)
   const quillRef = useRef<HTMLImageElement>(null)
+  const glitterRef = useRef<HTMLDivElement>(null)
   const potRef = useRef<HTMLImageElement>(null)
   const sparkleRef = useRef<HTMLSpanElement>(null)
   const engravingCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -58,10 +59,11 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const paper = paperRef.current
     const text = textRef.current
     const quill = quillRef.current
+    const glitter = glitterRef.current
     const pot = potRef.current
     const spark = sparkleRef.current
     const dustCanvas = engravingCanvasRef.current
-    if (!stage || !paper || !text || !quill || !pot || !spark || !dustCanvas) return
+    if (!stage || !paper || !text || !quill || !glitter || !pot || !spark || !dustCanvas) return
 
     let cancelled = false
     let completed = false
@@ -154,6 +156,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       quill.dataset.x = String(x)
       quill.dataset.y = String(y)
       quill.style.transform = `translate3d(${x}px,${y}px,0) rotate(${angle}deg)`
+      glitter.style.transform = `translate3d(${x}px,${y}px,0)`
       const nibX = x + quillWidth * .014
       const nibY = y + quillHeight * .993
       spark.style.transform = `translate3d(${nibX - 11}px,${nibY - 12}px,0)`
@@ -535,7 +538,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         </div>
         <span className="original-scroll-sparkles" aria-hidden="true">✦ ✧ ✦</span>
         <img ref={potRef} className="original-scroll-pot" src="/magical-scroll/inkpot.png" alt="" draggable={false}/>
-        {/* Independent, lightweight blue-flame shimmer. No JS animation loop or feather edits. */}
+        {/* The original blue flame is animated without moving the inkpot or feather. */}
         <svg
           className={`original-scroll-flame-overlay${opened ? ' is-open' : ''}`}
           viewBox="0 0 180 255"
@@ -563,26 +566,26 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
               <animate attributeName="opacity" values="0;.42;.32;0" dur="4.1s" repeatCount="indefinite"/>
             </circle>
           </g>
-          {/* Resting-only charge: energy rises from the existing inkpot mouth.
-              It shares the inkpot overlay coordinates, so there is no new
-              viewport/desktop/mobile positioning calculation. */}
-          <g className="original-scroll-rest-charge">
-            <ellipse cx="94" cy="108" rx="17" ry="7" fill="#25aaff" opacity=".28" className="charge-mouth-halo" />
-            <path className="charge-electric charge-electric-a" d="M94 113 C81 99 115 90 91 77 S77 53 87 36 S104 19 94 4" stroke="#62e8ff" strokeWidth="3" fill="none" />
-            <path className="charge-electric charge-electric-b" d="M97 109 C119 94 68 81 100 62 S113 39 83 22" stroke="#c09cff" strokeWidth="2.1" fill="none" />
-            <path className="charge-electric charge-electric-c" d="M90 109 C67 92 109 77 77 58 S98 34 75 12" stroke="#ff8fe5" strokeWidth="1.5" fill="none" />
-            <circle className="charge-energy-orb charge-orb-a" r="2.7" fill="#a7f5ff">
-              <animateMotion dur="2.5s" repeatCount="indefinite" path="M94 113 C81 99 115 90 91 77 S77 53 87 36 S104 19 94 4" />
-            </circle>
-            <circle className="charge-energy-orb charge-orb-b" r="2.2" fill="#ffc2f4">
-              <animateMotion dur="2.9s" begin="-1.3s" repeatCount="indefinite" path="M97 109 C119 94 68 81 100 62 S113 39 83 22" />
-            </circle>
-            <circle className="charge-energy-orb charge-orb-c" r="2.3" fill="#e2b8ff">
-              <animateMotion dur="3.1s" begin="-.8s" repeatCount="indefinite" path="M90 109 C67 92 109 77 77 58 S98 34 75 12" />
-            </circle>
-          </g>
         </svg>
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
+        {/* Glitter falls FROM the feather only when it is resting in the inkpot.
+            Follows the feather's exact coordinates, without changing its pose. */}
+        <div ref={glitterRef} className="original-scroll-feather-glitter" aria-hidden="true">
+          {Array.from({ length: 30 }, (_, i) => {
+            const pos = (i * 37 + 11) % 100
+            const top = 7 + ((i * 23) % 62)
+            const drift = -27 + ((i * 17) % 55)
+            const duration = 1.65 + (i % 7) * .21
+            const delay = -((i * .41) % 3.1)
+            const size = 2 + (i % 4)
+            const hue = [195, 275, 315, 45, 175, 235][i % 6]
+            return <i key={i} style={{
+              '--gx': `${pos}%`, '--gy': `${top}%`, '--drift': `${drift}px`,
+              '--duration': `${duration}s`, '--delay': `${delay}s`,
+              '--size': `${size}px`, '--hue': String(hue),
+            } as CSSProperties} />
+          })}
+        </div>
         <span ref={sparkleRef} className="original-scroll-nib-sparks" aria-hidden="true"><i/><i/><i/><i/><i/></span>
         <canvas ref={engravingCanvasRef} className="original-scroll-engraving-dust" aria-hidden="true" />
         {opened && <span className="sr-only">Scroll opened</span>}
@@ -591,7 +594,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       <style jsx global>{`
         .original-mashkeeza-scroll{font-family:'Noto Nastaliq Urdu',serif;color:#422410;width:100%;position:relative;z-index:100;overflow:visible}
         .original-scroll-stage{position:relative;z-index:101;width:100%;min-height:max-content;padding:8px 0 145px;overflow:visible;isolation:auto}
-        /* Balanced 20% expansion: equal 10% overhang on left and right.
+        /* Approved 40% expansion, symmetrically centered on the stage.
            Symmetric physical margins keep centering stable in RTL and Desktop Site mode.
            The viewport cap prevents excess horizontal overflow on narrow screens. */
         .original-scroll-assembly{--scroll-wide-width:min(140%, calc(100vw - 16px));width:var(--scroll-wide-width);margin-left:calc((100% - var(--scroll-wide-width)) / 2);margin-right:calc((100% - var(--scroll-wide-width)) / 2);left:auto;transform:none;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
@@ -612,29 +615,30 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-excerpt{font-size:.9em;text-align:center}
         .original-scroll-pot{position:absolute;z-index:1000;width:19.15%;height:auto;right:1%;bottom:0;opacity:0;pointer-events:none;filter:drop-shadow(0 0 8px #5e8cff99)}
         .original-scroll-flame-overlay{position:absolute;right:1%;bottom:0;width:19.15%;height:auto;aspect-ratio:180 / 255;z-index:1001;pointer-events:none;overflow:visible;opacity:0;mix-blend-mode:screen;transition:opacity 1.3s ease}
-        .original-scroll-flame-overlay.is-open{opacity:.7}
-        .original-scroll-flame-overlay .flame-light-waves{transform-origin:50% 42%;animation:inkFlameBreathe 3.1s ease-in-out infinite alternate}
-        .original-scroll-flame-overlay .flame-stream{stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:5 3;animation:inkFlameFlow 4.3s linear infinite}
-        .original-scroll-flame-overlay .stream-main{filter:drop-shadow(0 0 3px #5abaff88)}
-        .original-scroll-flame-overlay .stream-inner{animation-duration:3.1s;animation-direction:reverse}
-        @keyframes inkFlameBreathe{from{opacity:.38;transform:translate(-1px,1px) rotate(-1deg)}to{opacity:.83;transform:translate(1px,-1.5px) rotate(1.5deg)}}
-        @keyframes inkFlameFlow{to{stroke-dashoffset:-64}}
+        .original-scroll-flame-overlay.is-open{opacity:.82}
+        /* Animate the ORIGINAL blue flame — no extra lightning ribbons. */
+        .original-scroll-flame-overlay .flame-light-waves{transform-origin:94px 106px;animation:inkFlameLiving 3.4s ease-in-out infinite alternate}
+        .original-scroll-flame-overlay .flame-stream{stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:6 10;animation:inkFlameFlow 3.9s linear infinite,inkFlameGlisten 2.7s ease-in-out infinite}
+        .original-scroll-flame-overlay .stream-main{filter:drop-shadow(0 0 3px #53cfff) drop-shadow(0 0 5px #317aff)}
+        .original-scroll-flame-overlay .stream-inner{animation-duration:3.1s,3.7s;animation-direction:reverse,normal;filter:drop-shadow(0 0 3px #b1eeff)}
+        .original-scroll-stage.is-quill-resting .original-scroll-flame-overlay .flame-light-waves{animation-duration:2.4s;filter:drop-shadow(0 0 6px #33baffaa)}
+        .original-scroll-stage.is-quill-resting .original-scroll-flame-overlay .stream-main{stroke-width:4;filter:drop-shadow(0 0 5px #64e6ff) drop-shadow(0 0 9px #725bff)}
+        @keyframes inkFlameLiving{0%{opacity:.5;transform:translate(-1px,1px) rotate(-3deg) scaleX(.90)}40%{opacity:.92;transform:translate(2px,-2px) rotate(2deg) scaleX(1.07)}75%{opacity:.69;transform:translate(-2px,-5px) rotate(-1deg) scaleX(.96)}100%{opacity:1;transform:translate(1px,-3px) rotate(3deg) scaleX(1.04)}}
+        @keyframes inkFlameFlow{to{stroke-dashoffset:-96}}
+        @keyframes inkFlameGlisten{0%,100%{opacity:.38}45%{opacity:1}73%{opacity:.65}}
         .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform;transform-origin:1.4% 99.3%}
-        /* Charging plays ONLY when the quill is seated in the inkpot.
-           No width, translate or rotation modifications to the feather. */
-        .original-scroll-rest-charge{opacity:0;transition:opacity .6s ease;pointer-events:none}
-        .original-scroll-stage.is-quill-resting .original-scroll-rest-charge{opacity:1}
-        .original-scroll-rest-charge .charge-electric{stroke-linecap:round;stroke-dasharray:9 11;filter:drop-shadow(0 0 4px #5bdcff);animation:quillChargeFlow 2.15s linear infinite,quillChargeFlicker 2.7s ease-in-out infinite}
-        .original-scroll-rest-charge .charge-electric-b{animation-duration:2.65s,3.2s;animation-direction:reverse,normal}
-        .original-scroll-rest-charge .charge-electric-c{animation-duration:3.1s,2.35s}
-        .original-scroll-rest-charge .charge-mouth-halo{transform-origin:94px 108px;animation:quillChargeHalo 2.8s ease-in-out infinite}
-        .original-scroll-rest-charge .charge-energy-orb{filter:drop-shadow(0 0 5px #8aeaff);animation:quillChargeOrbs 2s ease-in-out infinite alternate}
-        .original-scroll-stage.is-quill-resting .original-scroll-quill{animation:quillChargedGlow 3.5s ease-in-out infinite alternate}
-        @keyframes quillChargeFlow{to{stroke-dashoffset:-100}}
-        @keyframes quillChargeFlicker{0%,100%{opacity:.40}45%{opacity:.90}70%{opacity:.58}}
-        @keyframes quillChargeHalo{0%,100%{opacity:.14;transform:scale(.8)}50%{opacity:.56;transform:scale(1.18)}}
-        @keyframes quillChargeOrbs{from{opacity:.35}to{opacity:1}}
-        @keyframes quillChargedGlow{0%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 3px #53c8ff99)}35%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 8px #8eeaffcc)}70%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 10px #d395ffcc)}100%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 9px #ff9bd7aa)}}
+        /* Subtle rainbow charge on the still feather; resting-only. */
+        .original-scroll-stage.is-quill-resting .original-scroll-quill{animation:quillChargedGlow 3.8s ease-in-out infinite alternate}
+        @keyframes quillChargedGlow{0%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 4px #49bfffbb)}33%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 8px #62ddffcc)}66%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 8px #cf93ffcc)}100%{filter:drop-shadow(5px 7px 5px #321b1280) drop-shadow(0 0 8px #ffa8d7bb)}}
+        /* Glitter follows the feather position, not screen coordinates.
+           Individual particles gently shed downward like SparkleCursor. */
+        .original-scroll-feather-glitter{position:absolute;left:0;top:0;width:17%;aspect-ratio:1 / 1.35;z-index:1150;pointer-events:none;opacity:0;will-change:transform;transition:opacity .35s ease}
+        .original-scroll-stage.is-quill-resting .original-scroll-feather-glitter{opacity:1}
+        .original-scroll-feather-glitter i{position:absolute;left:var(--gx);top:var(--gy);width:var(--size);height:var(--size);display:block;opacity:0;transform:rotate(45deg);border-radius:1px;background:hsl(var(--hue) 100% 84%);box-shadow:0 0 5px 1px hsl(var(--hue) 100% 65% / .85),0 0 11px hsl(var(--hue) 100% 70% / .55);animation:featherGlitterFall var(--duration) var(--delay) ease-in infinite;animation-play-state:paused}
+        .original-scroll-stage.is-quill-resting .original-scroll-feather-glitter i{animation-play-state:running}
+        .original-scroll-feather-glitter i:nth-child(3n){border-radius:50%}
+        .original-scroll-feather-glitter i:nth-child(4n){clip-path:polygon(50% 0,63% 38%,100% 50%,63% 62%,50% 100%,37% 62%,0 50%,37% 38%)}
+        @keyframes featherGlitterFall{0%{opacity:0;transform:translate3d(0,-5px,0) rotate(0deg) scale(.25)}14%{opacity:.95}55%{opacity:.8}100%{opacity:0;transform:translate3d(var(--drift),68px,0) rotate(170deg) scale(.15)}}
         /* Light, localized engraving flecks — separate from the feather's z-index. */
         .original-scroll-engraving-dust{position:absolute;left:0;top:0;width:120px;height:120px;z-index:1250;pointer-events:none;overflow:visible;will-change:transform}
         /* Small, soft sparks follow the ACTUAL nib; not the top of the feather. */
@@ -648,7 +652,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-sparkles{position:absolute;right:8%;bottom:13%;z-index:1001;pointer-events:none;color:#ffe88e;text-shadow:0 0 10px #e752ff,0 0 18px #21c8ff;animation:scrollSparkle 1.7s ease-in-out infinite alternate}
         @keyframes scrollSparkle{from{opacity:.25;transform:translateY(5px) scale(.8)}to{opacity:1;transform:translateY(-7px) scale(1.2)}}
         @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:11% 10% 17%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
-        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-sparkles,.original-scroll-nib-sparks i,.original-scroll-flame-overlay .flame-light-waves,.original-scroll-flame-overlay .flame-stream{animation:none}.original-scroll-flame-overlay .flame-floating-stars,.original-scroll-rest-charge .charge-energy-orb{display:none}.original-scroll-rest-charge .charge-electric,.original-scroll-rest-charge .charge-mouth-halo,.original-scroll-stage.is-quill-resting .original-scroll-quill{animation:none}}
+        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-sparkles,.original-scroll-nib-sparks i,.original-scroll-flame-overlay .flame-light-waves,.original-scroll-flame-overlay .flame-stream{animation:none}.original-scroll-flame-overlay .flame-floating-stars{display:none}.original-scroll-stage.is-quill-resting .original-scroll-quill,.original-scroll-feather-glitter i{animation:none}.original-scroll-feather-glitter{display:none}}
       `}</style>
     </>
   )
