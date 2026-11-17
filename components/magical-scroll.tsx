@@ -18,7 +18,7 @@ export type MagicalArticle = ArticleAppearance & {
 }
 
 const openedScrollKeys = new Set<string>()
-// Keeps consecutive completed flights from choosing the same choreography.
+// Keeps consecutive completed flights from choosing the same airflow variation.
 let lastFeatherFlightStyle = -1
 
 // A new full-page visit starts fresh. This also handles browser Back restoring
@@ -630,32 +630,31 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     }
 
     const swingHome = async () => {
-      // Return route follows the reference drawing, starting at the LAST letter:
-      // small dip -> bottom-left -> LEFT edge -> ONE top loop -> across top ->
-      // RIGHT edge -> falling-leaf descent -> exact approved inkpot rest.
-      // Only the feather's return-flight is changed; never touch the rest formula.
+      // Reference sketch (17 Nov 2026): the black rectangle is the PAPER,
+      // the pink stroke is the nib trajectory and the orange bowl is the inkpot.
+      // One leftward sweep, ONE deep U underneath the paper, a rising arch on
+      // the right, and a gentle descent into the EXISTING approved inkpot rest.
+      // Preserve the original inkpot coordinates, writing, sprites and effects.
       const home = resolveReadyRest()
       const stageRect = rectOfStage()
       const paperRect = paper.getBoundingClientRect()
       type Point = { x: number; y: number }
-      const stageW = stage.clientWidth
-      const margin = Math.max(9, stageW * .012)
       const paperLeft = paperRect.left - stageRect.left
       const paperRight = paperRect.right - stageRect.left
       const paperTop = paperRect.top - stageRect.top
       const paperBottom = paperRect.bottom - stageRect.top
+      const paperW = Math.max(160, paperRight - paperLeft)
+      const paperH = Math.max(220, paperBottom - paperTop)
+      const stageW = stage.clientWidth
       const start: Point = { x: featherX, y: featherY }
 
-      // Keep the broad feather outside the writing rectangle on both sides.
-      // The only unavoidable movement inside is the short exit from last letter.
-      const leftX = Math.min(paperLeft - quillWidth - margin, stageW * .035)
-      const rightX = Math.max(paperRight + margin, stageW - quillWidth - margin * 1.2)
-      const bottomY = Math.max(start.y + Math.min(36, stageW * .034), paperBottom + margin)
-      const loopDepth = Math.max(36, Math.min(92, stageW * .075))
-      // Leave room for the ENTIRE feather above the parchment while looping.
-      const topY = paperTop - quillHeight * .993 - loopDepth - margin - 8
-      const width = Math.max(260, rightX - leftX)
-
+      // Proportions copied from the hand-drawn pink path, relative to the
+      // black rectangle. Depth scales with WIDTH to avoid an enormous U on
+      // long articles. The complete quill may leave the paper/stage bounds.
+      const leftOutside = paperLeft - paperW * .015
+      const troughY = paperBottom + Math.max(65, Math.min(138, paperW * .245))
+      const crestY = paperBottom - Math.max(95, Math.min(paperH * .37, paperW * .36))
+      const farRight = Math.max(paperRight + paperW * .19, home.x + quillWidth * .014)
       // Keep V15's shuffled random styles (17) and no consecutive repeats.
       // Their variations now change the air-current/flutter, not the drawn route.
       const winds = [
@@ -701,32 +700,29 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       } catch { /* Storage is optional. */ }
       const [cycles, swayRatio, flutterRatio, durationRatio, phase] = winds[styleIndex]
 
-      // Exact silhouette of the supplied sketch, scaled to current scroll.
-      // A single decorative loop at the TOP, NOT a figure-eight.
-      const loopX = leftX + width * (.295 + (styleIndex % 3 - 1) * .009)
-      const loopH = loopDepth * (.83 + (styleIndex % 4) * .045)
-      const dip: Point = {
-        x: start.x - Math.min(18, stageW * .018),
-        y: start.y + Math.min(30, stageW * .028),
-      }
+      // Trace the supplied pink curve from the FINAL written glyph.
+      // The first bend is left/up, then the pen goes BELOW the page edge.
+      // NO top-of-page tour, NO figure-eight, NO extra loops.
       const waypoints: Point[] = [
         start,
-        dip,
-        { x: leftX + width * .43, y: bottomY },
-        { x: leftX + width * .13, y: bottomY + Math.min(14, stageW * .012) },
-        { x: leftX, y: bottomY - Math.min(62, stageW * .052) },
-        { x: leftX, y: topY + loopDepth * 1.06 },
-        { x: leftX + width * .11, y: topY },
-        // Enter the loop from its upper right, dip and curl once.
-        { x: loopX + width * .025, y: topY + loopH * .25 },
-        { x: loopX + width * .035, y: topY + loopH * .97 },
-        { x: loopX - width * .072, y: topY + loopH * 1.03 },
-        { x: loopX - width * .095, y: topY + loopH * .45 },
-        { x: loopX + width * .012, y: topY - loopH * .10 },
-        { x: leftX + width * .69, y: topY },
-        { x: rightX - width * .07, y: topY + loopDepth * .28 },
-        { x: rightX, y: topY + (home.y - topY) * .45 },
-        { x: rightX, y: home.y - Math.min(84, stageW * .08) },
+        { x: Math.min(start.x - paperW * .11, paperLeft + paperW * .42),
+          y: Math.min(start.y - paperW * .025, paperBottom - paperW * .23) },
+        { x: paperLeft + paperW * .12, y: paperBottom - paperW * .22 },
+        { x: leftOutside + paperW * .025, y: paperBottom - paperW * .12 },
+        { x: leftOutside, y: paperBottom + paperW * .055 },
+        { x: paperLeft + paperW * .085, y: paperBottom + paperW * .17 },
+        { x: paperLeft + paperW * .23, y: troughY - paperW * .012 },
+        { x: paperLeft + paperW * .40, y: troughY },
+        { x: paperLeft + paperW * .49, y: troughY - paperW * .035 },
+        { x: paperLeft + paperW * .64, y: paperBottom + paperW * .09 },
+        { x: paperLeft + paperW * .67, y: paperBottom - paperW * .11 },
+        { x: paperLeft + paperW * .70, y: paperBottom - paperW * .25 },
+        { x: paperLeft + paperW * .80, y: crestY + paperW * .045 },
+        { x: paperLeft + paperW * .90, y: crestY },
+        { x: paperRight + paperW * .045, y: crestY },
+        { x: farRight - paperW * .09, y: crestY + paperW * .045 },
+        { x: farRight - paperW * .015, y: crestY + paperW * .14 },
+        { x: farRight, y: home.y - Math.max(17, paperW * .09) },
         home,
       ]
 
@@ -778,7 +774,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       engraved = true
       spark.style.opacity = '.98'
       const softEase = (t: number) => t * t * (3 - 2 * t)
-      const amplitude = clamp(stageW * .0075, 4, 12)
+      const amplitude = clamp(stageW * .0035, 1.5, 5)
       const duration = clamp(length * (4.0 + durationRatio * .6), 12500, 24000)
 
       await tween(duration, t => {
