@@ -391,15 +391,15 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         const dx = x - glitterLastX, dy = y - glitterLastY
         const dist = Math.hypot(dx, dy)
         if (dist > .1 && dist < 300) {
-          // A narrow CURSOR-style trail: separated twinkling dots, not strokes.
-          const spacing = 2.9
+          // A moderately wider, denser cursor-style trail: separate stars, never flames.
+          const spacing = 2.6
           const count = Math.min(120, Math.floor((sampleRemainder + dist) / spacing))
           for (let j=0; j<count; j++) {
             const d = spacing * (j+1) - sampleRemainder
             const u = Math.max(0, Math.min(1, d/dist))
             const nx = -dy / dist, ny = dx / dist
-            for (let k=0; k<2; k++) {
-              const scatter = (Math.random()-.5)*4.2
+            for (let k=0; k<3; k++) {
+              const scatter = (Math.random()-.5)*11.0
               trailSparks.push({
                 x:glitterLastX + dx*u + nx*scatter,
                 y:glitterLastY + dy*u + ny*scatter,
