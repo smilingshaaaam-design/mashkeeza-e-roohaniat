@@ -536,7 +536,6 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
             <img className="original-scroll-roller original-scroll-bottom-roller" src="/magical-scroll/bottom-roller.png" alt="" draggable={false}/>
           </div>
         </div>
-        <span className="original-scroll-sparkles" aria-hidden="true">✦ ✧ ✦</span>
         <img ref={potRef} className="original-scroll-pot" src="/magical-scroll/inkpot.png" alt="" draggable={false}/>
         {/* The original blue flame is animated without moving the inkpot or feather. */}
         <svg
@@ -556,15 +555,35 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
             <path className="flame-stream stream-main" d="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3" stroke="url(#mashkeeza-flame-light)" strokeWidth="3.2" fill="none" />
             <path className="flame-stream stream-inner" d="M96 105 C129 82 109 67 87 61 C59 56 49 41 62 32 C58 22 80 13 77 7" stroke="#99ebff" strokeOpacity=".25" strokeWidth="1.25" fill="none" />
           </g>
-          <g className="flame-floating-stars">
-            <circle r="1.6" fill="#dbfaff">
-              <animateMotion dur="3.5s" repeatCount="indefinite" path="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3"/>
-              <animate attributeName="opacity" values="0;.60;.44;0" dur="3.5s" repeatCount="indefinite"/>
-            </circle>
-            <circle r="1.2" fill="#c0aaff">
-              <animateMotion dur="4.1s" begin="-1.6s" repeatCount="indefinite" path="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3"/>
-              <animate attributeName="opacity" values="0;.42;.32;0" dur="4.1s" repeatCount="indefinite"/>
-            </circle>
+          {/* A softly breathing mystical aura — no static three-star ornament. */}
+          <defs>
+            <radialGradient id="mashkeeza-ink-aura" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#82eaff" stopOpacity=".38" />
+              <stop offset="38%" stopColor="#4267ff" stopOpacity=".21" />
+              <stop offset="75%" stopColor="#b06aff" stopOpacity=".08" />
+              <stop offset="100%" stopColor="#7554e8" stopOpacity="0" />
+            </radialGradient>
+            <linearGradient id="mashkeeza-ink-mist" x1="0" x2="1" y1="1" y2="0">
+              <stop offset="0%" stopColor="#20c8ff" stopOpacity="0" />
+              <stop offset="42%" stopColor="#64ddff" stopOpacity=".42" />
+              <stop offset="77%" stopColor="#a38bff" stopOpacity=".27" />
+              <stop offset="100%" stopColor="#df9dff" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <g className="ink-mystic-aura">
+            <ellipse cx="94" cy="98" rx="48" ry="43" fill="url(#mashkeeza-ink-aura)" />
+          </g>
+          <g className="ink-mystic-mist">
+            <path d="M97 108 C72 90 116 76 95 59 S63 36 79 8" fill="none" stroke="url(#mashkeeza-ink-mist)" strokeWidth="7" strokeLinecap="round" />
+            <path d="M91 107 C123 82 64 70 86 48 S112 23 91 4" fill="none" stroke="url(#mashkeeza-ink-mist)" strokeWidth="4" strokeLinecap="round" />
+          </g>
+          <g className="ink-mystic-embers">
+            {Array.from({ length: 12 }, (_, i) => (
+              <circle key={i} r={i % 3 === 0 ? 1.15 : .7} fill={['#c4f6ff', '#8ad9ff', '#d7a4ff'][i % 3]} opacity="0">
+                <animateMotion dur={`${3.1 + (i % 5) * .55}s`} begin={`${-(i * .73)}s`} repeatCount="indefinite" path={i % 2 === 0 ? 'M94 106 C122 82 65 69 88 49 C107 33 77 24 81 1' : 'M94 106 C67 89 115 72 91 53 C65 33 104 17 86 1'} />
+                <animate attributeName="opacity" values="0;.22;.55;.16;0" dur={`${3.1 + (i % 5) * .55}s`} begin={`${-(i * .73)}s`} repeatCount="indefinite" />
+              </circle>
+            ))}
           </g>
         </svg>
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
@@ -649,10 +668,16 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-nib-sparks i:nth-child(4){animation-delay:.14s;background:#fff4c1;box-shadow:0 0 4px #fff0a388;animation-duration:.75s}
         .original-scroll-nib-sparks i:nth-child(5){animation-delay:.42s;background:#d29aff;box-shadow:0 0 4px #c47cff66;animation-duration:1.1s}
         @keyframes subtleNibSpark{from{transform:translate(0,0) scale(.85);opacity:.86}to{transform:translate(7px,-11px) scale(.17);opacity:0}}
-        .original-scroll-sparkles{position:absolute;right:8%;bottom:13%;z-index:1001;pointer-events:none;color:#ffe88e;text-shadow:0 0 10px #e752ff,0 0 18px #21c8ff;animation:scrollSparkle 1.7s ease-in-out infinite alternate}
-        @keyframes scrollSparkle{from{opacity:.25;transform:translateY(5px) scale(.8)}to{opacity:1;transform:translateY(-7px) scale(1.2)}}
+        /* Fluid enchanted mist and soft blue-violet aura replace the three-star ornament. */
+        .original-scroll-flame-overlay .ink-mystic-aura{transform-origin:94px 98px;animation:inkAuraBreathe 4.6s ease-in-out infinite alternate}
+        .original-scroll-flame-overlay .ink-mystic-mist{transform-origin:94px 106px;animation:inkMistSway 5.2s ease-in-out infinite alternate;filter:drop-shadow(0 0 3px #47b8ff66)}
+        .original-scroll-flame-overlay .ink-mystic-mist path:last-child{animation:inkMistRipple 4.1s ease-in-out infinite alternate}
+        .original-scroll-flame-overlay .ink-mystic-embers{filter:drop-shadow(0 0 2px #8edfff)}
+        @keyframes inkAuraBreathe{0%{opacity:.35;transform:scale(.83) translateY(5px)}55%{opacity:.8}100%{opacity:.62;transform:scale(1.12) translateY(-4px)}}
+        @keyframes inkMistSway{0%{opacity:.28;transform:translateX(-3px) rotate(-4deg)}50%{opacity:.7}100%{opacity:.47;transform:translateX(4px) rotate(4deg)}}
+        @keyframes inkMistRipple{from{opacity:.24;stroke-width:3}to{opacity:.73;stroke-width:5}}
         @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:11% 10% 17%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
-        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-sparkles,.original-scroll-nib-sparks i,.original-scroll-flame-overlay .flame-light-waves,.original-scroll-flame-overlay .flame-stream{animation:none}.original-scroll-flame-overlay .flame-floating-stars{display:none}.original-scroll-stage.is-quill-resting .original-scroll-quill,.original-scroll-feather-glitter i{animation:none}.original-scroll-feather-glitter{display:none}}
+        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-nib-sparks i,.original-scroll-flame-overlay .flame-light-waves,.original-scroll-flame-overlay .flame-stream{animation:none}.original-scroll-flame-overlay .ink-mystic-embers{display:none}.original-scroll-flame-overlay .ink-mystic-aura,.original-scroll-flame-overlay .ink-mystic-mist,.original-scroll-flame-overlay .ink-mystic-mist path:last-child{animation:none}.original-scroll-stage.is-quill-resting .original-scroll-quill,.original-scroll-feather-glitter i{animation:none}.original-scroll-feather-glitter{display:none}}
       `}</style>
     </>
   )
