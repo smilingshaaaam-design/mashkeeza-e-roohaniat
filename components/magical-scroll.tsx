@@ -620,140 +620,199 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     }
 
     const swingHome = async () => {
-      // REST FORMULA IS SACROSANCT: only how the feather flies is changed.
-      // An actual feather drifts around the air current AND rolls about its
-      // nib as its broad side catches the breeze. Smooth 3D wing flutter,
-      // not rigid zig-zags or stop-and-start waypoint tweening.
+      // Only the post-writing feather flight is changed.
+      // The approved inkpot rest formula and landing angle are untouched.
       const home = resolveReadyRest()
       const stageWidth = stage.clientWidth
       const stageHeight = Math.max(stage.clientHeight, 420)
 
-      // Seventeen soft flight personalities. Every one takes the same route
-      // left -> top -> right -> inkpot, with a different natural air current.
       type AirStyle = {
-        coils: number; sway: number; roll: number; bank: number;
-        pitch: number; buoyancy: number; pace: number; drift: number
+        cycles: number
+        sway: number
+        drift: number
+        flutter: number
+        lift: number
+        roll: number
+        bank: number
+        pitch: number
+        forward: number
+        pace: number
       }
+
+      // 17 quiet air-current variations: falling-leaf motion, never abrupt flips.
       const airStyles: AirStyle[] = [
-        { coils:2.10, sway:24, roll:19, bank:42, pitch:11, buoyancy:11, pace:1.00, drift:9 },
-        { coils:2.32, sway:21, roll:22, bank:48, pitch:13, buoyancy:13, pace:1.04, drift:7 },
-        { coils:2.48, sway:27, roll:17, bank:44, pitch:12, buoyancy:14, pace:.96, drift:10 },
-        { coils:1.93, sway:22, roll:24, bank:52, pitch:14, buoyancy:12, pace:1.08, drift:8 },
-        { coils:2.67, sway:30, roll:20, bank:50, pitch:10, buoyancy:15, pace:1.02, drift:12 },
-        { coils:2.25, sway:26, roll:25, bank:46, pitch:16, buoyancy:11, pace:.98, drift:9 },
-        { coils:2.81, sway:20, roll:21, bank:55, pitch:13, buoyancy:13, pace:1.06, drift:7 },
-        { coils:2.06, sway:29, roll:18, bank:49, pitch:15, buoyancy:16, pace:1.01, drift:11 },
-        { coils:2.56, sway:25, roll:23, bank:43, pitch:12, buoyancy:12, pace:1.09, drift:10 },
-        { coils:2.37, sway:28, roll:20, bank:51, pitch:17, buoyancy:14, pace:.95, drift:8 },
-        { coils:1.86, sway:23, roll:26, bank:54, pitch:11, buoyancy:10, pace:1.05, drift:9 },
-        { coils:2.73, sway:31, roll:19, bank:47, pitch:14, buoyancy:15, pace:1.00, drift:12 },
-        { coils:2.16, sway:26, roll:22, bank:56, pitch:16, buoyancy:14, pace:1.03, drift:10 },
-        { coils:2.62, sway:21, roll:24, bank:45, pitch:13, buoyancy:12, pace:1.07, drift:8 },
-        { coils:2.44, sway:30, roll:18, bank:50, pitch:15, buoyancy:17, pace:.97, drift:11 },
-        { coils:2.02, sway:25, roll:27, bank:53, pitch:16, buoyancy:13, pace:1.06, drift:9 },
-        { coils:2.87, sway:28, roll:21, bank:48, pitch:12, buoyancy:16, pace:1.02, drift:12 },
+        { cycles: 1.55, sway: 18, drift: 7, flutter: 4, lift: 10, roll: 11, bank: 18, pitch: 7, forward: 5, pace: 1.00 },
+        { cycles: 1.72, sway: 20, drift: 8, flutter: 5, lift: 11, roll: 13, bank: 20, pitch: 8, forward: 6, pace: 1.03 },
+        { cycles: 1.48, sway: 17, drift: 6, flutter: 4, lift: 9, roll: 10, bank: 17, pitch: 7, forward: 5, pace: 0.98 },
+        { cycles: 1.86, sway: 22, drift: 9, flutter: 5, lift: 12, roll: 14, bank: 22, pitch: 9, forward: 6, pace: 1.05 },
+        { cycles: 1.62, sway: 19, drift: 7, flutter: 4, lift: 10, roll: 12, bank: 19, pitch: 8, forward: 5, pace: 1.01 },
+        { cycles: 1.94, sway: 23, drift: 9, flutter: 6, lift: 13, roll: 15, bank: 24, pitch: 9, forward: 7, pace: 1.06 },
+        { cycles: 1.41, sway: 16, drift: 6, flutter: 3, lift: 8, roll: 9, bank: 16, pitch: 6, forward: 4, pace: 0.97 },
+        { cycles: 1.78, sway: 21, drift: 8, flutter: 5, lift: 12, roll: 13, bank: 21, pitch: 8, forward: 6, pace: 1.02 },
+        { cycles: 1.67, sway: 18, drift: 7, flutter: 4, lift: 10, roll: 11, bank: 18, pitch: 7, forward: 5, pace: 1.00 },
+        { cycles: 2.02, sway: 24, drift: 10, flutter: 6, lift: 14, roll: 16, bank: 25, pitch: 10, forward: 7, pace: 1.08 },
+        { cycles: 1.58, sway: 19, drift: 7, flutter: 4, lift: 11, roll: 12, bank: 19, pitch: 8, forward: 5, pace: 0.99 },
+        { cycles: 1.88, sway: 22, drift: 9, flutter: 5, lift: 13, roll: 14, bank: 23, pitch: 9, forward: 6, pace: 1.04 },
+        { cycles: 1.51, sway: 17, drift: 7, flutter: 3, lift: 9, roll: 11, bank: 17, pitch: 7, forward: 5, pace: 1.02 },
+        { cycles: 1.82, sway: 21, drift: 8, flutter: 5, lift: 11, roll: 14, bank: 20, pitch: 8, forward: 5, pace: 0.99 },
+        { cycles: 1.69, sway: 20, drift: 8, flutter: 4, lift: 12, roll: 12, bank: 21, pitch: 7, forward: 6, pace: 1.04 },
+        { cycles: 1.96, sway: 23, drift: 9, flutter: 5, lift: 13, roll: 15, bank: 23, pitch: 9, forward: 6, pace: 1.06 },
+        { cycles: 1.45, sway: 18, drift: 7, flutter: 4, lift: 9, roll: 10, bank: 17, pitch: 7, forward: 4, pace: 0.98 },
       ]
-      const nextIndex = lastFeatherFlightStyle < 0
-        ? Math.floor(Math.random() * airStyles.length)
-        : (lastFeatherFlightStyle + 1 + Math.floor(Math.random() * (airStyles.length - 1))) % airStyles.length
+
+      const nextIndex =
+        lastFeatherFlightStyle < 0
+          ? Math.floor(Math.random() * airStyles.length)
+          : (lastFeatherFlightStyle + 1 + Math.floor(Math.random() * (airStyles.length - 1))) % airStyles.length
+
       lastFeatherFlightStyle = nextIndex
       const breeze = airStyles[nextIndex]
 
-      // These waypoints preserve the user's exact scenic sequence.
+      const smoothStep = (a: number, b: number, value: number) => {
+        const n = clamp((value - a) / (b - a), 0, 1)
+        return n * n * (3 - 2 * n)
+      }
+
+      // Keep the approved scenic route: left -> above the paper -> right -> inkpot.
       const points = [
-        {x:featherX, y:featherY},
-        {x:Math.max(-quillWidth*.06,stageWidth*.11-quillWidth*.18),
-         y:clamp(home.y-Math.min(48,stageHeight*.08),18,stageHeight*.72)},
-        {x:clamp(stageWidth*.44-quillWidth*.12,-quillWidth*.04,stageWidth-quillWidth-8),
-         y:Math.max(-quillHeight*.24,2)},
-        {x:clamp(stageWidth*.82-quillWidth*.10,0,stageWidth-quillWidth-8),
-         y:clamp(home.y-Math.min(86,stageHeight*.16),12,stageHeight*.68)},
+        { x: featherX, y: featherY },
+        {
+          x: Math.max(-quillWidth * 0.04, stageWidth * 0.13 - quillWidth * 0.18),
+          y: clamp(home.y - Math.min(36, stageHeight * 0.06), 18, stageHeight * 0.74),
+        },
+        {
+          x: clamp(stageWidth * 0.46 - quillWidth * 0.10, -quillWidth * 0.02, stageWidth - quillWidth - 8),
+          y: Math.max(-quillHeight * 0.18, 6),
+        },
+        {
+          x: clamp(stageWidth * 0.80 - quillWidth * 0.10, 0, stageWidth - quillWidth - 8),
+          y: clamp(home.y - Math.min(62, stageHeight * 0.11), 16, stageHeight * 0.70),
+        },
         home,
       ]
-      type Point = {x:number;y:number}
-      const tangents: Point[] = points.map((p,i) => {
-        if (i===0 || i===points.length-1) return {x:0,y:0}
+
+      type Point = { x: number; y: number }
+      const tangents: Point[] = points.map((point, i) => {
+        if (i === 0 || i === points.length - 1) return { x: 0, y: 0 }
         return {
-          x:(points[i+1].x-points[i-1].x)*.46,
-          y:(points[i+1].y-points[i-1].y)*.46,
+          x: (points[i + 1].x - points[i - 1].x) * 0.36,
+          y: (points[i + 1].y - points[i - 1].y) * 0.36,
         }
       })
-      const curve = (u:number):Point => {
-        const scaled = Math.min(points.length-1-1e-8, Math.max(0,u)*(points.length-1))
+
+      const curve = (u: number): Point => {
+        const scaled = Math.min(points.length - 1 - 1e-8, Math.max(0, u) * (points.length - 1))
         const i = Math.floor(scaled)
-        const t = scaled-i
-        const t2=t*t,t3=t2*t
-        const h00=2*t3-3*t2+1,h10=t3-2*t2+t,h01=-2*t3+3*t2,h11=t3-t2
+        const t = scaled - i
+        const t2 = t * t
+        const t3 = t2 * t
+        const h00 = 2 * t3 - 3 * t2 + 1
+        const h10 = t3 - 2 * t2 + t
+        const h01 = -2 * t3 + 3 * t2
+        const h11 = t3 - t2
+
         return {
-          x:h00*points[i].x+h10*tangents[i].x+h01*points[i+1].x+h11*tangents[i+1].x,
-          y:h00*points[i].y+h10*tangents[i].y+h01*points[i+1].y+h11*tangents[i+1].y,
+          x: h00 * points[i].x + h10 * tangents[i].x + h01 * points[i + 1].x + h11 * tangents[i + 1].x,
+          y: h00 * points[i].y + h10 * tangents[i].y + h01 * points[i + 1].y + h11 * tangents[i + 1].y,
         }
       }
 
-      // Arc-length sampling: constant-speed flight along a C1-smooth curve.
-      const SAMPLES=360
-      const distances:number[]=[0]
-      let previous=curve(0)
-      for(let i=1;i<=SAMPLES;i++){
-        const now=curve(i/SAMPLES)
-        distances.push(distances[i-1]+Math.hypot(now.x-previous.x,now.y-previous.y))
-        previous=now
-      }
-      const length=distances[SAMPLES]
-      const sampleByDistance=(ratio:number):number=>{
-        const target=ratio*length
-        let lo=0,hi=SAMPLES
-        while(lo<hi){const mid=(lo+hi)>>1;if(distances[mid]<target)lo=mid+1;else hi=mid}
-        const high=Math.max(1,lo),low=high-1
-        const span=distances[high]-distances[low]
-        return (low+(span>0?(target-distances[low])/span:0))/SAMPLES
+      // Arc-length parameterization prevents sudden acceleration at curve bends.
+      const SAMPLES = 360
+      const distances: number[] = [0]
+      let previous = curve(0)
+
+      for (let i = 1; i <= SAMPLES; i++) {
+        const now = curve(i / SAMPLES)
+        distances.push(distances[i - 1] + Math.hypot(now.x - previous.x, now.y - previous.y))
+        previous = now
       }
 
-      // Gentle, visible floating: looping around the flight direction, with
-      // gradual feather roll, 3D side-flips, and buoyant dips. The envelope
-      // dissolves all offsets and all rotations at the EXACT inkpot landing.
-      const duration=clamp(length*5.0,6900,12900)*breeze.pace
-      const phaseOffset=Math.random()*Math.PI*2
-      const direction=Math.random()<.5?-1:1
-      const swayScale=clamp(stageWidth/1000,.65,1.25)
-      engraved=true
-      spark.style.opacity='.98'
-      await tween(duration,t=>{
-        const travel=.5-.5*Math.cos(Math.PI*t)
-        const u=sampleByDistance(travel)
-        const pos=curve(u)
-        const before=curve(Math.max(0,u-.0025))
-        const after=curve(Math.min(1,u+.0025))
-        const tx=after.x-before.x,ty=after.y-before.y
-        const magnitude=Math.max(1,Math.hypot(tx,ty))
-        const tangentX=tx/magnitude,tangentY=ty/magnitude
-        const normalX=-tangentY,normalY=tangentX
-        const envelope=Math.pow(Math.sin(Math.PI*t),1.15)
-        const phase=direction*2*Math.PI*breeze.coils*t+phaseOffset
-        const softSecondary=Math.sin(phase*.56+.9)
-        // The nib traces a soft helical/swirl current, never a sharp zigzag.
-        const sideways=(Math.sin(phase)*breeze.sway+softSecondary*breeze.drift)*envelope*swayScale
-        const forward=Math.cos(phase+.25)*breeze.sway*.40*envelope*swayScale
-        const verticalFloat=(Math.cos(phase-.45)*breeze.buoyancy
-          +Math.sin(phase*.47+.2)*breeze.buoyancy*.33)*envelope*swayScale
-        // Feather naturally rocks, flashes edge-on, and opens like a wing.
-        const roll=(Math.sin(phase+.60)*breeze.roll
-          +Math.sin(phase*.48-.25)*breeze.roll*.22)*envelope
-        const bank=(Math.sin(phase-.30)*breeze.bank
-          +Math.sin(phase*.51+.70)*breeze.bank*.12)*envelope
-        const pitch=Math.cos(phase*.79+.15)*breeze.pitch*envelope
+      const length = distances[SAMPLES]
+      const sampleByDistance = (ratio: number): number => {
+        const target = ratio * length
+        let lo = 0
+        let hi = SAMPLES
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1
+          if (distances[mid] < target) lo = mid + 1
+          else hi = mid
+        }
+        const high = Math.max(1, lo)
+        const low = high - 1
+        const span = distances[high] - distances[low]
+        return (low + (span > 0 ? (target - distances[low]) / span : 0)) / SAMPLES
+      }
+
+      const duration = clamp(length * 5.6, 7600, 14000) * breeze.pace
+      const phaseOffset = Math.random() * Math.PI * 2
+      const direction = Math.random() < 0.5 ? -1 : 1
+      const swayScale = clamp(stageWidth / 1000, 0.72, 1.18)
+
+      engraved = true
+      spark.style.opacity = '.98'
+
+      await tween(duration, t => {
+        const travel = t * t * (3 - 2 * t)
+        const u = sampleByDistance(travel)
+        const pos = curve(u)
+        const before = curve(Math.max(0, u - 0.0025))
+        const after = curve(Math.min(1, u + 0.0025))
+
+        const tx = after.x - before.x
+        const ty = after.y - before.y
+        const magnitude = Math.max(1, Math.hypot(tx, ty))
+        const tangentX = tx / magnitude
+        const tangentY = ty / magnitude
+        const normalX = -tangentY
+        const normalY = tangentX
+
+        const bodyEnvelope = Math.pow(Math.sin(Math.PI * t), 1.18)
+        const settle = 1 - smoothStep(0.76, 1, t)
+        const phase = phaseOffset + direction * Math.PI * 2 * breeze.cycles * t
+        const slowWave = Math.sin(phase)
+        const softWave = Math.sin(phase * 0.53 + 0.9)
+        const flutterWave = Math.sin(phase * 2.2 + 0.4)
+        const flutterWave2 = Math.cos(phase * 1.75 - 0.6)
+
+        // Falling-leaf side drift and small buoyant movements.
+        const sideDrift = (slowWave * breeze.sway + softWave * breeze.drift) * bodyEnvelope * settle * swayScale
+        const microFlutter = flutterWave * breeze.flutter * 0.9 * bodyEnvelope * settle * swayScale
+        const forwardGlide = Math.cos(phase * 0.62 + 0.35) * breeze.forward * bodyEnvelope * settle * swayScale
+        const verticalFloat = (
+          Math.cos(phase * 0.78 - 0.25) * breeze.lift +
+          Math.sin(phase * 0.37 + 0.7) * breeze.lift * 0.42
+        ) * bodyEnvelope * settle * swayScale
+
+        // Soft roll, gentle wing banking and a little pitching.
+        const roll = (
+          Math.sin(phase + 0.45) * breeze.roll +
+          flutterWave * breeze.roll * 0.18 +
+          flutterWave2 * breeze.roll * 0.10
+        ) * bodyEnvelope * settle
+        const bank = (
+          Math.sin(phase * 0.92 - 0.18) * breeze.bank +
+          Math.cos(phase * 0.46 + 0.4) * breeze.bank * 0.16
+        ) * bodyEnvelope * settle
+        const pitch = (
+          Math.cos(phase * 0.64 + 0.15) * breeze.pitch +
+          flutterWave * breeze.pitch * 0.12
+        ) * bodyEnvelope * settle
+
         setPose(
-          pos.x+normalX*sideways+tangentX*forward,
-          pos.y+normalY*sideways+tangentY*forward-verticalFloat,
-          roll,bank,pitch,
+          pos.x + normalX * (sideDrift + microFlutter) + tangentX * forwardGlide,
+          pos.y + normalY * (sideDrift + microFlutter) + tangentY * forwardGlide - verticalFloat,
+          roll,
+          bank,
+          pitch,
         )
       })
 
       if (!cancelled) {
-        // Identical existing approved resting coordinates AND unrotated pose.
-        setPose(home.x,home.y,0)
-        engraved=false
-        spark.style.opacity='0'
+        // Exactly the pre-existing approved rest pose.
+        setPose(home.x, home.y, 0)
+        engraved = false
+        spark.style.opacity = '0'
       }
     }
 
