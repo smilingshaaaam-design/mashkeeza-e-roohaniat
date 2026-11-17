@@ -320,7 +320,12 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       x: number; y: number; distance: number; born: number;
       color: string; size: number; phase: number; drift: number; largerStar: boolean
     }
+    type FallingSpark = {
+      x: number; y: number; vx: number; vy: number; born: number; ttl: number;
+      color: string; size: number; phase: number; largerStar: boolean
+    }
     const trailSparks: TrailSpark[] = []
+    const fallingSparks: FallingSpark[] = []
     const glitterColors = ['#ffe88d', '#ff9bdd', '#bf9aff', '#7be8ff', '#eaffff', '#ffaec7', '#ffd06a', '#88ffdc', '#d9a5ff']
     const tailLengthPx = 260 // longer, narrow 2.7in CSS-pixel motion history
     let glitterLastX = NaN, glitterLastY = NaN
@@ -334,6 +339,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
 
     const clearComet = () => {
       trailSparks.length = 0
+      fallingSparks.length = 0
       glitterLastX = NaN
       glitterLastY = NaN
       totalTravel = 0
@@ -402,17 +408,35 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
               const scatter = (Math.random()-.5)*11.0
               // Rare, only slightly larger stars scattered through the thin trail.
               const largerStar = Math.random() < .055
+              const px = glitterLastX + dx*u + nx*scatter
+              const py = glitterLastY + dy*u + ny*scatter
+              const color = glitterColors[Math.floor(Math.random()*glitterColors.length)]
               trailSparks.push({
-                x:glitterLastX + dx*u + nx*scatter,
-                y:glitterLastY + dy*u + ny*scatter,
+                x:px,
+                y:py,
                 distance:totalTravel + d,
                 born:now,
-                color:glitterColors[Math.floor(Math.random()*glitterColors.length)],
+                color,
                 size:largerStar ? 1.9+Math.random()*.55 : .65+Math.random()*1.1,
                 phase:Math.random()*Math.PI*2,
                 drift:(Math.random()-.5)*1.6,
                 largerStar
               })
+              // A few stars gently fall away from the trail like light glitter rain.
+              if (Math.random() < (largerStar ? .12 : .05)) {
+                fallingSparks.push({
+                  x:px,
+                  y:py,
+                  vx:(Math.random()-.5)*.28,
+                  vy:.35 + Math.random()*.42,
+                  born:now,
+                  ttl:900 + Math.random()*650,
+                  color,
+                  size:largerStar ? 1.35 + Math.random()*.5 : .75 + Math.random()*.6,
+                  phase:Math.random()*Math.PI*2,
+                  largerStar,
+                })
+              }
             }
           }
           sampleRemainder = (sampleRemainder + dist) % spacing
@@ -452,6 +476,33 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           c.beginPath()
           c.moveTo(px-arm,py); c.lineTo(px+arm,py)
           c.moveTo(px,py-arm); c.lineTo(px,py+arm)
+          c.stroke()
+        }
+      }
+      for (let i=fallingSparks.length-1; i>=0; i--) {
+        const p = fallingSparks[i]
+        const age = now - p.born
+        if (age > p.ttl) { fallingSparks.splice(i, 1); continue }
+        const t = age / p.ttl
+        const px = stageBounds.left + p.x + p.vx * age + Math.sin(age * .006 + p.phase) * .9
+        const py = stageBounds.top + p.y + p.vy * age + age * age * .000085
+        const fade = Math.max(0, 1 - t)
+        const twinkle = .42 + .58 * Math.sin(now * (p.largerStar ? .016 : .022) + p.phase) ** 2
+        c.globalAlpha = Math.min(.85, fade * twinkle * .75)
+        c.fillStyle = p.color
+        c.shadowColor = p.color
+        c.shadowBlur = 4.5
+        c.beginPath()
+        c.arc(px, py, p.size, 0, Math.PI * 2)
+        c.fill()
+        if (p.largerStar) {
+          const arm = 2.1 + twinkle * .9
+          c.globalAlpha = Math.min(.82, fade * twinkle * .62)
+          c.lineWidth = .7
+          c.strokeStyle = p.color
+          c.beginPath()
+          c.moveTo(px-arm, py); c.lineTo(px+arm, py)
+          c.moveTo(px, py-arm); c.lineTo(px, py+arm)
           c.stroke()
         }
       }
