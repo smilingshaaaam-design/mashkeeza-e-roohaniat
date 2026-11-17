@@ -630,39 +630,44 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     }
 
     const swingHome = async () => {
-      // Feather-only return flight. The parchment, writing, inkpot and the
-      // approved resolveReadyRest() / landing pose are never changed.
+      // Return route follows the reference drawing, starting at the LAST letter:
+      // small dip -> bottom-left -> LEFT edge -> ONE top loop -> across top ->
+      // RIGHT edge -> falling-leaf descent -> exact approved inkpot rest.
+      // Only the feather's return-flight is changed; never touch the rest formula.
       const home = resolveReadyRest()
       const stageRect = rectOfStage()
       const paperRect = paper.getBoundingClientRect()
-      const potRect = pot.getBoundingClientRect()
       type Point = { x: number; y: number }
+      const stageW = stage.clientWidth
+      const margin = Math.max(9, stageW * .012)
       const paperLeft = paperRect.left - stageRect.left
       const paperRight = paperRect.right - stageRect.left
+      const paperTop = paperRect.top - stageRect.top
       const paperBottom = paperRect.bottom - stageRect.top
-      const stageW = stage.clientWidth
-      const stageH = stage.clientHeight
-      const margin = Math.max(10, stageW * .012)
-      const rightLane = Math.max(paperRight + margin, stageW * .86)
-      const leftLane = Math.min(paperLeft - quillWidth - margin, stageW * .02)
       const start: Point = { x: featherX, y: featherY }
-      const potCenterY = potRect.top - stageRect.top + potRect.height * .45
-      const belowPaperY = Math.max(paperBottom + quillHeight * .12 + 12, potCenterY + 8)
-      const openTopY = Math.max(8, paperRect.top - stageRect.top + 14)
-      const openBottomY = Math.min(Math.max(openTopY + 70, belowPaperY), stageH + 20)
 
-      // 17 genuinely distinct natural wind personalities, selected in a
-      // shuffled bag so every route is used before any repeat.
+      // Keep the broad feather outside the writing rectangle on both sides.
+      // The only unavoidable movement inside is the short exit from last letter.
+      const leftX = Math.min(paperLeft - quillWidth - margin, stageW * .035)
+      const rightX = Math.max(paperRight + margin, stageW - quillWidth - margin * 1.2)
+      const bottomY = Math.max(start.y + Math.min(36, stageW * .034), paperBottom + margin)
+      const loopDepth = Math.max(36, Math.min(92, stageW * .075))
+      // Leave room for the ENTIRE feather above the parchment while looping.
+      const topY = paperTop - quillHeight * .993 - loopDepth - margin - 8
+      const width = Math.max(260, rightX - leftX)
+
+      // Keep V15's shuffled random styles (17) and no consecutive repeats.
+      // Their variations now change the air-current/flutter, not the drawn route.
       const winds = [
-        [1.15,.25,.16, 1.6,  .1], [1.65,.30,.22, 1.8,  .5],
-        [1.95,.36,.18, 2.1,  .8], [1.32,.18,.28, 1.7, 1.1],
-        [2.35,.27,.26, 2.4, 1.5], [1.72,.39,.19, 2.0, 1.8],
-        [2.60,.33,.31, 2.6, 2.2], [1.43,.42,.17, 1.9, 2.6],
-        [2.08,.24,.35, 2.2, 2.9], [1.88,.38,.29, 2.3, 3.2],
-        [2.82,.30,.22, 2.8, 3.5], [1.53,.22,.33, 1.9, 3.8],
-        [2.18,.44,.24, 2.5, 4.1], [1.27,.34,.37, 1.8, 4.4],
-        [2.48,.26,.30, 2.7, 4.8], [1.77,.41,.27, 2.1, 5.1],
-        [2.94,.35,.34, 2.9, 5.5],
+        [1.15,.25,.16,1.6,.1], [1.65,.30,.22,1.8,.5],
+        [1.95,.36,.18,2.1,.8], [1.32,.18,.28,1.7,1.1],
+        [2.35,.27,.26,2.4,1.5], [1.72,.39,.19,2.0,1.8],
+        [2.60,.33,.31,2.6,2.2], [1.43,.42,.17,1.9,2.6],
+        [2.08,.24,.35,2.2,2.9], [1.88,.38,.29,2.3,3.2],
+        [2.82,.30,.22,2.8,3.5], [1.53,.22,.33,1.9,3.8],
+        [2.18,.44,.24,2.5,4.1], [1.27,.34,.37,1.8,4.4],
+        [2.48,.26,.30,2.7,4.8], [1.77,.41,.27,2.1,5.1],
+        [2.94,.35,.34,2.9,5.5],
       ] as const
       const bagKey = 'mashkeeza:feather:safe-flight-bag:17:v1'
       const lastKey = 'mashkeeza:feather:safe-flight-last:17:v1'
@@ -676,7 +681,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         }
         const prior = sessionStorage.getItem(lastKey)
         if (prior !== null && Number.isInteger(Number(prior))) last = Number(prior)
-      } catch { /* Private browsing must not stop the animation. */ }
+      } catch { /* Private browsing must not stop animation. */ }
       if (!bag.length) {
         bag = winds.map((_, i) => i)
         for (let i = bag.length - 1; i > 0; i--) {
@@ -693,78 +698,70 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       try {
         sessionStorage.setItem(bagKey, JSON.stringify(bag))
         sessionStorage.setItem(lastKey, String(styleIndex))
-      } catch { /* No storage required. */ }
+      } catch { /* Storage is optional. */ }
       const [cycles, swayRatio, flutterRatio, durationRatio, phase] = winds[styleIndex]
 
-      // The last letter can be anywhere on the paper. Exit through its
-      // nearest side FIRST, then fly in the open margin, not over the text.
-      const nibX = start.x + quillWidth * .014
-      const goLeft = Math.abs(nibX - paperLeft) < Math.abs(paperRight - nibX)
-      const laneX = goLeft ? leftLane : rightLane
-      const exitY = clamp(start.y, openTopY, Math.max(openTopY, paperBottom - quillHeight))
-      const exit: Point = { x: laneX, y: exitY }
-      // One non-reversing outer-margin excursion. The original V14 path
-      // alternated upward/downward across the SAME lane, producing an 8.
-      // This path descends once, then (only on the left) crosses BELOW the
-      // paper exactly once toward the inkpot. No side is revisited.
-      const rightX = rightLane + (stageW - rightLane) * .07
-      const descendY = Math.max(exitY + 20, openBottomY)
-      const outward = goLeft ? -1 : 1
-      const outwardRoom = goLeft
-        ? Math.max(5, laneX - (-quillWidth * .20))
-        : Math.max(5, stageW + quillWidth * .08 - laneX)
-      // 17 random wind styles stay intact; their outer-lobe proportions vary
-      // without producing a figure-eight or a repeated side excursion.
-      const lobe = Math.min(outwardRoom * .45, Math.max(14, stageW * (.018 + (styleIndex % 6) * .003)))
-      const belowCrossY = Math.max(descendY, belowPaperY + 14)
-      const lane: Point[] = [
-        exit,
-        { x: laneX + outward * lobe * .50, y: exitY + (descendY - exitY) * .36 },
-        { x: laneX + outward * lobe, y: exitY + (descendY - exitY) * .74 },
-        { x: laneX + outward * lobe * .72, y: descendY },
-      ]
-      if (goLeft) {
-        // Cross to the inkpot on the right ONLY beneath the paper.
-        lane.push({ x: laneX + (rightX - laneX) * .54, y: belowCrossY + 8 })
-        lane.push({ x: rightX, y: belowCrossY + 16 })
-      } else {
-        lane.push({ x: rightX, y: belowCrossY + 8 })
+      // Exact silhouette of the supplied sketch, scaled to current scroll.
+      // A single decorative loop at the TOP, NOT a figure-eight.
+      const loopX = leftX + width * (.295 + (styleIndex % 3 - 1) * .009)
+      const loopH = loopDepth * (.83 + (styleIndex % 4) * .045)
+      const dip: Point = {
+        x: start.x - Math.min(18, stageW * .018),
+        y: start.y + Math.min(30, stageW * .028),
       }
-      lane.push(home)
+      const waypoints: Point[] = [
+        start,
+        dip,
+        { x: leftX + width * .43, y: bottomY },
+        { x: leftX + width * .13, y: bottomY + Math.min(14, stageW * .012) },
+        { x: leftX, y: bottomY - Math.min(62, stageW * .052) },
+        { x: leftX, y: topY + loopDepth * 1.06 },
+        { x: leftX + width * .11, y: topY },
+        // Enter the loop from its upper right, dip and curl once.
+        { x: loopX + width * .025, y: topY + loopH * .25 },
+        { x: loopX + width * .035, y: topY + loopH * .97 },
+        { x: loopX - width * .072, y: topY + loopH * 1.03 },
+        { x: loopX - width * .095, y: topY + loopH * .45 },
+        { x: loopX + width * .012, y: topY - loopH * .10 },
+        { x: leftX + width * .69, y: topY },
+        { x: rightX - width * .07, y: topY + loopDepth * .28 },
+        { x: rightX, y: topY + (home.y - topY) * .45 },
+        { x: rightX, y: home.y - Math.min(84, stageW * .08) },
+        home,
+      ]
 
-      // Continuous Catmull-Rom / cubic-Hermite curve; no sharp zigzags.
-      const smooth = (v: number) => v * v * (3 - 2 * v)
-      const curve = (points: Point[], u: number): Point => {
-        if (u >= 1) return points[points.length - 1]
-        const z = clamp(u, 0, 1) * (points.length - 1)
+      // C1-continuous cubic Hermite / Catmull-Rom: no pause at any waypoint.
+      // Reparameterise by arc length so tight top loop doesn't suddenly speed up.
+      const curve = (u: number): Point => {
+        if (u >= 1) return home
+        const z = clamp(u, 0, 1) * (waypoints.length - 1)
         const i = Math.floor(z)
         const t = z - i
-        const p = points[i], q = points[i + 1]
-        const a = points[Math.max(0, i - 1)]
-        const b = points[Math.min(points.length - 1, i + 2)]
-        const m0x = (q.x - a.x) * .30, m0y = (q.y - a.y) * .30
-        const m1x = (b.x - p.x) * .30, m1y = (b.y - p.y) * .30
-        const t2 = t * t, t3 = t2 * t
-        const h0 = 2 * t3 - 3 * t2 + 1
-        const h1 = t3 - 2 * t2 + t
-        const h2 = -2 * t3 + 3 * t2
-        const h3 = t3 - t2
-        return { x: h0*p.x + h1*m0x + h2*q.x + h3*m1x,
-                 y: h0*p.y + h1*m0y + h2*q.y + h3*m1y }
+        const p = waypoints[i], q = waypoints[i + 1]
+        const a = waypoints[Math.max(0, i - 1)]
+        const b = waypoints[Math.min(waypoints.length - 1, i + 2)]
+        const m0x = (q.x - a.x) * .42, m0y = (q.y - a.y) * .42
+        const m1x = (b.x - p.x) * .42, m1y = (b.y - p.y) * .42
+        const t2 = t*t, t3 = t2*t
+        const h0 = 2*t3-3*t2+1, h1 = t3-2*t2+t
+        const h2 = -2*t3+3*t2, h3 = t3-t2
+        return {
+          x: h0*p.x+h1*m0x+h2*q.x+h3*m1x,
+          y: h0*p.y+h1*m0y+h2*q.y+h3*m1y,
+        }
       }
-      const scenic = [exit, ...lane.slice(1)]
-      const samples = 600
-      const distances = [0]
-      let previous = curve(scenic, 0)
-      for (let i = 1; i <= samples; i++) {
-        const next = curve(scenic, i / samples)
-        distances.push(distances[i-1] + Math.hypot(next.x - previous.x, next.y - previous.y))
+      const SAMPLES = 720
+      const distances: number[] = [0]
+      let previous = curve(0)
+      for (let i = 1; i <= SAMPLES; i++) {
+        const next = curve(i / SAMPLES)
+        distances.push(distances[i - 1] + Math.hypot(next.x - previous.x, next.y - previous.y))
         previous = next
       }
-      const length = distances[samples]
+      const length = distances[SAMPLES]
       const atDistance = (ratio: number): Point => {
         const target = clamp(ratio, 0, 1) * length
-        let lo = 0, hi = samples
+        let lo = 0, hi = SAMPLES
         while (lo < hi) {
           const mid = (lo + hi) >> 1
           if (distances[mid] < target) lo = mid + 1
@@ -772,47 +769,44 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         }
         const high = Math.max(1, lo), low = high - 1
         const d = distances[high] - distances[low]
-        return curve(scenic, (low + (d ? (target - distances[low]) / d : 0)) / samples)
+        return curve((low + (d ? (target - distances[low]) / d : 0)) / SAMPLES)
       }
 
+      // V15's +20% return-only glitter boost is preserved unchanged.
       returnFlight = true
       returnGlitterBursts = 0
       engraved = true
       spark.style.opacity = '.98'
-      // First leave the written line promptly and smoothly; only after the
-      // exit does the slow leaf-like scenic motion begin.
-      await tween(clamp(Math.abs(exit.x-start.x)*1.6, 380, 1050), t => {
-        const e = smooth(t)
-        setPose(start.x + (exit.x-start.x)*e,
-          start.y + (exit.y-start.y)*e,
-          Math.sin(Math.PI*t)*5)
-      })
-      if (cancelled) return
+      const softEase = (t: number) => t * t * (3 - 2 * t)
+      const amplitude = clamp(stageW * .0075, 4, 12)
+      const duration = clamp(length * (4.0 + durationRatio * .6), 12500, 24000)
 
-      const amplitude = Math.max(5, Math.min(14, Math.abs(stageW * .018)))
-      const duration = clamp(length * (5.8 + durationRatio), 10500, 25000)
       await tween(duration, t => {
-        const progress = .5 - .5 * Math.cos(Math.PI * t)
+        const progress = softEase(t)
         const position = atDistance(progress)
-        const envelope = Math.pow(Math.sin(Math.PI * t), 1.4)
-        // At most one broad side-to-side wind sway during this return.
-        // No self-crossing figure-eight and no repeated loops.
-        const wave = phase + t * (.65 + cycles * .12) * Math.PI * 2
-        const lateral = (Math.sin(wave) * swayRatio +
-          Math.sin(wave * .49 + 1.2) * flutterRatio) * amplitude * envelope
-        const lift = Math.cos(wave * .7) * amplitude * .65 * envelope
-        const safeX = goLeft && position.x < paperLeft
-          ? Math.min(position.x + lateral, paperLeft - quillWidth - margin)
-          : position.x > paperRight
-            ? Math.max(position.x + lateral, paperRight + margin)
-            : position.x + lateral
-        const roll = (Math.sin(wave) * 18 + Math.sin(wave*1.9)*5) * envelope
-        const bank = (Math.cos(wave*.83)*34 + Math.sin(wave*1.7)*9) * envelope
-        const pitch = (Math.sin(wave*.66)*15 + Math.cos(wave*1.45)*5) * envelope
-        setPose(safeX, position.y - lift, roll, bank, pitch)
+        const ahead = atDistance(Math.min(1, progress + .0004))
+        const behind = atDistance(Math.max(0, progress - .0004))
+        const dx = ahead.x - behind.x, dy = ahead.y - behind.y
+        const mag = Math.max(.01, Math.hypot(dx, dy))
+        const normalX = -dy / mag, normalY = dx / mag
+        // Gentle falling-leaf drift. Fade all side motion at both ends;
+        // keep it subtle around the single intentional loop.
+        const envelope = Math.pow(Math.sin(Math.PI * t), 1.25)
+        const wave = phase + t * Math.PI * 2 * (1.3 + cycles * .22)
+        const flutter = Math.sin(wave) * swayRatio + Math.sin(wave * .55 + 1.1) * flutterRatio
+        const side = flutter * amplitude * envelope
+        const buoyancy = Math.cos(wave * .67) * amplitude * .40 * envelope
+        const roll = (Math.sin(wave + .2) * 16 + Math.sin(wave * 1.75) * 3) * envelope
+        const bank = (Math.cos(wave * .89) * 27 + Math.sin(wave * 1.5) * 5) * envelope
+        const pitch = (Math.sin(wave * .63) * 11 + Math.cos(wave * 1.34) * 3) * envelope
+        setPose(
+          position.x + normalX * side,
+          position.y + normalY * side - buoyancy,
+          roll, bank, pitch,
+        )
       })
       if (!cancelled) {
-        // Exactly the same landing/rest formula as the original file.
+        // No new landing formula, offset, shift or angle: exact V15 rest.
         setPose(home.x, home.y, 0)
         returnFlight = false
         engraved = false
