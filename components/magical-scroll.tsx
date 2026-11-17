@@ -299,6 +299,9 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     let quillWidth = 0, quillHeight = 0
     let featherX = 0, featherY = 0
     let engraved = false
+    // Return-flight particles only; writing particles retain their original count.
+    let returnFlight = false
+    let returnGlitterBursts = 0
     let inkX = 0, inkY = 0
     const ctx = dustCanvas.getContext('2d', { alpha: true })
     const dpi = Math.min(window.devicePixelRatio || 1, 2)
@@ -350,7 +353,14 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       const now = performance.now()
       if (now - lastEmission < 24) return
       lastEmission = now
-      for (let i = 0; i < 7 && flecks.length < 88; i++) {
+      // Writing: unchanged 7 particles per burst. Return flight: exactly
+      // 42 particles per 5 bursts (8.4 average) = 20% more than 35.
+      const burstSize = returnFlight
+        ? Math.floor((returnGlitterBursts + 1) * 42 / 5) - Math.floor(returnGlitterBursts * 42 / 5)
+        : 7
+      if (returnFlight) returnGlitterBursts++
+      const particleCap = returnFlight ? 106 : 88
+      for (let i = 0; i < burstSize && flecks.length < particleCap; i++) {
         flecks.push({
           x: 60 + (Math.random() - .5) * 5,
           y: 60 + (Math.random() - .5) * 5,
@@ -693,22 +703,33 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       const laneX = goLeft ? leftLane : rightLane
       const exitY = clamp(start.y, openTopY, Math.max(openTopY, paperBottom - quillHeight))
       const exit: Point = { x: laneX, y: exitY }
-      const verticalSpan = Math.max(100, openBottomY - openTopY)
-      const firstY = clamp(exitY - verticalSpan * (.20 + .07 * swayRatio), openTopY, openBottomY)
-      const secondY = clamp(exitY + verticalSpan * (.22 + .12 * flutterRatio), openTopY, openBottomY)
-      const thirdY = clamp(openTopY + verticalSpan * (.23 + .48 * (styleIndex % 5) / 4), openTopY, openBottomY)
-      const lastY = clamp(belowPaperY + 14, openTopY, openBottomY)
+      // One non-reversing outer-margin excursion. The original V14 path
+      // alternated upward/downward across the SAME lane, producing an 8.
+      // This path descends once, then (only on the left) crosses BELOW the
+      // paper exactly once toward the inkpot. No side is revisited.
       const rightX = rightLane + (stageW - rightLane) * .07
+      const descendY = Math.max(exitY + 20, openBottomY)
+      const outward = goLeft ? -1 : 1
+      const outwardRoom = goLeft
+        ? Math.max(5, laneX - (-quillWidth * .20))
+        : Math.max(5, stageW + quillWidth * .08 - laneX)
+      // 17 random wind styles stay intact; their outer-lobe proportions vary
+      // without producing a figure-eight or a repeated side excursion.
+      const lobe = Math.min(outwardRoom * .45, Math.max(14, stageW * (.018 + (styleIndex % 6) * .003)))
+      const belowCrossY = Math.max(descendY, belowPaperY + 14)
       const lane: Point[] = [
         exit,
-        { x: laneX, y: firstY },
-        { x: laneX, y: secondY },
-        { x: laneX, y: thirdY },
-        { x: laneX, y: lastY },
+        { x: laneX + outward * lobe * .50, y: exitY + (descendY - exitY) * .36 },
+        { x: laneX + outward * lobe, y: exitY + (descendY - exitY) * .74 },
+        { x: laneX + outward * lobe * .72, y: descendY },
       ]
-      // A left-side flight crosses toward the pot ONLY below the parchment.
-      if (goLeft) lane.push({ x: rightX, y: lastY })
-      lane.push({ x: rightX, y: Math.max(lastY, home.y + quillHeight * .22) })
+      if (goLeft) {
+        // Cross to the inkpot on the right ONLY beneath the paper.
+        lane.push({ x: laneX + (rightX - laneX) * .54, y: belowCrossY + 8 })
+        lane.push({ x: rightX, y: belowCrossY + 16 })
+      } else {
+        lane.push({ x: rightX, y: belowCrossY + 8 })
+      }
       lane.push(home)
 
       // Continuous Catmull-Rom / cubic-Hermite curve; no sharp zigzags.
@@ -754,6 +775,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         return curve(scenic, (low + (d ? (target - distances[low]) / d : 0)) / samples)
       }
 
+      returnFlight = true
+      returnGlitterBursts = 0
       engraved = true
       spark.style.opacity = '.98'
       // First leave the written line promptly and smoothly; only after the
@@ -772,8 +795,9 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         const progress = .5 - .5 * Math.cos(Math.PI * t)
         const position = atDistance(progress)
         const envelope = Math.pow(Math.sin(Math.PI * t), 1.4)
-        const wave = phase + t * cycles * Math.PI * 2
-        // Natural drifting wind, damped near the paper boundary and landing.
+        // At most one broad side-to-side wind sway during this return.
+        // No self-crossing figure-eight and no repeated loops.
+        const wave = phase + t * (.65 + cycles * .12) * Math.PI * 2
         const lateral = (Math.sin(wave) * swayRatio +
           Math.sin(wave * .49 + 1.2) * flutterRatio) * amplitude * envelope
         const lift = Math.cos(wave * .7) * amplitude * .65 * envelope
@@ -790,6 +814,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       if (!cancelled) {
         // Exactly the same landing/rest formula as the original file.
         setPose(home.x, home.y, 0)
+        returnFlight = false
         engraved = false
         spark.style.opacity = '0'
       }
