@@ -311,6 +311,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     type Fleck = { x: number; y: number; vx: number; vy: number; born: number; ttl: number; color: string; size: number }
     const flecks: Fleck[] = []
     const colours = ['#ffe38a', '#ffb347', '#f7a3e9', '#d29aff', '#9e8eff', '#62caff', '#dbf7ff']
+    const sparkleBoost = 1.5
     let lastEmission = 0
     let lastNibX = NaN, lastNibY = NaN
 
@@ -353,13 +354,17 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       const now = performance.now()
       if (now - lastEmission < 24) return
       lastEmission = now
-      // Writing: unchanged 7 particles per burst. Return flight: exactly
-      // 42 particles per 5 bursts (8.4 average) = 20% more than 35.
+      // Glitter/sparkles boosted by 50%, especially during writing.
+      // Writing: 7 -> 11 particles per burst. Return flight: 42 -> 63 particles
+      // per 5 bursts (12.6 average), while preserving the same burst cadence.
       const burstSize = returnFlight
-        ? Math.floor((returnGlitterBursts + 1) * 42 / 5) - Math.floor(returnGlitterBursts * 42 / 5)
-        : 7
+        ? Math.floor((returnGlitterBursts + 1) * Math.round(42 * sparkleBoost) / 5)
+          - Math.floor(returnGlitterBursts * Math.round(42 * sparkleBoost) / 5)
+        : Math.round(7 * sparkleBoost)
       if (returnFlight) returnGlitterBursts++
-      const particleCap = returnFlight ? 106 : 88
+      const particleCap = returnFlight
+        ? Math.round(106 * sparkleBoost)
+        : Math.round(88 * sparkleBoost)
       for (let i = 0; i < burstSize && flecks.length < particleCap; i++) {
         flecks.push({
           x: 60 + (Math.random() - .5) * 5,
@@ -917,7 +922,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         {/* Procedural liquid/light renderer sits over the existing inkpot image. */}
         <LivingInkEnergy active={opened} />
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
-        <span ref={sparkleRef} className="original-scroll-nib-sparks" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/></span>
+        <span ref={sparkleRef} className="original-scroll-nib-sparks" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/></span>
         <canvas ref={engravingCanvasRef} className="original-scroll-engraving-dust" aria-hidden="true" />
         {opened && <span className="sr-only">Scroll opened</span>}
       </div>
@@ -949,12 +954,18 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         /* Light, localized engraving flecks — separate from the feather's z-index. */
         .original-scroll-engraving-dust{position:absolute;left:0;top:0;width:120px;height:120px;z-index:1250;pointer-events:none;overflow:visible;will-change:transform}
         /* Small, soft sparks follow the ACTUAL nib; not the top of the feather. */
-        .original-scroll-nib-sparks{position:absolute;left:0;top:0;width:30px;height:30px;z-index:1200;opacity:0;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 0 10px #f7d8a4aa)}
-        .original-scroll-nib-sparks i{position:absolute;left:13px;top:13px;width:5px;height:5px;display:block;border-radius:50%;background:#ffeeb4;box-shadow:0 0 10px #efb763cc;animation:subtleNibSpark 1s ease-out infinite}
+        .original-scroll-nib-sparks{position:absolute;left:0;top:0;width:36px;height:36px;z-index:1200;opacity:0;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 0 12px #f7d8a4aa)}
+        .original-scroll-nib-sparks i{position:absolute;left:15px;top:15px;width:5px;height:5px;display:block;border-radius:50%;background:#ffeeb4;box-shadow:0 0 10px #efb763cc;animation:subtleNibSpark 1s ease-out infinite}
         .original-scroll-nib-sparks i:nth-child(2){animation-delay:.28s;background:#dd92e5;box-shadow:0 0 5px #c57fe899}
         .original-scroll-nib-sparks i:nth-child(3){animation-delay:.55s;background:#80d5ff;box-shadow:0 0 5px #82caff66}
         .original-scroll-nib-sparks i:nth-child(4){animation-delay:.14s;background:#fff4c1;box-shadow:0 0 4px #fff0a388;animation-duration:.75s}
-        .original-scroll-nib-sparks i:nth-child(5){animation-delay:.42s;background:#d29aff;box-shadow:0 0 5px #c47cff99;animation-duration:1.1s}.original-scroll-nib-sparks i:nth-child(6){animation-delay:.62s;background:#ffd17d;box-shadow:0 0 6px #ffb347aa;animation-duration:.88s}.original-scroll-nib-sparks i:nth-child(7){animation-delay:.22s;background:#9ce7ff;box-shadow:0 0 6px #62caffaa;animation-duration:1.18s}
+        .original-scroll-nib-sparks i:nth-child(5){animation-delay:.42s;background:#d29aff;box-shadow:0 0 5px #c47cff99;animation-duration:1.1s}
+        .original-scroll-nib-sparks i:nth-child(6){animation-delay:.62s;background:#ffd17d;box-shadow:0 0 6px #ffb347aa;animation-duration:.88s}
+        .original-scroll-nib-sparks i:nth-child(7){animation-delay:.22s;background:#9ce7ff;box-shadow:0 0 6px #62caffaa;animation-duration:1.18s}
+        .original-scroll-nib-sparks i:nth-child(8){animation-delay:.34s;background:#ffe38a;box-shadow:0 0 7px #efb763cc;animation-duration:.82s}
+        .original-scroll-nib-sparks i:nth-child(9){animation-delay:.48s;background:#f7a3e9;box-shadow:0 0 7px #dd92e5aa;animation-duration:1.06s}
+        .original-scroll-nib-sparks i:nth-child(10){animation-delay:.18s;background:#dbf7ff;box-shadow:0 0 7px #9ce7ffaa;animation-duration:.92s}
+        .original-scroll-nib-sparks i:nth-child(11){animation-delay:.70s;background:#ffd17d;box-shadow:0 0 8px #ffb347cc;animation-duration:1.22s}
         @keyframes subtleNibSpark{from{transform:translate(0,0) scale(.92);opacity:.96}20%{opacity:1}to{transform:translate(10px,-16px) scale(.14);opacity:0}}
         @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:11% 10% 17%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
         @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-nib-sparks i{animation:none}.original-scroll-fluid-canvas{display:none}}
