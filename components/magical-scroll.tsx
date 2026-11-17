@@ -626,7 +626,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           </div>
         </div>
         <img ref={potRef} className="original-scroll-pot" src="/magical-scroll/inkpot.png" alt="" draggable={false}/>
-        {/* Independent, lightweight blue-flame shimmer. No JS animation loop or feather edits. */}
+        {/* Fluid light overlays follow the inkpot image; no feather positioning changes. */}
         <svg
           className={`original-scroll-flame-overlay${opened ? ' is-open' : ''}`}
           viewBox="0 0 180 255"
@@ -634,60 +634,81 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           aria-hidden="true"
         >
           <defs>
-            <radialGradient id="mashkeeza-pot-core" cx="50%" cy="62%" r="38%">
-              <stop offset="0%" stopColor="#fff2b8" stopOpacity=".95" />
-              <stop offset="18%" stopColor="#ffcc71" stopOpacity=".85" />
-              <stop offset="36%" stopColor="#ff6fd8" stopOpacity=".78" />
-              <stop offset="63%" stopColor="#7f6bff" stopOpacity=".68" />
-              <stop offset="100%" stopColor="#1fa9ff" stopOpacity="0" />
+            <clipPath id="mashkeeza-glass-mask">
+              <ellipse cx="89" cy="177" rx="36" ry="24" />
+            </clipPath>
+            <radialGradient id="mashkeeza-liquid-depth" cx="49%" cy="61%" r="65%">
+              <stop offset="0%" stopColor="#ffdc96" stopOpacity=".65" />
+              <stop offset="27%" stopColor="#ff53c8" stopOpacity=".64" />
+              <stop offset="58%" stopColor="#6550ff" stopOpacity=".42" />
+              <stop offset="100%" stopColor="#16baff" stopOpacity="0" />
             </radialGradient>
-            <radialGradient id="mashkeeza-pot-halo" cx="50%" cy="62%" r="62%">
-              <stop offset="0%" stopColor="#8fd8ff" stopOpacity=".34" />
-              <stop offset="52%" stopColor="#925fff" stopOpacity=".20" />
-              <stop offset="100%" stopColor="#925fff" stopOpacity="0" />
-            </radialGradient>
-            <linearGradient id="mashkeeza-flame-light" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%" stopColor="#20b4ff" stopOpacity=".88" />
-              <stop offset="45%" stopColor="#84e6ff" stopOpacity=".70" />
-              <stop offset="100%" stopColor="#9a83ff" stopOpacity=".18" />
+            <linearGradient id="mashkeeza-liquid-stream" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#3aeaff" stopOpacity="0" />
+              <stop offset="30%" stopColor="#82f7ff" stopOpacity=".86" />
+              <stop offset="58%" stopColor="#ff81e3" stopOpacity=".84" />
+              <stop offset="79%" stopColor="#ffd980" stopOpacity=".91" />
+              <stop offset="100%" stopColor="#997aff" stopOpacity="0" />
             </linearGradient>
-            <linearGradient id="mashkeeza-ring-gold" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#ffeeb0" stopOpacity=".98" />
-              <stop offset="34%" stopColor="#ffd56f" stopOpacity=".95" />
-              <stop offset="68%" stopColor="#ff9b37" stopOpacity=".9" />
-              <stop offset="100%" stopColor="#fff3bb" stopOpacity=".96" />
+            <linearGradient id="mashkeeza-flame-living" x1="0" y1="1" x2="0" y2="0">
+              <stop offset="0%" stopColor="#38c9ff" stopOpacity=".9" />
+              <stop offset="38%" stopColor="#3b8eff" stopOpacity=".85" />
+              <stop offset="72%" stopColor="#9a6cff" stopOpacity=".62" />
+              <stop offset="100%" stopColor="#84eaff" stopOpacity=".05" />
             </linearGradient>
+            <linearGradient id="mashkeeza-gold-flow" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#ffc55d" stopOpacity=".03" />
+              <stop offset="33%" stopColor="#ffe8a5" stopOpacity=".92" />
+              <stop offset="53%" stopColor="#ffffff" stopOpacity="1" />
+              <stop offset="71%" stopColor="#ffad37" stopOpacity=".8" />
+              <stop offset="100%" stopColor="#ffd574" stopOpacity=".04" />
+            </linearGradient>
+            <filter id="mashkeeza-fluid-distort" x="-30%" y="-30%" width="160%" height="160%" colorInterpolationFilters="sRGB">
+              <feTurbulence type="fractalNoise" baseFrequency="0.013 0.026" numOctaves="2" seed="7" result="waves">
+                <animate attributeName="baseFrequency" values="0.013 0.026;0.020 0.035;0.011 0.024;0.013 0.026" dur="6s" repeatCount="indefinite" />
+                <animate attributeName="seed" values="7;8;9;7" dur="14s" repeatCount="indefinite" calcMode="discrete" />
+              </feTurbulence>
+              <feDisplacementMap in="SourceGraphic" in2="waves" scale="8" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+            <filter id="mashkeeza-flame-blur" x="-70%" y="-30%" width="240%" height="165%">
+              <feGaussianBlur stdDeviation="5" />
+            </filter>
           </defs>
 
-          <g className="pot-energy-core">
-            <ellipse cx="89" cy="179" rx="45" ry="32" fill="url(#mashkeeza-pot-halo)" />
-            <ellipse cx="89" cy="177" rx="32" ry="23" fill="url(#mashkeeza-pot-core)" />
-            <ellipse cx="74" cy="167" rx="14" ry="10" fill="#9de8ff" opacity=".28" />
-            <ellipse cx="104" cy="186" rx="15" ry="10" fill="#ff6fd8" opacity=".22" />
-            <ellipse cx="88" cy="191" rx="16" ry="9" fill="#ffbf55" opacity=".24" />
+          {/* Lit fluid motion is clipped inside the existing inkpot glass silhouette. */}
+          <g clipPath="url(#mashkeeza-glass-mask)" className="mashkeeza-glass-fluid">
+            <ellipse cx="89" cy="177" rx="36" ry="24" fill="url(#mashkeeza-liquid-depth)" />
+            <g className="mashkeeza-glass-current" filter="url(#mashkeeza-fluid-distort)">
+              <path d="M38 186 C61 161 82 166 96 179 S127 194 145 161" stroke="url(#mashkeeza-liquid-stream)" strokeWidth="16" strokeLinecap="round" fill="none" />
+              <path d="M48 163 C74 188 88 164 108 163 S136 182 145 198" stroke="#44d9ff" strokeOpacity=".45" strokeWidth="10" strokeLinecap="round" fill="none" />
+              <path d="M47 197 C76 165 104 198 137 160" stroke="#ff72c7" strokeOpacity=".38" strokeWidth="9" strokeLinecap="round" fill="none" />
+            </g>
+            <ellipse className="mashkeeza-liquid-hotspot" cx="93" cy="179" rx="16" ry="13" fill="#ffbb71" opacity=".4" />
           </g>
 
-          <g className="golden-energy-rings">
-            <ellipse className="ring ring-back" cx="89" cy="190" rx="55" ry="18" fill="none" stroke="url(#mashkeeza-ring-gold)" strokeWidth="4.1" strokeLinecap="round" strokeDasharray="34 18 20 14" />
-            <ellipse className="ring ring-mid" cx="91" cy="182" rx="49" ry="15" fill="none" stroke="url(#mashkeeza-ring-gold)" strokeWidth="3" strokeLinecap="round" strokeDasharray="26 14 18 12" />
-            <path className="ring-sweep" d="M40 196 C58 175 87 164 120 168 C138 171 149 178 160 189" fill="none" stroke="url(#mashkeeza-ring-gold)" strokeWidth="4.6" strokeLinecap="round" />
+          {/* Flowing fire is wispy and wavy, not a set of rigid straight strokes. */}
+          <g className="mashkeeza-flame-living" filter="url(#mashkeeza-fluid-distort)">
+            <path className="mashkeeza-flame-glow" d="M91 113 C135 84 121 68 93 61 C52 52 48 38 69 23 C80 13 78 6 75 0" stroke="#319eff" strokeOpacity=".66" strokeWidth="16" fill="none" filter="url(#mashkeeza-flame-blur)" />
+            <path className="mashkeeza-flame-primary" d="M91 112 C135 84 121 68 93 61 C52 52 48 38 69 23 C80 13 78 6 75 0" stroke="url(#mashkeeza-flame-living)" strokeWidth="7.5" strokeLinecap="round" fill="none" />
+            <path className="mashkeeza-flame-secondary" d="M85 110 C115 88 119 72 93 62 C73 54 57 48 61 31 C62 21 77 16 79 4" stroke="#8ceaff" strokeOpacity=".79" strokeWidth="3.1" strokeLinecap="round" fill="none" />
+            <path className="mashkeeza-flame-inner" d="M97 104 C116 84 110 69 87 61 C66 55 53 40 65 29 C75 20 78 11 77 6" stroke="#d4f9ff" strokeOpacity=".56" strokeWidth="1.6" strokeLinecap="round" fill="none" />
           </g>
-
-          <g className="flame-light-waves">
-            <path className="flame-stream stream-main" d="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3" stroke="url(#mashkeeza-flame-light)" strokeWidth="4.3" fill="none" />
-            <path className="flame-stream stream-second" d="M86 107 C112 87 111 72 92 63 C69 56 57 46 64 34 C65 22 84 17 82 7" stroke="#86e4ff" strokeOpacity=".72" strokeWidth="2.2" fill="none" />
-            <path className="flame-stream stream-inner" d="M98 106 C130 84 109 67 87 61 C59 56 49 41 62 32 C58 22 80 13 77 7" stroke="#d7f7ff" strokeOpacity=".44" strokeWidth="1.55" fill="none" />
-          </g>
-
-          <g className="flame-particles">
-            <circle r="1.8" fill="#dbfaff">
-              <animateMotion dur="3.1s" repeatCount="indefinite" path="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3"/>
-              <animate attributeName="opacity" values="0;.72;.45;0" dur="3.1s" repeatCount="indefinite"/>
+          <g className="mashkeeza-flame-embers">
+            <circle r="1.7" fill="#9beaff">
+              <animateMotion dur="3.1s" repeatCount="indefinite" path="M91 112 C135 84 121 68 93 61 C52 52 48 38 69 23 C80 13 78 6 75 0" />
+              <animate attributeName="opacity" values="0;.8;.36;0" dur="3.1s" repeatCount="indefinite" />
             </circle>
-            <circle r="1.25" fill="#c0aaff">
-              <animateMotion dur="3.7s" begin="-1.4s" repeatCount="indefinite" path="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3"/>
-              <animate attributeName="opacity" values="0;.56;.30;0" dur="3.7s" repeatCount="indefinite"/>
+            <circle r="1.2" fill="#be95ff">
+              <animateMotion dur="4.1s" begin="-2s" repeatCount="indefinite" path="M85 110 C115 88 119 72 93 62 C73 54 57 48 61 31 C62 21 77 16 79 4" />
+              <animate attributeName="opacity" values="0;.5;.3;0" dur="4.1s" repeatCount="indefinite" />
             </circle>
+          </g>
+
+          {/* These moving highlights follow the golden loops in the inkpot image. */}
+          <g className="mashkeeza-golden-current">
+            <ellipse className="mashkeeza-ring-current ring-one" cx="89" cy="191" rx="55" ry="18" fill="none" stroke="url(#mashkeeza-gold-flow)" strokeWidth="3.6" strokeLinecap="round" strokeDasharray="25 320" />
+            <ellipse className="mashkeeza-ring-current ring-two" cx="91" cy="183" rx="49" ry="15" fill="none" stroke="#ffe6a0" strokeOpacity=".74" strokeWidth="2.3" strokeLinecap="round" strokeDasharray="18 290" />
+            <path className="mashkeeza-ring-current ring-three" d="M38 197 C60 175 91 165 119 169 C140 172 151 180 159 191" fill="none" stroke="#ffd77f" strokeOpacity=".7" strokeWidth="2.8" strokeLinecap="round" strokeDasharray="14 170" />
           </g>
         </svg>
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
@@ -718,12 +739,21 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-pot{position:absolute;z-index:1000;width:19.15%;height:auto;right:1%;bottom:0;opacity:0;pointer-events:none;filter:drop-shadow(0 0 8px #5e8cff99)}
         .original-scroll-flame-overlay{position:absolute;right:1%;bottom:0;width:19.15%;height:auto;aspect-ratio:180 / 255;z-index:1001;pointer-events:none;overflow:visible;opacity:0;mix-blend-mode:screen;transition:opacity 1.3s ease}
         .original-scroll-flame-overlay.is-open{opacity:1}
-        .original-scroll-flame-overlay .pot-energy-core{transform-origin:50% 68%;animation:potCorePulse 2.8s ease-in-out infinite alternate}.original-scroll-flame-overlay .golden-energy-rings{transform-origin:50% 72%;filter:drop-shadow(0 0 6px rgba(255,203,96,.52)) drop-shadow(0 0 13px rgba(255,153,55,.35));animation:potRingFloat 3.6s ease-in-out infinite alternate}.original-scroll-flame-overlay .ring{animation:ringDash 4.3s linear infinite}.original-scroll-flame-overlay .ring-mid{animation-duration:3.4s;animation-direction:reverse}.original-scroll-flame-overlay .ring-sweep{filter:drop-shadow(0 0 6px rgba(255,209,110,.55));animation:ringSweep 2.7s ease-in-out infinite alternate}.original-scroll-flame-overlay .flame-light-waves{transform-origin:50% 42%;animation:inkFlameBreathe 2.7s ease-in-out infinite alternate}
-        .original-scroll-flame-overlay .flame-stream{stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:6 3;animation:inkFlameFlow 3.5s linear infinite}
-        .original-scroll-flame-overlay .stream-main{filter:drop-shadow(0 0 6px #5abaffcc) drop-shadow(0 0 12px #875cff88)}
-        .original-scroll-flame-overlay .stream-second{filter:drop-shadow(0 0 4px rgba(110,220,255,.55));animation-duration:2.9s}.original-scroll-flame-overlay .stream-inner{animation-duration:2.4s;animation-direction:reverse}
-        @keyframes potCorePulse{from{opacity:.82;transform:scale(.96)}to{opacity:1;transform:scale(1.06)}}@keyframes potRingFloat{from{opacity:.76;transform:translateY(1.5px) scale(.985)}to{opacity:1;transform:translateY(-1.5px) scale(1.02)}}@keyframes ringDash{to{stroke-dashoffset:-92}}@keyframes ringSweep{from{opacity:.68;transform:translateY(0) scale(.985)}to{opacity:1;transform:translateY(-2px) scale(1.02)}}@keyframes inkFlameBreathe{from{opacity:.52;transform:translate(-1px,1px) rotate(-1deg) scale(.985)}to{opacity:1;transform:translate(1.5px,-2px) rotate(1.8deg) scale(1.02)}}
-        @keyframes inkFlameFlow{to{stroke-dashoffset:-74}}
+        /* Slow overlapping movement creates a current inside the original glass. */
+        .original-scroll-flame-overlay .mashkeeza-glass-current{transform-origin:50% 70%;animation:mashkeezaLiquidOrbit 5.6s ease-in-out infinite alternate}
+        .original-scroll-flame-overlay .mashkeeza-glass-fluid{filter:drop-shadow(0 0 4px rgba(93,190,255,.3))}
+        .original-scroll-flame-overlay .mashkeeza-liquid-hotspot{animation:mashkeezaLiquidGlow 3.7s ease-in-out infinite alternate;transform-origin:50% 70%}
+        .original-scroll-flame-overlay .mashkeeza-flame-living{transform-origin:51% 43%;animation:mashkeezaFlameSway 3.8s ease-in-out infinite alternate}
+        .original-scroll-flame-overlay .mashkeeza-flame-primary{filter:drop-shadow(0 0 5px rgba(49,167,255,.9)) drop-shadow(0 0 11px rgba(125,76,255,.55));animation:mashkeezaFlameBreath 2.9s ease-in-out infinite alternate}
+        .original-scroll-flame-overlay .mashkeeza-flame-secondary{animation:mashkeezaFlameBreath 2.3s ease-in-out infinite alternate-reverse}
+        .original-scroll-flame-overlay .mashkeeza-ring-current{animation:mashkeezaRingFlow 3.1s linear infinite;filter:drop-shadow(0 0 5px rgba(255,196,82,.8))}
+        .original-scroll-flame-overlay .ring-two{animation-duration:4s;animation-direction:reverse}
+        .original-scroll-flame-overlay .ring-three{animation-duration:2.7s}
+        @keyframes mashkeezaLiquidOrbit{0%{transform:translate(-3px,1px) rotate(-6deg) scale(1.02)}50%{transform:translate(2px,-2px) rotate(1deg) scale(1.06)}100%{transform:translate(4px,1px) rotate(7deg) scale(1.02)}}
+        @keyframes mashkeezaLiquidGlow{0%{opacity:.22;transform:translate(-6px,2px) scale(.82)}100%{opacity:.65;transform:translate(5px,-2px) scale(1.18)}}
+        @keyframes mashkeezaFlameSway{0%{transform:translate(-1px,2px) rotate(-2deg) scale(.99)}50%{transform:translate(2px,-1px) rotate(1deg) scale(1.02)}100%{transform:translate(-2px,-3px) rotate(2.8deg) scale(1)}}
+        @keyframes mashkeezaFlameBreath{0%{opacity:.65}100%{opacity:1}}
+        @keyframes mashkeezaRingFlow{to{stroke-dashoffset:-360}}
         .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform;transform-origin:1.4% 99.3%}
         /* Light, localized engraving flecks — separate from the feather's z-index. */
         .original-scroll-engraving-dust{position:absolute;left:0;top:0;width:120px;height:120px;z-index:1250;pointer-events:none;overflow:visible;will-change:transform}
@@ -736,7 +766,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-nib-sparks i:nth-child(5){animation-delay:.42s;background:#d29aff;box-shadow:0 0 5px #c47cff99;animation-duration:1.1s}.original-scroll-nib-sparks i:nth-child(6){animation-delay:.62s;background:#ffd17d;box-shadow:0 0 6px #ffb347aa;animation-duration:.88s}.original-scroll-nib-sparks i:nth-child(7){animation-delay:.22s;background:#9ce7ff;box-shadow:0 0 6px #62caffaa;animation-duration:1.18s}
         @keyframes subtleNibSpark{from{transform:translate(0,0) scale(.92);opacity:.96}20%{opacity:1}to{transform:translate(10px,-16px) scale(.14);opacity:0}}
         @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:11% 10% 17%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
-        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-nib-sparks i,.original-scroll-flame-overlay .pot-energy-core,.original-scroll-flame-overlay .golden-energy-rings,.original-scroll-flame-overlay .ring,.original-scroll-flame-overlay .ring-sweep,.original-scroll-flame-overlay .flame-light-waves,.original-scroll-flame-overlay .flame-stream{animation:none}.original-scroll-flame-overlay .flame-particles{display:none}}
+        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-nib-sparks i,.original-scroll-flame-overlay .mashkeeza-glass-current,.original-scroll-flame-overlay .mashkeeza-liquid-hotspot,.original-scroll-flame-overlay .mashkeeza-flame-living,.original-scroll-flame-overlay .mashkeeza-flame-primary,.original-scroll-flame-overlay .mashkeeza-flame-secondary,.original-scroll-flame-overlay .mashkeeza-ring-current{animation:none}.original-scroll-flame-overlay .mashkeeza-flame-embers{display:none}}
       `}</style>
     </>
   )
