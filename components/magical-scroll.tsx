@@ -259,7 +259,6 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
   const potRef = useRef<HTMLImageElement>(null)
   const sparkleRef = useRef<HTMLSpanElement>(null)
   const engravingCanvasRef = useRef<HTMLCanvasElement>(null)
-  const cometCanvasRef = useRef<HTMLCanvasElement>(null)
   const [opened, setOpened] = useState(false)
   const [visitEpoch, setVisitEpoch] = useState(0)
 
@@ -278,8 +277,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const pot = potRef.current
     const spark = sparkleRef.current
     const dustCanvas = engravingCanvasRef.current
-    const cometCanvas = cometCanvasRef.current
-    if (!stage || !paper || !text || !quill || !pot || !spark || !dustCanvas || !cometCanvas) return
+    if (!stage || !paper || !text || !quill || !pot || !spark || !dustCanvas) return
 
     let cancelled = false
     let completed = false
@@ -316,102 +314,143 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const sparkleBoost = 1.5
     let lastEmission = 0
     let lastNibX = NaN, lastNibY = NaN
-    // Cursor-style trailing glitter: individual stars shed from the feather nib.
-    // No ribbon, broad glow, flame, or connecting stroke is ever drawn.
-    const cometCtx = cometCanvas.getContext('2d', { alpha: true })
-    type TrailSpark = { x: number; y: number; born: number; hue: number; size: number; seed: number }
-    const trailSparks: TrailSpark[] = []
-    const tailLengthPx = 125 // 1–1.5 inches in CSS pixels, based on actual movement
-    let cometScale = 1
-    let glitterLastX = NaN, glitterLastY = NaN
-    let glitterDistance = 0
-    const prepareComet = () => {
-      if (!cometCtx) return
-      const w = Math.max(1, stage.clientWidth)
-      const h = Math.max(1, stage.scrollHeight)
-      cometScale = Math.min(window.devicePixelRatio || 1, 1.5, 4096 / Math.max(w, h))
-      cometCanvas.width = Math.round(w * cometScale)
-      cometCanvas.height = Math.round(h * cometScale)
-      cometCtx.setTransform(cometScale, 0, 0, cometScale, 0, 0)
-      trailSparks.length = 0
-      glitterDistance = 0
-      glitterLastX = NaN
-      glitterLastY = NaN
+    // Lightweight cursor-like stars. Nothing connects the particles, so this
+    // cannot become a flame/ribbon. Draw in a BODY overlay above site cards.
+    type TrailSpark = {
+      x: number; y: number; distance: number; born: number;
+      color: string; size: number; phase: number; drift: number
     }
+    const trailSparks: TrailSpark[] = []
+    const glitterColors = ['#ffe88d', '#ff9bdd', '#bf9aff', '#7be8ff', '#eaffff', '#ffaec7']
+    const tailLengthPx = 260 // longer, narrow 2.7in CSS-pixel motion history
+    let glitterLastX = NaN, glitterLastY = NaN
+    let totalTravel = 0
+    let sampleRemainder = 0
+    let flightLayer: HTMLDivElement | null = null
+    let flightCanvas: HTMLCanvasElement | null = null
+    let flightCtx: CanvasRenderingContext2D | null = null
+    let flyingFeather: HTMLImageElement | null = null
+    let flightScale = 1
+
     const clearComet = () => {
       trailSparks.length = 0
-      glitterDistance = 0
       glitterLastX = NaN
       glitterLastY = NaN
-      cometCtx?.clearRect(0, 0, cometCanvas.width / cometScale, cometCanvas.height / cometScale)
+      totalTravel = 0
+      sampleRemainder = 0
+      if (flightLayer) flightLayer.remove()
+      flightLayer = null
+      flightCanvas = null
+      flightCtx = null
+      flyingFeather = null
+      quill.style.visibility = 'visible'
+      spark.style.visibility = 'visible'
+    }
+    const prepareComet = () => {
+      clearComet()
+      const overlay = document.createElement('div')
+      overlay.setAttribute('aria-hidden', 'true')
+      Object.assign(overlay.style, {
+        position:'fixed', inset:'0', overflow:'visible', pointerEvents:'none',
+        zIndex:'2147483000', background:'transparent', contain:'none'
+      })
+      const canvas = document.createElement('canvas')
+      Object.assign(canvas.style, {
+        position:'absolute', top:'0', left:'0', width:'100%', height:'100%',
+        overflow:'visible', pointerEvents:'none'
+      })
+      flightScale = Math.min(window.devicePixelRatio || 1, 1.75)
+      canvas.width = Math.round(window.innerWidth * flightScale)
+      canvas.height = Math.round(window.innerHeight * flightScale)
+      const flightContext = canvas.getContext('2d', { alpha: true })
+      flightContext?.setTransform(flightScale, 0, 0, flightScale, 0, 0)
+      const clone = quill.cloneNode(false) as HTMLImageElement
+      clone.removeAttribute('id')
+      clone.removeAttribute('class')
+      Object.assign(clone.style, {
+        position:'absolute', left:'0', top:'0', width:`${quillWidth}px`,
+        height:`${quillHeight}px`, opacity:'1', visibility:'visible',
+        transformOrigin:'1.4% 99.3%', pointerEvents:'none',
+        filter:'drop-shadow(2px 4px 4px rgba(45,25,44,.4))',
+        willChange:'transform', zIndex:'2'
+      })
+      overlay.appendChild(canvas)
+      overlay.appendChild(clone)
+      document.body.appendChild(overlay)
+      flightLayer = overlay
+      flightCanvas = canvas
+      flightCtx = flightContext
+      flyingFeather = clone
+      quill.style.visibility = 'hidden'
+      spark.style.visibility = 'hidden'
     }
     const drawComet = (x: number, y: number) => {
-      if (!cometCtx || !cometCanvas.width) return
+      if (!flightCtx || !flightCanvas) return
       const now = performance.now()
       if (Number.isFinite(glitterLastX)) {
         const dx = x - glitterLastX, dy = y - glitterLastY
         const dist = Math.hypot(dx, dy)
-        // One glitter cluster every ~4 CSS px travelled, including fast frames.
-        // Fixed world positions make them appear to shed / fall behind the nib.
-        if (dist > .05 && dist < 250) {
-          const n = Math.min(75, Math.floor((glitterDistance + dist) / 4))
-          for (let j = 0; j < n; j++) {
-            const along = (4 * (j + 1) - glitterDistance) / dist
-            const px = glitterLastX + dx * along
-            const py = glitterLastY + dy * along
-            for (let k = 0; k < 2; k++) {
-              const scatter = (Math.random() - .5) * 6
+        if (dist > .1 && dist < 300) {
+          // A narrow CURSOR-style trail: separated twinkling dots, not strokes.
+          const spacing = 2.9
+          const count = Math.min(120, Math.floor((sampleRemainder + dist) / spacing))
+          for (let j=0; j<count; j++) {
+            const d = spacing * (j+1) - sampleRemainder
+            const u = Math.max(0, Math.min(1, d/dist))
+            const nx = -dy / dist, ny = dx / dist
+            for (let k=0; k<2; k++) {
+              const scatter = (Math.random()-.5)*4.2
               trailSparks.push({
-                x: px - dy / dist * scatter,
-                y: py + dx / dist * scatter,
-                born: now - (1 - along) * 15,
-                hue: Math.floor(Math.random() * 6),
-                size: .8 + Math.random() * 1.8,
-                seed: Math.random() * 6.283,
+                x:glitterLastX + dx*u + nx*scatter,
+                y:glitterLastY + dy*u + ny*scatter,
+                distance:totalTravel + d,
+                born:now,
+                color:glitterColors[Math.floor(Math.random()*glitterColors.length)],
+                size:.65+Math.random()*1.1,
+                phase:Math.random()*Math.PI*2,
+                drift:(Math.random()-.5)*1.6
               })
             }
           }
-          glitterDistance = (glitterDistance + dist) % 4
+          sampleRemainder = (sampleRemainder + dist) % spacing
+          totalTravel += dist
         }
       }
-      glitterLastX = x; glitterLastY = y
-      cometCtx.clearRect(0, 0, cometCanvas.width / cometScale, cometCanvas.height / cometScale)
-      const palette = ['#ffe58e', '#ff8dd8', '#b58aff', '#63dfff', '#fff9df', '#9ef5ef']
-      cometCtx.save()
-      cometCtx.globalCompositeOperation = 'lighter'
-      // Distance filter ensures the tail follows the curved path and is 125px long.
-      // Time filter prevents lingering when motion stops.
-      for (let i = trailSparks.length - 1; i >= 0; i--) {
-        const s = trailSparks[i]
-        const age = now - s.born
-        const dist = Math.hypot(x - s.x, y - s.y)
-        if (age > 900 || dist > tailLengthPx) { trailSparks.splice(i, 1); continue }
-        const fade = Math.pow(1 - Math.max(age / 900, dist / tailLengthPx), 1.25)
-        const pulse = .65 + .35 * Math.sin(now * .018 + s.seed)
-        const radius = s.size * (.6 + .4 * fade)
-        const px = s.x + Math.sin(age * .005 + s.seed) * Math.min(2, age * .004)
-        const py = s.y + Math.min(12, age * age * .000017) // glitter gently falling
-        const color = palette[s.hue]
-        cometCtx.fillStyle = color
-        cometCtx.strokeStyle = color
-        cometCtx.globalAlpha = Math.min(1, fade * pulse)
-        cometCtx.shadowBlur = 4 + 4 * fade
-        cometCtx.shadowColor = color
-        cometCtx.beginPath()
-        cometCtx.arc(px, py, radius, 0, Math.PI * 2)
-        cometCtx.fill()
-        // Occasional tiny four-point twinkles, never long light streaks.
-        if (s.size > 2.05) {
-          cometCtx.lineWidth = .65
-          cometCtx.beginPath()
-          cometCtx.moveTo(px - radius * 2.0, py)
-          cometCtx.lineTo(px + radius * 2.0, py)
-          cometCtx.moveTo(px, py - radius * 2.0)
-          cometCtx.lineTo(px, py + radius * 2.0)
-          cometCtx.stroke()
+      glitterLastX=x; glitterLastY=y
+      const stageBounds = rectOfStage()
+      const c = flightCtx
+      c.clearRect(0,0,window.innerWidth,window.innerHeight)
+      c.save()
+      // Normal source-over: avoid additive glow merging into orange flames.
+      c.globalCompositeOperation = 'source-over'
+      for (let i=trailSparks.length-1; i>=0; i--) {
+        const p=trailSparks[i]
+        const travelled=totalTravel-p.distance
+        const age=now-p.born
+        if (travelled>tailLengthPx || age>2200) {trailSparks.splice(i,1);continue}
+        const fade=Math.max(0,Math.min(1,1-travelled/tailLengthPx)) *
+          Math.max(0,Math.min(1,1-age/2200))
+        const twinkle=.55+.45*Math.sin(now*.022+p.phase)**2
+        const px=stageBounds.left+p.x+Math.sin(age*.006+p.phase)*p.drift
+        const py=stageBounds.top+p.y+Math.min(6,age*.0035)
+        c.globalAlpha=Math.min(.95,fade*twinkle)
+        c.fillStyle=p.color
+        c.shadowColor=p.color
+        c.shadowBlur=3.2
+        c.beginPath()
+        c.arc(px,py,p.size,0,Math.PI*2)
+        c.fill()
+        // A few tiny star crosses, never long lines or thick glowing blobs.
+        if (p.size>1.43 && i%5===0) {
+          c.lineWidth=.65
+          c.strokeStyle=p.color
+          c.beginPath()
+          c.moveTo(px-2.6,py); c.lineTo(px+2.6,py)
+          c.moveTo(px,py-2.6); c.lineTo(px,py+2.6)
+          c.stroke()
         }
       }
-      cometCtx.restore()
+      c.restore()
     }
 
     const drawFlecks = (time: number) => {
@@ -450,7 +489,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       }
       lastNibX = x; lastNibY = y
       if (!engraved || !ctx) return
-      // In flight the glitter is embedded into the single comet ribbon above.
+      // In flight the independent glitter stars are drawn in the top-level overlay.
       // Keep the existing boosted writing sparks, not a separate flying cloud.
       if (returnFlight) return
       const now = performance.now()
@@ -498,7 +537,16 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       const nibY = y + quillHeight * .993
       spark.style.transform = `translate3d(${nibX - 11}px,${nibY - 12}px,0)`
       drawAtNib(nibX, nibY)
-      if (returnFlight) drawComet(nibX, nibY)
+      if (returnFlight) {
+        if (flyingFeather) {
+          const rect = rectOfStage()
+          const transform = bank === 0 && pitch === 0
+            ? `translate3d(${rect.left+x}px,${rect.top+y}px,0) rotate(${angle}deg)`
+            : `translate3d(${rect.left+x}px,${rect.top+y}px,0) perspective(740px) rotateZ(${angle}deg) rotateY(${bank}deg) rotateX(${pitch}deg)`
+          flyingFeather.style.transform = transform
+        }
+        drawComet(nibX, nibY)
+      }
     }
     const resolveReadyRest = () => {
       const stageRect = rectOfStage()
@@ -1029,7 +1077,6 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         <LivingInkEnergy active={opened} />
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
         <span ref={sparkleRef} className="original-scroll-nib-sparks" aria-hidden="true"><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/><i/></span>
-        <canvas ref={cometCanvasRef} className="original-scroll-comet-tail" aria-hidden="true" />
         <canvas ref={engravingCanvasRef} className="original-scroll-engraving-dust" aria-hidden="true" />
         {opened && <span className="sr-only">Scroll opened</span>}
       </div>
@@ -1059,7 +1106,6 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-fluid-canvas.is-open{opacity:.98}
         .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform;transform-origin:1.4% 99.3%}
         /* Light, localized engraving flecks — separate from the feather's z-index. */
-        .original-scroll-comet-tail{position:absolute;inset:0;width:100%;height:100%;z-index:1140;pointer-events:none;overflow:visible}
         .original-scroll-engraving-dust{position:absolute;left:0;top:0;width:120px;height:120px;z-index:1250;pointer-events:none;overflow:visible;will-change:transform}
         /* Small, soft sparks follow the ACTUAL nib; not the top of the feather. */
         .original-scroll-nib-sparks{position:absolute;left:0;top:0;width:36px;height:36px;z-index:1200;opacity:0;pointer-events:none;will-change:transform,opacity;filter:drop-shadow(0 0 12px #f7d8a4aa)}
