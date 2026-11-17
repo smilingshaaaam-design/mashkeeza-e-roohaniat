@@ -537,7 +537,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           </div>
         </div>
         <img ref={potRef} className="original-scroll-pot" src="/magical-scroll/inkpot.png" alt="" draggable={false}/>
-        {/* The original blue flame is animated without moving the inkpot or feather. */}
+        {/* V5: design-matched motion — illuminate the inkpot's own galaxy glass,
+            its existing golden orbit and the blue flame. No extra star emblems. */}
         <svg
           className={`original-scroll-flame-overlay${opened ? ' is-open' : ''}`}
           viewBox="0 0 180 255"
@@ -545,65 +546,72 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           aria-hidden="true"
         >
           <defs>
-            <linearGradient id="mashkeeza-flame-light" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%" stopColor="#20b4ff" stopOpacity=".54" />
-              <stop offset="45%" stopColor="#84e6ff" stopOpacity=".42" />
-              <stop offset="100%" stopColor="#9a83ff" stopOpacity=".06" />
+            <linearGradient id="mashkeeza-v5-flame" x1="0" y1="1" x2=".2" y2="0">
+              <stop offset="0%" stopColor="#18b9ff" stopOpacity=".95" />
+              <stop offset="43%" stopColor="#42d9ff" stopOpacity=".72" />
+              <stop offset="78%" stopColor="#665aff" stopOpacity=".45" />
+              <stop offset="100%" stopColor="#b4a1ff" stopOpacity="0" />
             </linearGradient>
-          </defs>
-          <g className="flame-light-waves">
-            <path className="flame-stream stream-main" d="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3" stroke="url(#mashkeeza-flame-light)" strokeWidth="3.2" fill="none" />
-            <path className="flame-stream stream-inner" d="M96 105 C129 82 109 67 87 61 C59 56 49 41 62 32 C58 22 80 13 77 7" stroke="#99ebff" strokeOpacity=".25" strokeWidth="1.25" fill="none" />
-          </g>
-          {/* Layered enchanted vapour: the existing flame remains the anchor.
-              Everything stays inside the same SVG, so inkpot alignment is unchanged. */}
-          <defs>
-            <radialGradient id="mashkeeza-ink-aura" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#a8f7ff" stopOpacity=".42" />
-              <stop offset="35%" stopColor="#31aaff" stopOpacity=".23" />
-              <stop offset="66%" stopColor="#8872ff" stopOpacity=".12" />
-              <stop offset="100%" stopColor="#9655fa" stopOpacity="0" />
+            <radialGradient id="mashkeeza-v5-galaxy" cx="50%" cy="52%" r="55%">
+              <stop offset="0%" stopColor="#ff61ca" stopOpacity=".42" />
+              <stop offset="43%" stopColor="#9853ef" stopOpacity=".24" />
+              <stop offset="75%" stopColor="#2d9dff" stopOpacity=".22" />
+              <stop offset="100%" stopColor="#0b61ff" stopOpacity="0" />
             </radialGradient>
-            <linearGradient id="mashkeeza-ink-mist" x1="0" x2="1" y1="1" y2="0">
-              <stop offset="0%" stopColor="#1abaff" stopOpacity="0" />
-              <stop offset="34%" stopColor="#64e4ff" stopOpacity=".56" />
-              <stop offset="72%" stopColor="#a28aff" stopOpacity=".34" />
-              <stop offset="100%" stopColor="#eab8ff" stopOpacity="0" />
+            <linearGradient id="mashkeeza-v5-orbit" x1="0" y1="0" x2="1" y2=".8">
+              <stop offset="0%" stopColor="#ff9d35" stopOpacity="0" />
+              <stop offset="27%" stopColor="#ffcf62" stopOpacity=".7" />
+              <stop offset="52%" stopColor="#ffef9b" stopOpacity=".95" />
+              <stop offset="80%" stopColor="#ff7e36" stopOpacity=".55" />
+              <stop offset="100%" stopColor="#ffb641" stopOpacity="0" />
             </linearGradient>
-            <linearGradient id="mashkeeza-flame-core" x1="0" y1="1" x2="30%" y2="0%">
-              <stop offset="0%" stopColor="#9affff" stopOpacity=".82" />
-              <stop offset="45%" stopColor="#50d9ff" stopOpacity=".72" />
-              <stop offset="82%" stopColor="#9580ff" stopOpacity=".43" />
-              <stop offset="100%" stopColor="#d0a3ff" stopOpacity="0" />
-            </linearGradient>
+            <filter id="mashkeeza-v5-softlight" x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="3.2" />
+            </filter>
+            <clipPath id="mashkeeza-v5-glass-area">
+              <ellipse cx="90" cy="181" rx="61" ry="40" />
+            </clipPath>
           </defs>
-          {/* Atmospheric halo behind the flame, not a three-star ornament. */}
-          <g className="ink-mystic-aura">
-            <ellipse cx="94" cy="98" rx="48" ry="43" fill="url(#mashkeeza-ink-aura)" />
-            <ellipse cx="94" cy="104" rx="23" ry="32" fill="url(#mashkeeza-ink-aura)" opacity=".52" />
+          {/* Light within the existing colorful glass; no extra solid bottle drawn. */}
+          <g className="ink-v5-glass-light" clipPath="url(#mashkeeza-v5-glass-area)">
+            <ellipse cx="91" cy="179" rx="61" ry="40" fill="url(#mashkeeza-v5-galaxy)" />
+            <ellipse className="ink-v5-liquid-shimmer" cx="93" cy="189" rx="48" ry="19" fill="#d82fff" opacity=".10" filter="url(#mashkeeza-v5-softlight)" />
+            {Array.from({length: 18}, (_, i) => (
+              <circle key={i} className="ink-v5-glass-point" cx={44 + (i * 29) % 95} cy={149 + (i * 19) % 62}
+                r={i % 4 === 0 ? 1.25 : .7}
+                fill={['#8defff','#ffb6fb','#f9cf8c','#997aff'][i % 4]}
+                style={{animationDelay:`${-(i * .37)}s`,animationDuration:`${2.5 + (i % 5) * .6}s`}} />
+            ))}
           </g>
-          <g className="ink-mystic-mist">
-            <path d="M97 108 C72 90 116 76 95 59 S63 36 79 8" fill="none" stroke="url(#mashkeeza-ink-mist)" strokeWidth="7" strokeLinecap="round" />
-            <path d="M91 107 C123 82 64 70 86 48 S112 23 91 4" fill="none" stroke="url(#mashkeeza-ink-mist)" strokeWidth="4" strokeLinecap="round" />
+          {/* Gold orbit: light travels ALONG the ring visible in the source art. */}
+          <g className="ink-v5-orbit">
+            <path d="M22 207 C40 225 131 240 158 209 C173 187 142 168 114 167" fill="none" stroke="url(#mashkeeza-v5-orbit)" strokeWidth="2" opacity=".65" />
+            <path d="M25 214 C54 235 140 233 162 204" fill="none" stroke="#ffc968" strokeWidth="1" opacity=".3" />
+            <circle r="2" fill="#fff3b5" filter="url(#mashkeeza-v5-softlight)">
+              <animateMotion dur="4.8s" repeatCount="indefinite" path="M22 207 C40 225 131 240 158 209 C173 187 142 168 114 167" />
+              <animate attributeName="opacity" values="0;.85;.65;0" dur="4.8s" repeatCount="indefinite" />
+            </circle>
+            <circle r="1.4" fill="#ffe0a0">
+              <animateMotion dur="6.1s" begin="-2.1s" repeatCount="indefinite" path="M25 214 C54 235 140 233 162 204" />
+              <animate attributeName="opacity" values="0;.8;.5;0" dur="6.1s" begin="-2.1s" repeatCount="indefinite" />
+            </circle>
           </g>
-          {/* Soft inner filament follows the SAME original flame trajectory. */}
-          <g className="ink-mystic-filaments">
-            <path className="ink-mystic-filament filament-one" d="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3" stroke="url(#mashkeeza-flame-core)" strokeWidth="1.45" fill="none" />
-            <path className="ink-mystic-filament filament-two" d="M96 105 C129 82 109 67 87 61 C59 56 49 41 62 32 C58 22 80 13 77 7" stroke="#a7f8ff" strokeOpacity=".42" strokeWidth=".7" fill="none" />
-          </g>
-          {/* Tiny embers rise within the flame. Their size and cadence vary. */}
-          <g className="ink-mystic-embers">
-            {Array.from({ length: 17 }, (_, i) => {
-              const dur = 3.35 + (i % 6) * .48
-              const start = -(i * .53)
-              return (
-                <circle key={i} r={i % 5 === 0 ? 1.2 : i % 3 === 0 ? .85 : .55} fill={['#b7f9ff','#6bd6ff','#ae9bff','#eeadff'][i % 4]} opacity="0">
-                  <animateMotion dur={`${dur}s`} begin={`${start}s`} repeatCount="indefinite" path={i % 3 === 0 ? 'M94 106 C122 82 65 69 88 49 C107 33 77 24 81 1' : i % 3 === 1 ? 'M94 106 C67 89 115 72 91 53 C65 33 104 17 86 1' : 'M93 105 C108 91 79 76 97 60 C115 43 66 31 76 3'} />
-                  <animate attributeName="opacity" values="0;.12;.62;.35;0" dur={`${dur}s`} begin={`${start}s`} repeatCount="indefinite" />
-                  <animate attributeName="r" values=".25;1.1;.65;.15" dur={`${dur}s`} begin={`${start}s`} repeatCount="indefinite" />
-                </circle>
-              )
-            })}
+          {/* The same flame silhouette as the inkpot image, with flowing highlights. */}
+          <g className="ink-v5-blue-flame">
+            <path d="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3"
+              stroke="url(#mashkeeza-v5-flame)" strokeWidth="5.1" fill="none" strokeLinecap="round" opacity=".55" filter="url(#mashkeeza-v5-softlight)" />
+            <path className="ink-v5-flame-ribbon" d="M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3"
+              stroke="url(#mashkeeza-v5-flame)" strokeWidth="2.8" fill="none" strokeLinecap="round" />
+            <path className="ink-v5-flame-ribbon ink-v5-flame-ribbon-alt" d="M96 105 C129 82 109 67 87 61 C59 56 49 41 62 32 C58 22 80 13 77 7"
+              stroke="#94eeff" strokeWidth="1.4" strokeOpacity=".6" fill="none" strokeLinecap="round" />
+            {Array.from({length: 12}, (_,i) => (
+              <circle key={i} r={i % 4 === 0 ? 1.1 : .65}
+                fill={['#9df6ff','#5ecfff','#b09aff'][i % 3]} opacity="0">
+                <animateMotion dur={`${2.8 + i * .23}s`} begin={`${-i * .48}s`} repeatCount="indefinite"
+                  path={i % 2 === 0 ? 'M94 106 C124 85 119 69 92 61 C61 57 44 43 58 32 C57 20 85 14 75 3' : 'M96 105 C129 82 109 67 87 61 C59 56 49 41 62 32 C58 22 80 13 77 7'} />
+                <animate attributeName="opacity" values="0;.2;.7;.3;0" dur={`${2.8 + i * .23}s`} begin={`${-i * .48}s`} repeatCount="indefinite" />
+              </circle>
+            ))}
           </g>
         </svg>
         <img ref={quillRef} className="original-scroll-quill" src="/magical-scroll/quill.webp" alt="" draggable={false}/>
@@ -654,17 +662,23 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-excerpt{font-size:.9em;text-align:center}
         .original-scroll-pot{position:absolute;z-index:1000;width:19.15%;height:auto;right:1%;bottom:0;opacity:0;pointer-events:none;filter:drop-shadow(0 0 8px #5e8cff99)}
         .original-scroll-flame-overlay{position:absolute;right:1%;bottom:0;width:19.15%;height:auto;aspect-ratio:180 / 255;z-index:1001;pointer-events:none;overflow:visible;opacity:0;mix-blend-mode:screen;transition:opacity 1.3s ease}
-        .original-scroll-flame-overlay.is-open{opacity:.82}
-        /* V4: the EXISTING flame gains a gentle dual-speed, organic undulation. */
-        .original-scroll-flame-overlay .flame-light-waves{transform-origin:94px 106px;animation:inkFlameLiving 4.1s cubic-bezier(.4,0,.5,1) infinite alternate}
-        .original-scroll-flame-overlay .flame-stream{stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:5 12;animation:inkFlameFlow 5.2s linear infinite,inkFlameGlisten 3.25s ease-in-out infinite}
-        .original-scroll-flame-overlay .stream-main{filter:drop-shadow(0 0 3px #53cfff) drop-shadow(0 0 5px #317aff)}
-        .original-scroll-flame-overlay .stream-inner{animation-duration:4.15s,4.3s;animation-direction:reverse,normal;filter:drop-shadow(0 0 3px #b1eeff)}
-        .original-scroll-stage.is-quill-resting .original-scroll-flame-overlay .flame-light-waves{animation-duration:3.05s;filter:drop-shadow(0 0 6px #33baffaa)}
-        .original-scroll-stage.is-quill-resting .original-scroll-flame-overlay .stream-main{stroke-width:3.6;filter:drop-shadow(0 0 5px #64e6ff) drop-shadow(0 0 8px #725bff)}
-        @keyframes inkFlameLiving{0%{opacity:.63;transform:translate(-1px,1px) rotate(-2.1deg) scaleX(.94)}29%{opacity:.96;transform:translate(1px,-1px) rotate(1.3deg) scaleX(1.045)}66%{opacity:.72;transform:translate(-1px,-3px) rotate(-.9deg) scaleX(.98)}100%{opacity:1;transform:translate(1px,-4px) rotate(2.2deg) scaleX(1.06)}}
-        @keyframes inkFlameFlow{to{stroke-dashoffset:-102}}
-        @keyframes inkFlameGlisten{0%,100%{opacity:.4}48%{opacity:.95}77%{opacity:.66}}
+        .original-scroll-flame-overlay.is-open{opacity:.9}
+        /* V5 follows the inkpot's existing blue flame and golden galaxy rings. */
+        .original-scroll-flame-overlay .ink-v5-glass-light{animation:inkV5GalaxyBreathe 5.7s ease-in-out infinite alternate;transform-origin:90px 180px}
+        .original-scroll-flame-overlay .ink-v5-liquid-shimmer{animation:inkV5GalaxyDrift 7s ease-in-out infinite alternate;transform-origin:93px 189px}
+        .original-scroll-flame-overlay .ink-v5-glass-point{animation:inkV5GlassTwinkle 3.2s ease-in-out infinite;opacity:.12}
+        .original-scroll-flame-overlay .ink-v5-orbit{animation:inkV5OrbitBreathe 5.4s ease-in-out infinite alternate;transform-origin:90px 201px}
+        .original-scroll-flame-overlay .ink-v5-blue-flame{transform-origin:94px 106px;animation:inkV5FlameSway 4.9s ease-in-out infinite alternate}
+        .original-scroll-flame-overlay .ink-v5-flame-ribbon{stroke-dasharray:16 12;animation:inkV5FlameCurrent 4.6s linear infinite,inkV5FlameGlow 3.7s ease-in-out infinite}
+        .original-scroll-flame-overlay .ink-v5-flame-ribbon-alt{animation-duration:5.8s,4.6s;animation-direction:reverse,normal}
+        .original-scroll-stage.is-quill-resting .original-scroll-flame-overlay .ink-v5-blue-flame{filter:drop-shadow(0 0 3px #48d5ff99)}
+        @keyframes inkV5GalaxyBreathe{from{opacity:.48;transform:scale(.98)}to{opacity:.9;transform:scale(1.015)}}
+        @keyframes inkV5GalaxyDrift{from{opacity:.16;transform:translateX(-4px) rotate(-5deg)}to{opacity:.42;transform:translateX(5px) rotate(6deg)}}
+        @keyframes inkV5GlassTwinkle{0%,100%{opacity:.04}45%{opacity:.74}70%{opacity:.21}}
+        @keyframes inkV5OrbitBreathe{from{opacity:.45}to{opacity:.9}}
+        @keyframes inkV5FlameSway{0%{opacity:.61;transform:translateX(-1.5px) rotate(-1.8deg) scaleX(.97)}45%{opacity:.94;transform:translate(1px,-2px) rotate(1.4deg) scaleX(1.025)}100%{opacity:.75;transform:translate(-1px,-3px) rotate(-.7deg) scaleX(.99)}}
+        @keyframes inkV5FlameCurrent{to{stroke-dashoffset:-112}}
+        @keyframes inkV5FlameGlow{0%,100%{opacity:.35}52%{opacity:.85}}
         .original-scroll-quill{position:absolute;z-index:1100;left:0;top:0;width:17%;height:auto;opacity:0;pointer-events:none;filter:drop-shadow(5px 7px 5px #321b1280);will-change:transform;transform-origin:1.4% 99.3%}
         /* A subtle jewel-like chromatic charge on a RESTING feather only. */
         .original-scroll-stage.is-quill-resting .original-scroll-quill{animation:quillChargedGlow 4.8s ease-in-out infinite alternate}
@@ -688,24 +702,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-nib-sparks i:nth-child(4){animation-delay:.14s;background:#fff4c1;box-shadow:0 0 4px #fff0a388;animation-duration:.75s}
         .original-scroll-nib-sparks i:nth-child(5){animation-delay:.42s;background:#d29aff;box-shadow:0 0 4px #c47cff66;animation-duration:1.1s}
         @keyframes subtleNibSpark{from{transform:translate(0,0) scale(.85);opacity:.86}to{transform:translate(7px,-11px) scale(.17);opacity:0}}
-        /* V4: gentle, layered atmospheric vapour — no decorative 3-stars. */
-        .original-scroll-flame-overlay .ink-mystic-aura{transform-origin:94px 98px;animation:inkAuraBreathe 5.8s ease-in-out infinite alternate}
-        .original-scroll-flame-overlay .ink-mystic-mist{transform-origin:94px 106px;animation:inkMistSway 6.1s ease-in-out infinite alternate;filter:drop-shadow(0 0 3px #47b8ff66)}
-        .original-scroll-flame-overlay .ink-mystic-mist path:first-child{stroke-dasharray:10 22;animation:inkVapourTravel 9s linear infinite}
-        .original-scroll-flame-overlay .ink-mystic-mist path:last-child{stroke-dasharray:8 20;animation:inkVapourTravel 7.3s linear infinite reverse,inkMistRipple 4.5s ease-in-out infinite alternate}
-        .original-scroll-flame-overlay .ink-mystic-filaments{transform-origin:94px 106px;animation:inkFilamentSway 4.75s ease-in-out infinite alternate;filter:drop-shadow(0 0 2px #8decff99)}
-        .original-scroll-flame-overlay .ink-mystic-filament{stroke-linecap:round;stroke-dasharray:2 15;animation:inkFilamentFlow 5.6s linear infinite}
-        .original-scroll-flame-overlay .filament-two{animation-direction:reverse;animation-duration:4.3s}
-        .original-scroll-flame-overlay .ink-mystic-embers{filter:drop-shadow(0 0 2px #8edfff)}
-        .original-scroll-stage.is-quill-resting .original-scroll-flame-overlay .ink-mystic-aura{animation-duration:4.5s}
-        @keyframes inkAuraBreathe{0%{opacity:.37;transform:scale(.86) translateY(4px)}52%{opacity:.8}100%{opacity:.64;transform:scale(1.11) translateY(-4px)}}
-        @keyframes inkMistSway{0%{opacity:.32;transform:translateX(-2px) rotate(-2.5deg)}55%{opacity:.72}100%{opacity:.5;transform:translateX(3px) rotate(3deg)}}
-        @keyframes inkMistRipple{from{opacity:.3;stroke-width:3}to{opacity:.65;stroke-width:4.7}}
-        @keyframes inkVapourTravel{to{stroke-dashoffset:-128}}
-        @keyframes inkFilamentSway{0%{opacity:.4;transform:translate(-1px,0) rotate(-1.5deg)}100%{opacity:.85;transform:translate(2px,-2px) rotate(1.5deg)}}
-        @keyframes inkFilamentFlow{to{stroke-dashoffset:-102}}
         @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:11% 10% 17%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
-        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-nib-sparks i,.original-scroll-flame-overlay .flame-light-waves,.original-scroll-flame-overlay .flame-stream{animation:none}.original-scroll-flame-overlay .ink-mystic-embers{display:none}.original-scroll-flame-overlay .ink-mystic-aura,.original-scroll-flame-overlay .ink-mystic-mist,.original-scroll-flame-overlay .ink-mystic-mist path,.original-scroll-flame-overlay .ink-mystic-filaments,.original-scroll-flame-overlay .ink-mystic-filament{animation:none}.original-scroll-stage.is-quill-resting .original-scroll-quill,.original-scroll-feather-glitter i{animation:none}.original-scroll-feather-glitter{display:none}}
+        @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-nib-sparks i,.original-scroll-flame-overlay .ink-v5-glass-light,.original-scroll-flame-overlay .ink-v5-liquid-shimmer,.original-scroll-flame-overlay .ink-v5-glass-point,.original-scroll-flame-overlay .ink-v5-orbit,.original-scroll-flame-overlay .ink-v5-blue-flame,.original-scroll-flame-overlay .ink-v5-flame-ribbon{animation:none}.original-scroll-stage.is-quill-resting .original-scroll-quill,.original-scroll-feather-glitter i{animation:none}.original-scroll-feather-glitter{display:none}}
       `}</style>
     </>
   )
