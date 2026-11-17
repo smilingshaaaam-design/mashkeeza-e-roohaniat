@@ -376,6 +376,53 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         }
         cometCtx.restore()
       }
+      // Cursor-trail style: colorful twinkling glitter lives INSIDE the
+      // continuous shooting-star ribbon, never as independent long streaks.
+      // Spread points across the actual curved tail with a small perpendicular
+      // offset and let each one pulse at its own frequency.
+      const clock = performance.now() * .001
+      cometCtx.save()
+      cometCtx.globalCompositeOperation = 'lighter'
+      for (let i = 1; i < tailHistory.length; i++) {
+        const a = tailHistory[i - 1], b = tailHistory[i]
+        const dx = b.x - a.x, dy = b.y - a.y
+        const segmentLength = Math.hypot(dx, dy)
+        if (segmentLength < .001) continue
+        const age = i / count
+        // Approximately 1-2 embedded specks per 8px of visible ribbon.
+        const specks = Math.max(1, Math.ceil(segmentLength / 7))
+        for (let j = 0; j < specks; j++) {
+          const seed = Math.sin(i * 127.1 + j * 311.7) * 43758.5453
+          const random = seed - Math.floor(seed)
+          const phase = random * Math.PI * 2
+          const u = (j + .3 + random * .4) / specks
+          const nx = -dy / segmentLength, ny = dx / segmentLength
+          const offset = (random - .5) * (2 + 5 * age)
+          const px = a.x + dx * u + nx * offset
+          const py = a.y + dy * u + ny * offset
+          const twinkle = .35 + .65 * Math.pow(.5 + .5 * Math.sin(clock * (5 + random * 7) + phase), 3)
+          const alpha = Math.pow(age, 1.15) * twinkle
+          const radius = (.65 + random * 1.25) * (.45 + .55 * age)
+          const color = colours[(i + j * 3) % colours.length]
+          cometCtx.fillStyle = color
+          cometCtx.strokeStyle = color
+          cometCtx.globalAlpha = alpha
+          cometCtx.shadowBlur = 7 + 7 * random
+          cometCtx.shadowColor = color
+          cometCtx.beginPath()
+          cometCtx.arc(px, py, radius, 0, Math.PI * 2)
+          cometCtx.fill()
+          if (random > .75) {
+            const ray = radius * 2.7
+            cometCtx.lineWidth = .7
+            cometCtx.beginPath()
+            cometCtx.moveTo(px - ray, py); cometCtx.lineTo(px + ray, py)
+            cometCtx.moveTo(px, py - ray); cometCtx.lineTo(px, py + ray)
+            cometCtx.stroke()
+          }
+        }
+      }
+      cometCtx.restore()
     }
 
     const drawFlecks = (time: number) => {
@@ -414,6 +461,9 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       }
       lastNibX = x; lastNibY = y
       if (!engraved || !ctx) return
+      // In flight the glitter is embedded into the single comet ribbon above.
+      // Keep the existing boosted writing sparks, not a separate flying cloud.
+      if (returnFlight) return
       const now = performance.now()
       if (now - lastEmission < 24) return
       lastEmission = now
