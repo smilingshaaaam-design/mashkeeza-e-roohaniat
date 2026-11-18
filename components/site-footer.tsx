@@ -70,10 +70,6 @@ export function SiteFooter() {
         <Link href="/contact" className="mx-4 inline-block leading-loose underline underline-offset-4">رابطہ کریں</Link>
         <Link href="/privacy-policy" className="mx-4 inline-block leading-loose underline underline-offset-4">پرائیویسی پالیسی</Link>
         <Link href="/disclaimer" className="mx-4 inline-block leading-loose underline underline-offset-4">وضاحت و حدودِ استعمال</Link>
-        <button type="button" onClick={openPrivacySettings}
-          className="cursor-pointer font-sans text-sm underline underline-offset-4">
-          Privacy and cookie settings
-        </button>
         {showHelp && (
           <p role="status" dir="rtl" className="mx-auto mt-2 max-w-xl text-sm leading-loose">
             اس وقت اس صفحے پر گوگل کا رضامندی فارم دستیاب نہیں ہے۔
@@ -81,6 +77,10 @@ export function SiteFooter() {
             اپنے براؤزر کی رازداری کی ترتیبات کھولیں۔
           </p>
         )}
+        <button type="button" onClick={openPrivacySettings}
+          className="mx-auto mt-3 block cursor-pointer font-sans text-sm underline underline-offset-4">
+          Privacy and cookie settings
+        </button>
       </div>
     </footer>
   )
