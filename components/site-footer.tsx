@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import CmsText from '@/components/cms-text'
@@ -9,20 +8,6 @@ const contactEmail = 'mashkeezaeroohaniat@gmail.com'
 const gmailComposeUrl = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(contactEmail)}`
 
 export function SiteFooter() {
-  const [showHelp, setShowHelp] = useState(false)
-
-  function openPrivacySettings() {
-    const google = (window as Window & {
-      googlefc?: { showRevocationMessage?: () => void }
-    }).googlefc
-    if (typeof google?.showRevocationMessage === 'function') {
-      google.showRevocationMessage()
-      setShowHelp(false)
-    } else {
-      setShowHelp(value => !value)
-    }
-  }
-
   return (
     <footer className="relative isolate">
       <Image
@@ -88,17 +73,10 @@ export function SiteFooter() {
         <Link href="/contact" className="mx-4 inline-block leading-loose underline underline-offset-4">رابطہ کریں</Link>
         <Link href="/privacy-policy" className="mx-4 inline-block leading-loose underline underline-offset-4">پرائیویسی پالیسی</Link>
         <Link href="/disclaimer" className="mx-4 inline-block leading-loose underline underline-offset-4">وضاحت و حدودِ استعمال</Link>
-        {showHelp && (
-          <p role="status" dir="rtl" className="mx-auto mt-2 max-w-xl text-sm leading-loose">
-            اس وقت اس صفحے پر گوگل کا رضامندی فارم دستیاب نہیں ہے۔
-            اس ویب سائٹ کی محفوظ شدہ کوکیز دیکھنے یا حذف کرنے کے لیے
-            اپنے براؤزر کی رازداری کی ترتیبات کھولیں۔
-          </p>
-        )}
-        <button type="button" onClick={openPrivacySettings}
-          className="mx-auto mt-3 block cursor-pointer font-sans text-sm underline underline-offset-4">
-          Privacy and cookie settings
-        </button>
+        <Link href="/privacy-policy#cookie-information" lang="en"
+          className="mx-auto mt-3 block w-fit font-sans text-sm underline underline-offset-4">
+          Cookie information
+        </Link>
       </div>
     </footer>
   )
