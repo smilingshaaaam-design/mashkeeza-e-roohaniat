@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { defaultNavItems } from '@/components/main-nav'
+import { defaultNavItems, upgradeTopicMenus } from '@/components/main-nav'
 
 export const CMS_API = 'https://mashkeeza-cms-api.smilingshaaaam.workers.dev'
 export type MenuItem = { id: string; label: string; href: string; visible?: boolean; openInNewTab?: boolean; children?: MenuItem[] }
@@ -109,7 +109,7 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
       setCardStyles(draftDesign.cardStyles && typeof draftDesign.cardStyles === 'object' ? draftDesign.cardStyles : {})
       if (Array.isArray(pubDesign.sidebar)) setPublishedSidebar(pubDesign.sidebar)
       setSidebarState(Array.isArray(draftDesign.sidebar) ? draftDesign.sidebar : [])
-      setPublishedMenus(nav.published?.items?.length >= 3 ? nav.published.items : clone(defaultNavItems))
+      setPublishedMenus(nav.published?.items?.length >= 3 ? upgradeTopicMenus(nav.published.items) : clone(defaultNavItems))
       setPublishedCards(card.published?.items?.length ? card.published.items : null)
       // Recover the original navigation if an accidental two-item CMS draft replaced it.
       // Never silently publish this recovery: the editor must explicitly save/publish.
@@ -117,7 +117,7 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
       const looksAccidentallyTruncated = Array.isArray(candidate) && candidate.length < 3
       setRecoveryWarning(looksAccidentallyTruncated)
       setCompactDraft(looksAccidentallyTruncated ? clone(candidate) : null)
-      setMenusState(looksAccidentallyTruncated ? clone(defaultNavItems) : Array.isArray(candidate) && candidate.length ? candidate : clone(defaultNavItems))
+      setMenusState(looksAccidentallyTruncated ? clone(defaultNavItems) : Array.isArray(candidate) && candidate.length ? upgradeTopicMenus(candidate) : clone(defaultNavItems))
       if (card.draft?.items) setCardsState(card.draft.items)
       else if (card.published?.items?.length) setCardsState(card.published.items)
     }).catch(e => setMessage(e.message))
