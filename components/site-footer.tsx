@@ -53,6 +53,7 @@ export function SiteFooter() {
       </div>
       <div className="relative bg-black/85 px-4 py-3 text-center text-amber-100">
         <Link href="/about" className="mx-4 inline-block leading-loose underline underline-offset-4">ہمارے بارے میں</Link>
+        <Link href="/contact" className="mx-4 inline-block leading-loose underline underline-offset-4">رابطہ کریں</Link>
         <button type="button" onClick={openPrivacySettings}
           className="cursor-pointer font-sans text-sm underline underline-offset-4">
           Privacy and cookie settings
