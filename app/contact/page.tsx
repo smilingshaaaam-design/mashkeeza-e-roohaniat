@@ -12,6 +12,16 @@ export default function ContactPage() {
         <li>موبائل: <a dir="ltr" href="tel:+393888288898" className="inline-block font-sans underline">0039 3888 2888 98</a></li>
         <li>واٹس ایپ: <a dir="ltr" href="https://wa.me/393888288898" className="inline-block font-sans underline">0039 3888 2888 98</a></li>
       </ul>
+      <section className="mt-10 space-y-4 leading-loose" aria-labelledby="message-heading">
+        <h2 id="message-heading" className="gold-text text-2xl">پیغام بھیجیں</h2>
+        <p id="message-status">ای میل کی سہولت جلد دستیاب ہوگی۔ فی الحال واٹس ایپ پر رابطہ کریں۔</p>
+        <fieldset disabled aria-describedby="message-status" className="space-y-4">
+          <label className="block">آپ کا ای میل<input type="email" dir="ltr" className="block w-full rounded border border-amber-700 bg-black/50 px-3 py-2" /></label>
+          <label className="block">موضوع<input dir="auto" className="block w-full rounded border border-amber-700 bg-black/50 px-3 py-2" /></label>
+          <label className="block">آپ کا پیغام<textarea dir="auto" rows={6} className="block w-full rounded border border-amber-700 bg-black/50 px-3 py-2" /></label>
+          <button type="button" disabled className="rounded bg-amber-200/50 px-6 py-2 text-black">ارسال کریں</button>
+        </fieldset>
+      </section>
     </main>
   )
 }
