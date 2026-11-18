@@ -279,6 +279,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const dustCanvas = engravingCanvasRef.current
     if (!stage || !paper || !text || !quill || !pot || !spark || !dustCanvas) return
 
+    paper.style.height = '0px'
+    paper.style.overflow = 'hidden'
     let cancelled = false
     let completed = false
     let lastProgress = performance.now()
@@ -1159,7 +1161,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-stage{position:relative;z-index:101;width:100%;min-height:max-content;padding:8px 0 145px;overflow:visible;isolation:auto}
         .original-scroll-assembly{width:100%;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
         .original-scroll-roller{width:100%;height:auto;position:relative;z-index:3;flex-shrink:0;display:block;pointer-events:none;user-select:none}
-        .original-scroll-paper{width:63.6%;margin:-1px 0 0;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
+        .original-scroll-paper{height:0;width:63.6%;margin:-1px 0 0;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
         /* Bottom roller sits in front of the parchment edge, like the top roller. */
         /* The mount overlaps the parchment and casts an upward contact shadow,
            matching the way the top wooden roller sits against the paper. */
