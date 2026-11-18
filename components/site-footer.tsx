@@ -1,8 +1,24 @@
+'use client'
 
+import { useState } from 'react'
 import Image from 'next/image'
 import CmsText from '@/components/cms-text'
 
 export function SiteFooter() {
+  const [showHelp, setShowHelp] = useState(false)
+
+  function openPrivacySettings() {
+    const google = (window as Window & {
+      googlefc?: { showRevocationMessage?: () => void }
+    }).googlefc
+    if (typeof google?.showRevocationMessage === 'function') {
+      google.showRevocationMessage()
+      setShowHelp(false)
+    } else {
+      setShowHelp(value => !value)
+    }
+  }
+
   return (
     <footer className="relative isolate">
       <Image
@@ -33,6 +49,19 @@ export function SiteFooter() {
             />
           </p>
         </div>
+      </div>
+      <div className="relative bg-black/85 px-4 py-3 text-center text-amber-100">
+        <button type="button" onClick={openPrivacySettings}
+          className="cursor-pointer font-sans text-sm underline underline-offset-4">
+          Privacy and cookie settings
+        </button>
+        {showHelp && (
+          <p role="status" dir="rtl" className="mx-auto mt-2 max-w-xl text-sm leading-loose">
+            اس وقت اس صفحے پر گوگل کا رضامندی فارم دستیاب نہیں ہے۔
+            اس ویب سائٹ کی محفوظ شدہ کوکیز دیکھنے یا حذف کرنے کے لیے
+            اپنے براؤزر کی رازداری کی ترتیبات کھولیں۔
+          </p>
+        )}
       </div>
     </footer>
   )
