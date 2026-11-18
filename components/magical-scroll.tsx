@@ -295,7 +295,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
 
     // The user-approved inkpot coordinates MUST NOT drift between start/end.
     // These values come from the last correctly aligned build.
-    const approvedRightShift = Math.max(0, Math.min(96, stage.clientWidth * .15) - 10)
+    let waitingForAssets = true
     let quillWidth = 0, quillHeight = 0
     let featherX = 0, featherY = 0
     let engraved = false
@@ -606,6 +606,9 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       }
     }
     const resolveReadyRest = () => {
+      quillWidth = quill.offsetWidth
+      quillHeight = quill.offsetHeight
+      const approvedRightShift = Math.max(0, Math.min(96, stage.clientWidth * .15) - 10)
       const stageRect = rectOfStage()
       const potRect = pot.getBoundingClientRect()
       // This is the EXACT formula accepted before the later buggy revisions.
@@ -793,7 +796,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         const baseline = box.top + top + (bottom - top) * .78
         lines.push({
           top, bottom, letters: Math.max(1, row.rects.length * stride),
-          points: dedup.map(x=>({x,y:baseline})),
+          points: dedup.map(x=>({x:x-box.left,y:baseline-box.top})),
         })
       }
       return lines
@@ -802,22 +805,23 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       const lines = measureLines(block)
       const r = block.getBoundingClientRect()
       if (!lines.length) {block.style.clipPath='none';block.style.opacity='1';return}
-      const first = toPoseFromPage(lines[0].points[0].x,lines[0].points[0].y)
+      const atBlockPoint = (point: InkGlyph) => {
+        const bounds = block.getBoundingClientRect()
+        return toPoseFromPage(bounds.left + point.x, bounds.top + point.y)
+      }
+      const first = atBlockPoint(lines[0].points[0])
       await moveTo(first, fast ? 180 : 285)
       if (cancelled) return
       block.style.opacity='1'
       for (const line of lines) {
         if (cancelled) return
         const pts = line.points
-        const from = toPoseFromPage(pts[0].x,pts[0].y)
+        const from = atBlockPoint(pts[0])
         // Flying to the next line is separate from the writing stroke.
         if (Math.abs(featherX-from.x) + Math.abs(featherY-from.y) > 9) await moveTo(from,fast ? 80 : 120)
         const duration = clamp(line.letters * (fast ? 8 : 18),fast ? 155 : 245,fast ? 1150 : 2070)
         engraved = true
         spark.style.opacity='.80'
-        // Fixed stage geometry throughout each stroke: no forced layout read
-        // per animation frame, which was causing the feather to stutter.
-        const strokeStage = rectOfStage()
         await tween(duration, t => {
           const index = t * Math.max(0,pts.length-1)
           const before = Math.floor(index)
@@ -826,11 +830,9 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
           const next = pts[Math.min(pts.length-1,before+1)]
           const x = p.x + (next.x - p.x) * fraction
           const y = p.y + (next.y - p.y) * fraction
-          const nibX = x - strokeStage.left - quillWidth * .014
-          const nibY = y - strokeStage.top - quillHeight * .993
-          // No independent XY wave: feather nib exactly matches reveal edge.
-          setPose(nibX,nibY,Math.sin(t * Math.PI * 6)*4.1)
-          const edgeX = clamp(x-r.left,0,r.width)
+          const pose = atBlockPoint({x,y})
+          setPose(pose.x,pose.y,Math.sin(t * Math.PI * 6)*4.1)
+          const edgeX = clamp(x,0,r.width)
           const endY = clamp(line.bottom,0,r.height)
           const startY = clamp(line.top,0,endY)
           block.style.clipPath = `polygon(0 0,100% 0,100% ${endY}px,${edgeX}px ${endY}px,${edgeX}px ${startY}px,0 ${startY}px)`
@@ -1040,6 +1042,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       // first geometry measurements used by the feather and writing reveal.
       await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
       if (cancelled) return
+      waitingForAssets = false
+      lastProgress = performance.now()
       quillWidth = quill.offsetWidth
       quillHeight = quill.offsetHeight
       const blocks = getBlocks()
@@ -1093,9 +1097,15 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     }
     const watchdog = window.setInterval(() => {
       // On an inactive tab rAF is suspended: do not mistake that for a freeze.
-      if (!cancelled && !completed && document.visibilityState === 'visible' &&
+      if (!waitingForAssets && !cancelled && !completed && document.visibilityState === 'visible' &&
         performance.now() - lastProgress > 8000) failSafe()
     }, 900)
+    const sizeObserver = new ResizeObserver(() => {
+      quillWidth = quill.offsetWidth
+      quillHeight = quill.offsetHeight
+      if (completed) landAtApprovedRest()
+    })
+    for (const element of [stage,pot,quill]) sizeObserver.observe(element)
     void run().catch(error => {
       if (cancelled || completed) return
       console.error('Magical Scroll animation error:',error)
@@ -1103,6 +1113,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     })
     return () => {
       cancelled = true
+      sizeObserver.disconnect()
       window.clearInterval(watchdog)
       window.clearTimeout(activeTimeout)
       cancelAnimationFrame(activeFrame)
