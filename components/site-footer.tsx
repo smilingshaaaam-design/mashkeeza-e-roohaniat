@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import Image from 'next/image'
 import CmsText from '@/components/cms-text'
 
@@ -51,6 +52,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="relative bg-black/85 px-4 py-3 text-center text-amber-100">
+        <Link href="/about" className="mx-4 inline-block leading-loose underline underline-offset-4">ہمارے بارے میں</Link>
         <button type="button" onClick={openPrivacySettings}
           className="cursor-pointer font-sans text-sm underline underline-offset-4">
           Privacy and cookie settings
