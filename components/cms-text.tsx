@@ -16,7 +16,7 @@ type SiteSettings = Record<SiteSettingKey, string>;
 const DEFAULT_SETTINGS: SiteSettings = {
   site_title: "مشکیزہ روحانیت",
   site_subtitle: "علم و معرفت کا روحانی مرکز",
-  site_footer: "مشکیزہ روحانیت — التماس دعا سید شاہ",
+  site_footer: "مشکیزہ روحانیت — التماس دعا سید حسن شاہ",
 };
 
 let cachedSettings: SiteSettings | null = null;
@@ -101,5 +101,10 @@ export default function CmsText({
     };
   }, [settingKey]);
 
-  return <span className={className}>{value}</span>;
+  // Older CMS settings and saved fallbacks may still contain the former signature.
+  const displayValue = settingKey === "site_footer"
+    ? value.replace(/سید\s+شاہ/g, "سید حسن شاہ")
+    : value;
+
+  return <span className={className}>{displayValue}</span>;
 }
