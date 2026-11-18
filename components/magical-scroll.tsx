@@ -1026,14 +1026,19 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     }
 
     const run = async () => {
-      // Load first, then perform ONE transition. Never animate from an
-      // undefined image size and never repeat the roll-opening phase.
-      await Promise.race([
-        Promise.all([pot,quill].map(img => img.decode().catch(() => undefined))),
-        new Promise<void>(resolve => window.setTimeout(resolve, 1700)),
-      ])
+      // Do not measure the writing while fonts or article images can still
+      // change its layout. In particular, lazy images without dimensions can
+      // push later lines down after the feather has already started writing.
+      const contentImages = Array.from(text.querySelectorAll('img'))
+      for (const img of contentImages) img.loading = 'eager'
+      await Promise.all([pot, quill, ...contentImages].map(img => img.decode().catch(() => undefined)))
       if (cancelled) return
-      await Promise.race([document.fonts.ready,new Promise<void>(resolve => window.setTimeout(resolve, 1400))])
+      await document.fonts.load(window.getComputedStyle(text).font).catch(() => [])
+      await document.fonts.ready
+      if (cancelled) return
+      // Let the browser apply the final font and image dimensions before the
+      // first geometry measurements used by the feather and writing reveal.
+      await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
       if (cancelled) return
       quillWidth = quill.offsetWidth
       quillHeight = quill.offsetHeight
