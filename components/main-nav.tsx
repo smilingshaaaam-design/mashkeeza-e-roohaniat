@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronLeft, Home } from 'lucide-react'
+import { topics } from '@/lib/reading-topics'
 import { cn } from '@/lib/utils'
 import { useVisualCms } from '@/components/visual-cms'
 
@@ -25,183 +26,33 @@ const contactLinks: NavItem[] = [
 ]
 
 export const defaultNavItems: NavItem[] = [
-  {
-    id: 'home',
-    label: 'صفحۂ اول',
-    href: '/',
-  },
-  {
-    id: 'ism-azam',
-    label: 'اسم اعظم',
-    href: '#ism-azam',
+  { id: 'home', label: 'صفحۂ اول', href: '/' },
+  ...topics.map(topic => ({
+    id: topic.id,
+    label: topic.label,
+    href: '/#topic-' + topic.id,
     children: [
-      {
-        id: 'ism-jafar',
-        label: 'اسم اعظم بذریعہ علم جفر',
-        href: '#ism-azam',
-      },
-      {
-        id: 'ism-adad',
-        label: 'اسم اعظم علم الاعداد',
-        href: '#ism-azam',
-      },
-      {
-        id: 'ism-calculator',
-        label: 'اسم اعظم کیلکولیٹر',
-        href: 'https://quran-analyzer.web.app/',
-        openInNewTab: true,
-      },
+      ...topic.readings.map(reading => ({ id: reading.slug, label: reading.title, href: '/reading/' + reading.slug })),
+      ...(topic.id === 'ism-azam' ? [{ id: 'ism-calculator', label: 'اسمِ اعظم کیلکولیٹر', href: 'https://quran-analyzer.web.app/', openInNewTab: true }] : []),
     ],
-  },
-  {
-    id: 'jafar',
-    label: 'جفر',
-    href: '#jafar',
-    children: [
-      {
-        id: 'jafar-history',
-        label: 'علم جفر: تاریخ و تعارف',
-        href: '#jafar',
-      },
-      {
-        id: 'jafar-islam',
-        label: 'علم جفر کی حقیقت اور اسلام',
-        href: '#jafar',
-      },
-      {
-        id: 'jafar-other-sciences',
-        label: 'علم جفر کا دیگر علوم سے تعلق',
-        href: '#jafar',
-      },
-      {
-        id: 'jafar-learn',
-        label: 'علم جفر سیکھیے',
-        href: '#jafar',
-      },
-      {
-        id: 'jafar-problems',
-        label: 'علم جفر سے جانیے اپنے مسائل اور حل',
-        href: '#jafar',
-      },
-    ],
-  },
-  {
-    id: 'adad',
-    label: 'علم الاعداد',
-    href: '#adad',
-    children: [
-      {
-        id: 'adad-history',
-        label: 'علم الاعداد: تاریخ و تعارف',
-        href: '#adad',
-      },
-      {
-        id: 'adad-islam',
-        label: 'علم الاعداد کی حقیقت اور اسلام',
-        href: '#adad',
-      },
-      {
-        id: 'adad-other-sciences',
-        label: 'علم الاعداد کا دیگر علوم سے تعلق',
-        href: '#adad',
-      },
-      {
-        id: 'adad-learn',
-        label: 'علم الاعداد سیکھیے',
-        href: '#adad',
-      },
-      {
-        id: 'adad-problems',
-        label: 'علم الاعداد سے جانیے اپنے مسائل اور حل',
-        href: '#adad',
-      },
-    ],
-  },
-  {
-    id: 'taweez',
-    label: 'تعویذات',
-    href: '#taweez',
-    children: [
-      {
-        id: 'taweez-roohani',
-        label: 'روحانی تعویذات',
-        href: '#taweez',
-      },
-      {
-        id: 'taweez-amliyat',
-        label: 'مستند عملیات',
-        href: '#taweez',
-      },
-    ],
-  },
-  {
-    id: 'talismat',
-    label: 'طلسمات',
-    href: '#talismat',
-    children: [
-      {
-        id: 'talismat-qurani',
-        label: 'قرآنی طلسمات',
-        href: '#talismat',
-      },
-      {
-        id: 'talismat-solutions',
-        label: 'مشکلات کا حل',
-        href: '#talismat',
-      },
-    ],
-  },
-  {
-    id: 'wazaif',
-    label: 'ورد و وظائف',
-    href: '#wazaif',
-    children: [
-      {
-        id: 'wazaif-daily',
-        label: 'روزمرہ وظائف',
-        href: '#wazaif',
-      },
-      {
-        id: 'wazaif-special',
-        label: 'خصوصی اوراد',
-        href: '#wazaif',
-      },
-    ],
-  },
-  {
-    id: 'nawaz',
-    label: 'روحانی نواز',
-    href: '#nawaz',
-  },
-  {
-    id: 'peshgoiyan',
-    label: 'تاریخی حسابات و پیش گوئیاں',
-    href: '#peshgoiyan',
-    children: [
-      {
-        id: 'past-calculations',
-        label: 'ماضی کے حسابات',
-        href: '#peshgoiyan',
-      },
-      {
-        id: 'future-predictions',
-        label: 'مستقبل کی پیش گوئیاں',
-        href: '#peshgoiyan',
-      },
-    ],
-  },
-  {
-    id: 'jafri-hisabat',
-    label: 'پرانے جفری حسابات',
-    href: '#jafri-hisabat',
-  },
-  {
-    id: 'contact',
-    label: 'رابطہ کریں',
-    href: '#contact',
-    children: contactLinks,
-  },
+  })),
+  { id: 'contact', label: 'رابطہ کریں', href: '#contact', children: contactLinks },
 ]
+
+// Upgrade the old anchor-based navigation, retaining real CMS page assignments.
+export function upgradeTopicMenus(items: NavItem[]): NavItem[] {
+  if (items.some(item => item.href.startsWith('/#topic-'))) return items
+  if (!items.some(item => item.id === 'ism-azam' && item.href === '#ism-azam')) return items
+  const upgraded = defaultNavItems.map(base => {
+    const saved = items.find(item => item.id === base.id)
+    if (!saved) return base
+    if (base.id === 'contact' || base.id === 'home') return saved
+    const linked = (saved.children ?? []).filter(child => !child.href.startsWith('#'))
+    const cards = (base.children ?? []).map(card => linked.find(child => child.id === card.id) ?? card)
+    return { ...base, visible: saved.visible, children: [...cards, ...linked.filter(child => !cards.some(card => card.id === child.id))] }
+  })
+  return [...upgraded, ...items.filter(item => item.id !== 'nawaz' && !upgraded.some(base => base.id === item.id))]
+}
 
 function isNavItem(value: unknown): value is NavItem {
   if (!value || typeof value !== 'object') return false
@@ -297,7 +148,7 @@ function MenuEntry({
   const isContact = depth === 0 && item.id === 'contact'
   // Older saved menus have an empty contact entry.
   const children = isContact && !item.children?.length ? contactLinks : item.children || []
-  const hasChildren = children.length > 0
+  const hasChildren = children.length > 0 && !item.href.startsWith('/#topic-')
   const isExpanded = expanded.has(item.id)
   const isRoot = depth === 0
   const [hoverSession, setHoverSession] = useState<number | null>(null)
@@ -530,6 +381,16 @@ export function MainNav() {
     })
   }
 
+  const [activeHash, setActiveHash] = useState('')
+  useEffect(() => {
+    const syncTopic = () => setActiveHash(window.location.hash)
+    syncTopic()
+    window.addEventListener('hashchange', syncTopic)
+    return () => window.removeEventListener('hashchange', syncTopic)
+  }, [])
+  const visibleItems = upgradeTopicMenus(cms?.menus ?? navItems).filter(item => item.visible !== false)
+  const activeTopic = visibleItems.find(item => item.href.startsWith('/#topic-') && item.href.slice(1) === activeHash)
+
   const navRef = useRef<HTMLElement>(null)
   const [dismissal, setDismissal] = useState(0)
   const closeAll = useCallback(() => {
@@ -557,7 +418,7 @@ export function MainNav() {
     >
       <div className="gold-frame-strong mx-auto max-w-7xl rounded-md bg-gradient-to-b from-[#1a1206] via-[#0b0904] to-[#1a1206]">
         <ul className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1 px-2 py-2">
-          {(cms?.menus ?? navItems).filter(item => item.visible !== false).map((item, index) => (
+          {visibleItems.map((item, index) => (
             <MenuEntry
               key={item.id}
               item={item}
@@ -573,6 +434,21 @@ export function MainNav() {
           ))}
         </ul>
       </div>
+      {activeTopic && (
+        <section id={activeTopic.href.slice(2)} aria-label={activeTopic.label} className="mx-auto mt-4 max-w-7xl rounded-lg border border-amber-700/60 bg-black/90 p-5">
+          <h2 className="gold-text mb-3 text-xl leading-loose">{activeTopic.label}</h2>
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {(activeTopic.children ?? []).filter(card => card.visible !== false).map(card => (
+              <li key={card.id}>
+                <a href={card.href} target={card.openInNewTab ? '_blank' : undefined} rel={card.openInNewTab ? 'noopener noreferrer' : undefined}
+                  className="gold-frame block rounded-lg px-4 py-3 text-gold-light leading-loose hover:bg-amber-900/30 focus-visible:outline-2 focus-visible:outline-amber-300">
+                  {card.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </nav>
   )
 }
