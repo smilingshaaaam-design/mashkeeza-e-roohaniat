@@ -18,6 +18,12 @@ export type NavItem = {
   openInNewTab?: boolean
 }
 
+const gmailCompose = 'https://mail.google.com/mail/u/0/?view=cm&fs=1&to=mashkeezaeroohaniat%40gmail.com'
+const contactLinks: NavItem[] = [
+  { id: 'contact-gmail', label: 'جی میل', href: gmailCompose, openInNewTab: true },
+  { id: 'contact-whatsapp', label: 'واٹس ایپ', href: 'https://wa.me/393888288898', openInNewTab: true },
+]
+
 export const defaultNavItems: NavItem[] = [
   {
     id: 'home',
@@ -193,6 +199,7 @@ export const defaultNavItems: NavItem[] = [
     id: 'contact',
     label: 'رابطہ کریں',
     href: '#contact',
+    children: contactLinks,
   },
 ]
 
@@ -285,7 +292,9 @@ function MenuEntry({
   onEdit,
   selectedMenuId,
 }: MenuEntryProps) {
-  const children = item.children || []
+  const isContact = depth === 0 && item.id === 'contact'
+  // Older saved menus have an empty contact entry.
+  const children = isContact && !item.children?.length ? contactLinks : item.children || []
   const hasChildren = children.length > 0
   const isExpanded = expanded.has(item.id)
   const isRoot = depth === 0
@@ -340,7 +349,22 @@ function MenuEntry({
               ? 'noopener noreferrer'
               : undefined
           }
-          onClick={e => { if (editing) { e.preventDefault(); onEdit?.(item.id) } else closeAll() }}
+          onClick={e => {
+            if (editing) {
+              e.preventDefault()
+              onEdit?.(item.id)
+            } else if (isContact && item.href === '#contact') {
+              e.preventDefault()
+              toggle(item.id)
+            } else {
+              if (item.href === gmailCompose && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+                || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))) {
+                e.preventDefault()
+                window.location.href = 'mailto:mashkeezaeroohaniat@gmail.com'
+              }
+              closeAll()
+            }
+          }}
           className={cn(
             'flex min-w-0 items-center gap-1',
             'text-gold-light transition-colors',
@@ -417,7 +441,8 @@ function MenuEntry({
               : 'lg:right-full lg:top-0 lg:min-w-56',
             showChildren
               ? cn('absolute z-50 block min-w-48 visible opacity-100', isRoot ? 'right-0 top-full' : 'right-full top-0')
-              : 'hidden' 
+              : 'hidden',
+            isContact && 'left-0 right-auto lg:left-0 lg:right-auto' 
           )}
         >
           {children.map(child => (
