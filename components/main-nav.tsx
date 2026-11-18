@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronLeft, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useVisualCms } from '@/components/visual-cms'
@@ -273,6 +273,7 @@ type MenuEntryProps = {
   item: NavItem
   depth: number
   first?: boolean
+  dismissal: number
   expanded: Set<string>
   toggle: (id: string) => void
   closeAll: () => void
@@ -285,6 +286,7 @@ function MenuEntry({
   item,
   depth,
   first = false,
+  dismissal,
   expanded,
   toggle,
   closeAll,
@@ -298,7 +300,8 @@ function MenuEntry({
   const hasChildren = children.length > 0
   const isExpanded = expanded.has(item.id)
   const isRoot = depth === 0
-  const [hovered, setHovered] = useState(false)
+  const [hoverSession, setHoverSession] = useState<number | null>(null)
+  const hovered = hoverSession === dismissal
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => () => {
@@ -310,14 +313,14 @@ function MenuEntry({
       clearTimeout(leaveTimer.current)
       leaveTimer.current = null
     }
-    setHovered(true)
+    setHoverSession(dismissal)
   }
 
   function leaveMenu() {
     if (leaveTimer.current !== null) clearTimeout(leaveTimer.current)
     // Give the pointer time to cross from the parent to its dropdown.
     leaveTimer.current = setTimeout(() => {
-      setHovered(false)
+      setHoverSession(null)
       leaveTimer.current = null
     }, 450)
   }
@@ -326,8 +329,8 @@ function MenuEntry({
 
   return (
     <li
-      onMouseEnter={enterMenu}
-      onMouseLeave={leaveMenu}
+      onPointerEnter={e => { if (hasChildren && e.pointerType === 'mouse') enterMenu() }}
+      onPointerLeave={e => { if (hasChildren && e.pointerType === 'mouse') leaveMenu() }}
       className={cn(
         'group/menu relative',
         isRoot ? 'shrink-0' : 'w-full'
@@ -391,7 +394,7 @@ function MenuEntry({
           <button
             type="button"
             aria-label={`${item.label} ذیلی مینو`}
-            aria-expanded={isExpanded}
+            aria-expanded={Boolean(showChildren)}
             onClick={() => toggle(item.id)}
             className={cn(
               'flex shrink-0 items-center justify-center',
@@ -450,6 +453,7 @@ function MenuEntry({
               key={child.id}
               item={child}
               depth={depth + 1}
+              dismissal={dismissal}
               expanded={expanded}
               toggle={toggle}
               closeAll={closeAll}
@@ -526,12 +530,27 @@ export function MainNav() {
     })
   }
 
-  function closeAll() {
+  const navRef = useRef<HTMLElement>(null)
+  const [dismissal, setDismissal] = useState(0)
+  const closeAll = useCallback(() => {
     setExpanded(new Set())
-  }
+    // A pointer parked over a clicked link must re-enter to reopen its menu.
+    setDismissal(value => value + 1)
+  }, [])
+
+  useEffect(() => {
+    function dismissOutside(event: Event) {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      if (!navRef.current?.contains(target) || !target.closest('a, button')) closeAll()
+    }
+    document.addEventListener('click', dismissOutside, true)
+    return () => document.removeEventListener('click', dismissOutside, true)
+  }, [closeAll])
 
   return (
     <nav
+      ref={navRef}
       aria-label="مرکزی مینو"
       dir="rtl"
       className="relative z-[110] px-2 md:px-4"
@@ -544,6 +563,7 @@ export function MainNav() {
               item={item}
               depth={0}
               first={index === 0}
+              dismissal={dismissal}
               expanded={expanded}
               toggle={toggle}
               closeAll={closeAll}
