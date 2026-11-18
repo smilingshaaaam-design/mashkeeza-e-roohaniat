@@ -5,6 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import CmsText from '@/components/cms-text'
 
+const contactEmail = 'mashkeezaeroohaniat@gmail.com'
+const gmailComposeUrl = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(contactEmail)}`
+
 export function SiteFooter() {
   const [showHelp, setShowHelp] = useState(false)
 
@@ -53,7 +56,16 @@ export function SiteFooter() {
       </div>
       <div className="relative bg-black/85 px-4 py-3 text-center text-amber-100">
         <div dir="ltr" className="mb-2 flex justify-center gap-3">
-          <a href="https://mail.google.com/mail/?view=cm&fs=1&to=mashkeezaeroohaniat%40gmail.com" target="_blank" rel="noopener noreferrer" aria-label="جی میل پر پیغام لکھیں" title="Gmail" className="grid size-11 place-items-center rounded-full bg-white">
+          <a href={`mailto:${contactEmail}`}
+            onClick={(event) => {
+              const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+                || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+              if (!isMobile && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+                event.preventDefault()
+                window.open(gmailComposeUrl, '_blank', 'noopener,noreferrer')
+              }
+            }}
+            aria-label="جی میل پر پیغام لکھیں" title="Gmail" className="grid size-11 place-items-center rounded-full bg-white">
             <svg viewBox="0 0 24 18" className="w-7" aria-hidden="true">
               <path fill="#4285f4" d="M0 3h4v15H1a1 1 0 0 1-1-1Z"/><path fill="#34a853" d="M20 3h4v14a1 1 0 0 1-1 1h-3Z"/>
               <path fill="#ea4335" d="M4 1l8 6 8-6v5l-8 6-8-6Z"/><path fill="#c5221f" d="M0 2a2 2 0 0 1 3-1.7L4 1v5L0 3Z"/><path fill="#fbbc04" d="M20 1l1-.7A2 2 0 0 1 24 2v1l-4 3Z"/>
