@@ -73,7 +73,7 @@ export function SiteFooter() {
         <Link href="/contact" className="mx-4 inline-block leading-loose underline underline-offset-4">رابطہ کریں</Link>
         <Link href="/privacy-policy" className="mx-4 inline-block leading-loose underline underline-offset-4">پرائیویسی پالیسی</Link>
         <Link href="/disclaimer" className="mx-4 inline-block leading-loose underline underline-offset-4">وضاحت و حدودِ استعمال</Link>
-        <Link href="/privacy-policy#cookie-information" lang="en"
+        <Link href="/privacy-policy#cookie-information" lang="en" dir="ltr"
           className="mx-auto mt-3 block w-fit font-sans text-sm underline underline-offset-4">
           Cookie information
         </Link>
