@@ -46,7 +46,7 @@ export function SiteFooter() {
           <p className="gold-text text-lg leading-[2.2] md:text-2xl">
             <CmsText
               settingKey="site_footer"
-              fallback="مشکیزہ روحانیت — التماس دعا سید شاہ"
+              fallback="مشکیزہ روحانیت — التماس دعا سید حسن شاہ"
             />
           </p>
         </div>
