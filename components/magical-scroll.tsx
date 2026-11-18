@@ -610,13 +610,11 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const resolveReadyRest = () => {
       quillWidth = quill.offsetWidth
       quillHeight = quill.offsetHeight
-      const approvedRightShift = Math.max(0, Math.min(96, stage.clientWidth * .15) - 10)
       const stageRect = rectOfStage()
       const potRect = pot.getBoundingClientRect()
-      // This is the EXACT formula accepted before the later buggy revisions.
-      const x = clamp(potRect.left + potRect.width * .52 - stageRect.left - quillWidth * .014,
-        0, stageRect.width - quillWidth - 8) + approvedRightShift
-      const y = Math.max(0, potRect.top + potRect.height * .43 - stageRect.top - quillHeight * .993)
+      // Centre of the illustrated inkpot opening, measured in image coordinates.
+      const x = potRect.left + potRect.width * .52 - stageRect.left - quillWidth * .014
+      const y = potRect.top + potRect.height * .43 - stageRect.top - quillHeight * .993
       return { x, y }
     }
     const landAtApprovedRest = () => {
@@ -870,8 +868,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       // long articles. The complete quill may leave the paper/stage bounds.
       const leftOutside = paperLeft - paperW * .015
       const troughY = paperBottom + Math.max(65, Math.min(138, paperW * .245))
-      const crestY = paperBottom - Math.max(95, Math.min(paperH * .37, paperW * .36))
-      const farRight = Math.max(paperRight + paperW * .19, home.x + quillWidth * .014)
+      const crestY = Math.min(home.y - paperW * .24, paperBottom - Math.max(95, Math.min(paperH * .37, paperW * .36)))
+
       // Keep V15's shuffled random styles (17) and no consecutive repeats.
       // Their variations now change the air-current/flutter, not the drawn route.
       const winds = [
@@ -936,10 +934,9 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         { x: paperLeft + paperW * .70, y: paperBottom - paperW * .25 },
         { x: paperLeft + paperW * .80, y: crestY + paperW * .045 },
         { x: paperLeft + paperW * .90, y: crestY },
-        { x: paperRight + paperW * .045, y: crestY },
-        { x: farRight - paperW * .09, y: crestY + paperW * .045 },
-        { x: farRight - paperW * .015, y: crestY + paperW * .14 },
-        { x: farRight, y: home.y - Math.max(17, paperW * .09) },
+        { x: home.x - paperW * .06, y: crestY + (home.y - crestY) * .14 },
+        { x: home.x, y: crestY + (home.y - crestY) * .48 },
+        { x: home.x, y: crestY + (home.y - crestY) * .75 },
         home,
       ]
 
@@ -953,8 +950,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         const p = waypoints[i], q = waypoints[i + 1]
         const a = waypoints[Math.max(0, i - 1)]
         const b = waypoints[Math.min(waypoints.length - 1, i + 2)]
-        const m0x = (q.x - a.x) * .42, m0y = (q.y - a.y) * .42
-        const m1x = (b.x - p.x) * .42, m1y = (b.y - p.y) * .42
+        const m0x = p.x === q.x ? 0 : (q.x - a.x) * .42, m0y = (q.y - a.y) * .42
+        const m1x = q.x === b.x ? 0 : (b.x - p.x) * .42, m1y = (b.y - p.y) * .42
         const t2 = t*t, t3 = t2*t
         const h0 = 2*t3-3*t2+1, h1 = t3-2*t2+t
         const h2 = -2*t3+3*t2, h3 = t3-t2
@@ -972,6 +969,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         previous = next
       }
       const length = distances[SAMPLES]
+      const descentStart = distances[Math.floor(SAMPLES * (waypoints.length - 3) / (waypoints.length - 1))] / length
       const atDistance = (ratio: number): Point => {
         const target = clamp(ratio, 0, 1) * length
         let lo = 0, hi = SAMPLES
@@ -1005,7 +1003,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         const normalX = -dy / mag, normalY = dx / mag
         // Gentle falling-leaf drift. Fade all side motion at both ends;
         // keep it subtle around the single intentional loop.
-        const envelope = Math.pow(Math.sin(Math.PI * t), 1.25)
+        const envelope = Math.pow(Math.sin(Math.PI * t), 1.25) * ease(clamp((descentStart - progress) / .10, 0, 1))
         const wave = phase + t * Math.PI * 2 * (1.3 + cycles * .22)
         const flutter = Math.sin(wave) * swayRatio + Math.sin(wave * .55 + 1.1) * flutterRatio
         const side = flutter * amplitude * envelope
