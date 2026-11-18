@@ -1,4 +1,3 @@
-import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Gulzar, Noto_Nastaliq_Urdu } from 'next/font/google'
 import { SparkleCursor } from '@/components/magic/sparkle-cursor'
@@ -70,7 +69,6 @@ export default function RootLayout({
       <body className="font-urdu antialiased bg-night text-gold-light">
         {children}
         <SparkleCursor />
-        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   )
