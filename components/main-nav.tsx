@@ -27,7 +27,8 @@ const contactLinks: NavItem[] = [
 
 export const defaultNavItems: NavItem[] = [
   { id: 'home', label: 'صفحۂ اول', href: '/' },
-  ...topics.map(topic => ({
+  ...topics.flatMap(topic => [
+    {
     id: topic.id,
     label: topic.label,
     href: '/#topic-' + topic.id,
@@ -35,7 +36,12 @@ export const defaultNavItems: NavItem[] = [
       ...topic.readings.map(reading => ({ id: reading.slug, label: reading.title, href: '/reading/' + reading.slug })),
       ...(topic.id === 'ism-azam' ? [{ id: 'ism-calculator', label: 'اسمِ اعظم کیلکولیٹر', href: 'https://quran-analyzer.web.app/', openInNewTab: true }] : []),
     ],
-  })),
+    },
+    ...(topic.id === 'talismat' ? [{
+      id: 'free-tools', label: 'روحانی فری ٹولز', href: '/#topic-free-tools',
+      children: [{ id: 'free-ism-calculator', label: 'اسمِ اعظم کیلکولیٹر', href: 'https://quran-analyzer.web.app/', openInNewTab: true }],
+    }] : []),
+  ]),
   { id: 'contact', label: 'رابطہ کریں', href: '#contact', children: contactLinks },
 ]
 
