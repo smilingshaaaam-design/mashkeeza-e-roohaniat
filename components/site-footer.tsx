@@ -65,6 +65,12 @@ export function SiteFooter() {
           <a href="https://www.facebook.com/share/1BFMniSQRW/" target="_blank" rel="noopener noreferrer" aria-label="ہمارا فیس بک پیج کھولیں" title="Facebook" className="grid size-11 place-items-center rounded-full bg-[#1877f2]">
             <svg viewBox="0 0 24 24" className="size-8" aria-hidden="true"><path fill="white" d="M14 22v-9h3l.5-3H14V8c0-1 .3-1.6 1.7-1.6H18v-3a18 18 0 0 0-2.8-.2c-2.9 0-4.7 1.8-4.7 4.9V10H7.4v3h3.1v9Z"/></svg>
           </a>
+          <a href="https://youtube.com/@mashkeezaeroohaniat?si=1cQ8uOP8TW66wMKi" target="_blank" rel="noopener noreferrer" aria-label="ہمارا یوٹیوب چینل کھولیں" title="YouTube" className="grid size-11 place-items-center rounded-full bg-white">
+            <svg viewBox="0 0 24 24" className="size-8" aria-hidden="true">
+              <rect x="1" y="4" width="22" height="16" rx="5" fill="#ff0000" />
+              <path d="M10 8.5v7l6-3.5z" fill="white" />
+            </svg>
+          </a>
         </div>
         <Link href="/about" className="mx-4 inline-block leading-loose underline underline-offset-4">ہمارے بارے میں</Link>
         <Link href="/contact" className="mx-4 inline-block leading-loose underline underline-offset-4">رابطہ کریں</Link>
