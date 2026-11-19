@@ -13,29 +13,7 @@ function pageSlug(href: string) {
   return /^\/pages\/?$/.test(url.pathname) ? url.searchParams.get('slug') : null
 }
 
-const leafBands = 16
 const duration = 1350
-
-// Clip the sheet into adjoining strips perpendicular to the moving crease.
-function foldedStrip(left: number, right: number, width: number, height: number, nx: number, ny: number) {
-  type Point = [number, number]
-  let points: Point[] = [[0, 0], [width, 0], [width, height], [0, height]]
-  for (const [edge, sign] of [[left, 1], [right, -1]]) {
-    const clipped: Point[] = []
-    points.forEach((a, i) => {
-      const b = points[(i + 1) % points.length]
-      const da = sign * (a[0] * nx + a[1] * ny - edge)
-      const db = sign * (b[0] * nx + b[1] * ny - edge)
-      if (da >= 0) clipped.push(a)
-      if ((da >= 0) !== (db >= 0)) {
-        const f = da / (da - db)
-        clipped.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f])
-      }
-    })
-    points = clipped
-  }
-  return 'polygon(' + points.map(([x,y]) => x + 'px ' + y + 'px').join(',') + ')'
-}
 
 type Sheet = { face: HTMLDivElement; right: boolean }
 
@@ -79,93 +57,93 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
 type PageTurn = { outgoing: Sheet; landing: Sheet }
 
 function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
-  const { outgoing, landing } = turn
-  const reverse = outgoing.right
-  const incoming = captureSheet(leaf, !reverse)
-  outgoing.face.style.transform = reverse ? 'scaleX(-1)' : ''
-  incoming.face.style.transform = reverse ? '' : 'scaleX(-1)'
-
   const width = leaf.clientWidth / 2
   const height = leaf.clientHeight
   if (!width || !height) return
-  // A diagonal bend reaches the bottom outside corner first in both directions.
-  const nx = -Math.cos(0.44), ny = Math.sin(0.44)
-  const start = nx * width
-  // One unbent panel spans the entire binding. Every flexible strip starts
-  // beyond the lower end of the seam, so no point on that seam can lift.
-  const sewnEdge = start + ny * height
-  const step = -start / (leafBands - 1)
-  const stripEdge = (i: number) => i === 0 ? start : sewnEdge + (i - 1) * step
-  leaf.style.transform = reverse ? 'scaleX(-1)' : ''
-  const pieces = Array.from(leaf.querySelectorAll<HTMLElement>('[data-fold]'))
-  const frames: Keyframe[][] = pieces.map(() => [])
-  const flips: number[] = pieces.map(() => 1)
-  pieces.forEach((piece, i) => {
-    piece.replaceChildren(outgoing.face.cloneNode(true), incoming.face.cloneNode(true))
-    piece.style.clipPath = foldedStrip(stripEdge(i) - 0.45, stripEdge(i + 1) + 0.45, width, height, nx, ny)
+
+  const fromRight = turn.outgoing.right
+  const front = turn.outgoing.face
+  const back = captureSheet(leaf, !fromRight).face
+  const sheet = document.createElement('div')
+  sheet.dataset.turningSheet = ''
+  Object.assign(sheet.style, {
+    position:'absolute', left:fromRight ? '50%' : '0', top:'0', width:'50%', height:'100%',
+    transformStyle:'preserve-3d', transformOrigin:fromRight ? 'left center' : 'right center',
+    pointerEvents:'none'
   })
-  const eased = (v: number) => {
-    const t = Math.max(0, Math.min(1, v))
-    return t * t * (3 - 2 * t)
+  // Both inked faces share a single hinge; native backface culling handles the
+  // edge-on frame, even when perspective or the viewport changes the viewing angle.
+  for (const face of [front, back]) {
+    face.style.backfaceVisibility = 'hidden'
+    face.style.setProperty('-webkit-backface-visibility', 'hidden')
   }
-  for (let frame = 0; frame <= 42; frame++) {
-    const t = frame / 42
-    const hinge = 180 * eased(t)
-    let distance = start, lift = 0
-    pieces.forEach((_, i) => {
-      const edge = stripEdge(i)
-      const span = stripEdge(i + 1) - edge
-      const u = i / (leafBands - 1)
-      const bend = 52 * u * Math.sin(Math.PI * t) *
-        eased((t - 0.14 * (1 - u)) / 0.26) * (1 - eased((t - 0.45) / 0.48))
-      const radians = bend * Math.PI / 180
-      const drift = distance - edge
-      const transform = 'translateX(' + width + 'px) rotateY(' + hinge + 'deg) translateX(-' + width + 'px) ' +
-        'translate3d(' + nx * drift + 'px,' + ny * drift + 'px,' + lift + 'px) ' +
-        'translate(' + nx * edge + 'px,' + ny * edge + 'px) rotate3d(' + ny + ',' + (-nx) + ',0,' + bend + 'deg) ' +
-        'translate(' + (-nx * edge) + 'px,' + (-ny * edge) + 'px)'
-      const h = hinge * Math.PI / 180
-      const normal = Math.cos(h) * Math.cos(radians) + nx * Math.sin(h) * Math.sin(radians)
-      if (normal <= 0 && flips[i] === 1) flips[i] = t
-      frames[i].push({transform, opacity:1,
-        filter:'brightness(' + (1 - 0.22 * Math.sin((hinge + bend) * Math.PI / 180) ** 2) + ')'})
-      distance += span * Math.cos(radians)
-      lift += span * Math.sin(radians)
-    })
-  }
-  // Keep the old destination visible until the reverse face settles onto it.
-  // The stationary copy is outside the mirrored moving sheet.
-  const still = landing.face
-  const half = leaf.clientWidth / 2
+  front.style.transform = 'translateZ(.15px)'
+  back.style.transform = 'rotateY(180deg) translateZ(.15px)'
+  sheet.append(front, back)
+  leaf.append(sheet)
+
+  const still = turn.landing.face
   Object.assign(still.style, {
-    inset:'auto', left:(leaf.offsetLeft + (landing.right ? half : 0))+'px',
-    top:leaf.offsetTop+'px', width:half+'px', height:leaf.clientHeight+'px', pointerEvents:'none'
+    inset:'auto', left:(leaf.offsetLeft + (turn.landing.right ? width : 0))+'px',
+    top:leaf.offsetTop+'px', width:width+'px', height:height+'px', pointerEvents:'none'
   })
   still.setAttribute('aria-hidden','true')
   leaf.before(still)
-  const animations = pieces.map((piece,i) => piece.animate(frames[i], { duration }))
-  pieces.forEach((piece, i) => {
-    // Swap surfaces edge-on, independently along the curling sheet.
-    const timing = { duration, fill:'both' as const }
-    const edge = flips[i]
-    animations.push(piece.children[0].animate([
-      {opacity:1,offset:0},{opacity:1,offset:edge},{opacity:0,offset:edge},{opacity:0,offset:1}
-    ], timing), piece.children[1].animate([
-      {opacity:0,offset:0},{opacity:0,offset:edge},{opacity:1,offset:edge},{opacity:1,offset:1}
-    ], timing))
+
+  const transforms: Keyframe[] = []
+  const profiles: [Keyframe[], Keyframe[]] = [[], []]
+  const light: Keyframe[] = []
+  const shadowFrames: Keyframe[] = []
+  const direction = fromRight ? -1 : 1
+  for (let i = 0; i <= 48; i++) {
+    const t = i / 48
+    const progress = t * t * (3 - 2 * t)
+    const angle = Math.PI * progress
+    const bend = Math.sin(angle)
+    const easingOut = Math.sin(2 * angle)
+    // Shear along the free edge. Points on the vertical binding stay fixed.
+    transforms.push({transform:'rotateY(' + direction * 180 * progress + 'deg) skewY(' +
+      direction * (2.3 * bend + 1.6 * easingOut) + 'deg) scaleX(' + (1 - .045 * bend) + ')'})
+    for (const side of [0, 1] as const) {
+      const right = side === 0 ? fromRight : !fromRight
+      const spine = right ? 0 : width
+      const outside = right ? width : 0
+      const inward = right ? -1 : 1
+      const reach = outside + inward * width * .035 * bend
+      const rise = height * .032 * bend
+      const path = 'M ' + spine + ' 0 Q ' + ((outside + spine)/2) + ' ' + (-rise*.22) + ' ' + reach + ' ' + rise*.25 +
+        ' Q ' + (outside-inward*width*.012*bend) + ' ' + height*.52 + ' ' + outside + ' ' + (height-rise) +
+        ' Q ' + ((outside + spine)/2) + ' ' + (height+rise*.15) + ' ' + spine + ' ' + height + ' Z'
+      profiles[side].push({clipPath:'path("' + path + '")'})
+    }
+    light.push({opacity:.78*bend,backgroundPosition:(18 + 65 * progress) + '% 50%'})
+    shadowFrames.push({opacity:.26*bend,transform:'translateX(' + direction * -52*Math.cos(angle) +
+      '%) scaleX(' + (.16 + .59*bend) + ')'})
+  }
+
+  const timing: KeyframeAnimationOptions = {duration, fill:'both'}
+  const motion = sheet.animate(transforms, timing)
+  const animations = [motion]
+  ;[front, back].forEach((face, index) => {
+    const glaze = document.createElement('div')
+    Object.assign(glaze.style, {
+      position:'absolute', inset:'0', pointerEvents:'none',
+      backgroundImage:'linear-gradient(105deg,transparent 10%,rgba(97,59,27,.18) 38%,rgba(255,248,219,.16) 57%,transparent 81%)',
+      backgroundSize:'160% 100%'
+    })
+    face.append(glaze)
+    animations.push(face.animate(profiles[index], timing), glaze.animate(light, timing))
   })
   const shadow = leaf.querySelector('.deewan-turn-shadow')
-  if (shadow) animations.push(shadow.animate([
-    {opacity:0,transform:'translate(-55%,8%) scale(.4,.85)'},
-    {opacity:.28,transform:'translateX(0) scaleX(.42)',offset:.56},
-    {opacity:0,transform:'translateX(55%) scaleX(.85)'}
-  ], {duration}))
+  if (shadow) animations.push(shadow.animate(shadowFrames,timing))
+
   const release = () => {
+    motion.onfinish = null
     animations.forEach(animation => animation.cancel())
+    sheet.remove()
     still.remove()
-    pieces.forEach(piece => piece.replaceChildren())
   }
-  animations[0].onfinish = release
+  motion.onfinish = release
   return release
 }
 
@@ -283,9 +261,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
           <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}
       </div></div>
     </div>}
-    <div aria-hidden="true" className="deewan-leaf" style={{top:"5.6%", bottom:"8.2%"}} ref={leaf}><div className="deewan-turn-shadow" />{Array.from({length:leafBands}, (_,i) => <i key={i} data-fold="" className="deewan-paper" style={{
-      left:0, right:'auto', width:'50%', transformOrigin:'0 0', backgroundImage:'none', fontStyle:'normal'
-    }} />)}</div>
+    <div aria-hidden="true" className="deewan-leaf" style={{top:"5.6%", bottom:"8.2%"}} ref={leaf}><div className="deewan-turn-shadow" /></div>
     <div className="deewan-controls">
       <button disabled={current < 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1} / {count}</span>}
