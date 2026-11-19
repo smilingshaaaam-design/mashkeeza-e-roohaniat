@@ -37,7 +37,54 @@ function foldedStrip(left: number, right: number, width: number, height: number,
   return 'polygon(' + points.map(([x,y]) => x + 'px ' + y + 'px').join(',') + ')'
 }
 
-function animateLeaf(leaf: HTMLElement, reverse: boolean) {
+type Sheet = { face: HTMLDivElement; right: boolean }
+
+// Freeze the currently visible column and artwork before navigation changes the DOM.
+function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
+  const book = leaf.parentElement!
+  const panel = book.querySelector<HTMLElement>(right ? ':scope > .deewan-index' : ':scope > .deewan-reading')
+  const width = leaf.clientWidth / 2
+  const left = leaf.offsetLeft + (right ? width : 0)
+  const top = leaf.offsetTop
+  const face = document.createElement('div')
+  face.inert = true
+  Object.assign(face.style, {
+    position:'absolute', inset:'0', overflow:'hidden', fontStyle:'normal', direction:'rtl',
+    backgroundImage:"url('/images/deewan/book.webp')",
+    backgroundSize:book.clientWidth + 'px ' + book.clientHeight + 'px',
+    backgroundPosition:-left + 'px ' + (-top) + 'px'
+  })
+  if (panel) {
+    const copy = panel.cloneNode(true) as HTMLElement
+    Object.assign(copy.style, {
+      left:(panel.offsetLeft-left)+'px', right:'auto', top:(panel.offsetTop-top)+'px',
+      bottom:'auto', width:panel.offsetWidth+'px', height:panel.offsetHeight+'px',
+      overflow:'hidden', pointerEvents:'none'
+    })
+    copy.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'))
+    const columns = copy.querySelector<HTMLElement>('.deewan-columns')
+    const viewport = panel.querySelector<HTMLElement>('.deewan-viewport')
+    if (columns && viewport) columns.style.transform = 'translateX(' + (-viewport.scrollLeft) + 'px)'
+    if (right && panel.scrollTop) {
+      const inner = document.createElement('div')
+      inner.append(...Array.from(copy.childNodes))
+      inner.style.transform = 'translateY(-' + panel.scrollTop + 'px)'
+      copy.append(inner)
+    }
+    face.append(copy)
+  }
+  return {face, right}
+}
+
+type PageTurn = { outgoing: Sheet; landing: Sheet }
+
+function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
+  const { outgoing, landing } = turn
+  const reverse = outgoing.right
+  const incoming = captureSheet(leaf, !reverse)
+  outgoing.face.style.transform = reverse ? 'scaleX(-1)' : ''
+  incoming.face.style.transform = reverse ? '' : 'scaleX(-1)'
+
   const width = leaf.clientWidth / 2
   const height = leaf.clientHeight
   if (!width || !height) return
@@ -52,7 +99,9 @@ function animateLeaf(leaf: HTMLElement, reverse: boolean) {
   leaf.style.transform = reverse ? 'scaleX(-1)' : ''
   const pieces = Array.from(leaf.querySelectorAll<HTMLElement>('[data-fold]'))
   const frames: Keyframe[][] = pieces.map(() => [])
+  const flips: number[] = pieces.map(() => 1)
   pieces.forEach((piece, i) => {
+    piece.replaceChildren(outgoing.face.cloneNode(true), incoming.face.cloneNode(true))
     piece.style.clipPath = foldedStrip(stripEdge(i) - 0.45, stripEdge(i + 1) + 0.45, width, height, nx, ny)
   })
   const eased = (v: number) => {
@@ -75,20 +124,49 @@ function animateLeaf(leaf: HTMLElement, reverse: boolean) {
         'translate3d(' + nx * drift + 'px,' + ny * drift + 'px,' + lift + 'px) ' +
         'translate(' + nx * edge + 'px,' + ny * edge + 'px) rotate3d(' + ny + ',' + (-nx) + ',0,' + bend + 'deg) ' +
         'translate(' + (-nx * edge) + 'px,' + (-ny * edge) + 'px)'
-      frames[i].push({transform, opacity:Math.min(1,t * 18,(1 - t) * 14),
+      const h = hinge * Math.PI / 180
+      const normal = Math.cos(h) * Math.cos(radians) + nx * Math.sin(h) * Math.sin(radians)
+      if (normal <= 0 && flips[i] === 1) flips[i] = t
+      frames[i].push({transform, opacity:1,
         filter:'brightness(' + (1 - 0.22 * Math.sin((hinge + bend) * Math.PI / 180) ** 2) + ')'})
       distance += span * Math.cos(radians)
       lift += span * Math.sin(radians)
     })
   }
+  // Keep the old destination visible until the reverse face settles onto it.
+  // The stationary copy is outside the mirrored moving sheet.
+  const still = landing.face
+  const half = leaf.clientWidth / 2
+  Object.assign(still.style, {
+    inset:'auto', left:(leaf.offsetLeft + (landing.right ? half : 0))+'px',
+    top:leaf.offsetTop+'px', width:half+'px', height:leaf.clientHeight+'px', pointerEvents:'none'
+  })
+  still.setAttribute('aria-hidden','true')
+  leaf.before(still)
   const animations = pieces.map((piece,i) => piece.animate(frames[i], { duration }))
+  pieces.forEach((piece, i) => {
+    // Swap surfaces edge-on, independently along the curling sheet.
+    const timing = { duration, fill:'both' as const }
+    const edge = flips[i]
+    animations.push(piece.children[0].animate([
+      {opacity:1,offset:0},{opacity:1,offset:edge},{opacity:0,offset:edge},{opacity:0,offset:1}
+    ], timing), piece.children[1].animate([
+      {opacity:0,offset:0},{opacity:0,offset:edge},{opacity:1,offset:edge},{opacity:1,offset:1}
+    ], timing))
+  })
   const shadow = leaf.querySelector('.deewan-turn-shadow')
   if (shadow) animations.push(shadow.animate([
     {opacity:0,transform:'translate(-55%,8%) scale(.4,.85)'},
     {opacity:.28,transform:'translateX(0) scaleX(.42)',offset:.56},
     {opacity:0,transform:'translateX(55%) scaleX(.85)'}
   ], {duration}))
-  return () => animations.forEach(animation => animation.cancel())
+  const release = () => {
+    animations.forEach(animation => animation.cancel())
+    still.remove()
+    pieces.forEach(piece => piece.replaceChildren())
+  }
+  animations[0].onfinish = release
+  return release
 }
 
 export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: NavItem[]; hash: string }) {
@@ -102,12 +180,16 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
   const [count, setCount] = useState(1)
   const paper = useRef<HTMLDivElement>(null)
   const leaf = useRef<HTMLDivElement>(null)
-  const backwards = useRef(false)
+  const pendingSheet = useRef<PageTurn | null>(null)
+  function rememberSheet() {
+    if (leaf.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      pendingSheet.current = { outgoing:captureSheet(leaf.current, !card), landing:captureSheet(leaf.current, Boolean(card)) }
+    }
+  }
   const lastPage = useRef<string | null>(null)
   const touch = useRef<[number, number] | null>(null)
-  const hasArticle = Boolean(card)
   useEffect(() => {
-    if (!hasArticle || entries) return
+    if (entries) return
     const controller = new AbortController()
     setFailed(false)
     fetch('https://mashkeeza-cms-api.smilingshaaaam.workers.dev/public/content', { signal: controller.signal })
@@ -118,7 +200,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
         if (!controller.signal.aborted) setEntries(data.items)
       }).catch(() => { if (!controller.signal.aborted) setFailed(true) })
     return () => controller.abort()
-  }, [hasArticle, entries, attempt])
+  }, [entries, attempt])
   const entry = card && entries?.find(item => item.slug === pageSlug(card.href) && item.content_type === 'page')
 
   useLayoutEffect(() => {
@@ -148,21 +230,23 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
   }, [hash, page, count])
   useLayoutEffect(() => {
     const el = leaf.current
-    if (el && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return animateLeaf(el, backwards.current)
-    }
+    const sheet = pendingSheet.current
+    pendingSheet.current = null
+    if (el && sheet) return animateLeaf(el, sheet)
   }, [hash, page])
 
   function open(i: number, fromEnd = false) {
     const next = articles[i]
     const target = next ? topic.href + '/read/' + encodeURIComponent(next.id) : topic.href
-    backwards.current = fromEnd || !next
+    rememberSheet()
     lastPage.current = fromEnd ? target : null
     window.location.hash = target
   }
   function turn(delta: number) {
-    backwards.current = delta < 0
-    if (card && page + delta >= 0 && page + delta < count) setPage(page + delta)
+    if (card && page + delta >= 0 && page + delta < count) {
+      rememberSheet()
+      setPage(page + delta)
+    }
     else if (current + delta >= -1 && current + delta < articles.length) open(current + delta, delta < 0 && current > 0)
   }
   return <section className="deewan-book" tabIndex={0} aria-label={topic.label}
@@ -187,7 +271,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
         return <li key={item.id}><a className="deewan-plaque" href={internal ? topic.href + '/read/' + encodeURIComponent(item.id) : item.href}
           aria-current={item.id === card?.id ? 'page' : undefined}
           target={!internal && item.openInNewTab ? '_blank' : undefined} rel={!internal && item.openInNewTab ? 'noopener noreferrer' : undefined}
-          onClick={() => { lastPage.current = null; backwards.current = false; if (card?.id === item.id) setPage(0) }}>{item.label}</a></li>
+          onClick={() => { lastPage.current = null; if (internal && (card?.id !== item.id || page !== 0)) rememberSheet(); if (card?.id === item.id) setPage(0) }}>{item.label}</a></li>
       })}</ol> : <p>اس موضوع سے ابھی کوئی تحریر منسلک نہیں ہے۔</p>}
     </div>
     {card && <div className="deewan-reading">
@@ -200,7 +284,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
       </div></div>
     </div>}
     <div aria-hidden="true" className="deewan-leaf" style={{top:"5.6%", bottom:"8.2%"}} ref={leaf}><div className="deewan-turn-shadow" />{Array.from({length:leafBands}, (_,i) => <i key={i} data-fold="" className="deewan-paper" style={{
-      left:0, right:'auto', width:'50%', transformOrigin:'0 0', backgroundSize:'480% 170%', backgroundPosition:'76% 47%', borderRadius:'1% 0 0 1%'
+      left:0, right:'auto', width:'50%', transformOrigin:'0 0', backgroundImage:'none', fontStyle:'normal'
     }} />)}</div>
     <div className="deewan-controls">
       <button disabled={current < 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
