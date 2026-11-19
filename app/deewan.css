@@ -1,5 +1,8 @@
 .reshmi-header {
-  padding-top:clamp(48px,5vw,96px);
+  padding-top:48px;
+}
+@media (min-width:768px) {
+  .reshmi-header {padding-top:64px;}
 }
 .reshmi-backdrop {
   position:absolute;
