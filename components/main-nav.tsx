@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronDown, ChevronLeft, Home } from 'lucide-react'
+import { ManuscriptBook } from '@/components/manuscript-book'
 import { cn } from '@/lib/utils'
 import { useVisualCms } from '@/components/visual-cms'
 
@@ -130,6 +131,7 @@ function containsMenu(item: NavItem, id: string): boolean {
 type MenuEntryProps = {
   item: NavItem
   depth: number
+  active?: boolean
   first?: boolean
   dismissal: number
   expanded: Set<string>
@@ -143,6 +145,7 @@ type MenuEntryProps = {
 function MenuEntry({
   item,
   depth,
+  active = false,
   first = false,
   dismissal,
   expanded,
@@ -202,6 +205,7 @@ function MenuEntry({
       >
         <a
           href={item.href}
+          aria-current={active ? 'true' : undefined}
           target={
             item.openInNewTab ? '_blank' : undefined
           }
@@ -396,7 +400,8 @@ export function MainNav() {
     return () => window.removeEventListener('hashchange', update)
   }, [])
   const items = topicNavigation(cms?.menus ?? navItems).filter(item => item.visible !== false)
-  const topic = items.find(item => item.href.startsWith('#topic-') && item.href === activeHash)
+  const bookTopics = items.filter(item => item.href.startsWith('#topic-'))
+  const topic = bookTopics.find(item => item.href === activeHash.split('/read/')[0])
   const cards = topic?.children?.filter(card => card.visible !== false && isSafeHref(card.href) && !card.href.startsWith('#')) ?? []
 
   const navRef = useRef<HTMLElement>(null)
@@ -422,16 +427,17 @@ export function MainNav() {
       ref={navRef}
       aria-label="مرکزی مینو"
       dir="rtl"
-      className="relative z-[110] px-2 md:px-4"
+      className="deewan-nav relative z-[110]"
     >
-      <div className="gold-frame-strong mx-auto max-w-7xl rounded-md bg-gradient-to-b from-[#1a1206] via-[#0b0904] to-[#1a1206]">
-        <ul className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1 px-2 py-2">
+      <div className="deewan-menu">
+        <ul className="deewan-menu-list">
           {items.map((item, index) => (
             <MenuEntry
               key={item.id}
               item={item}
               depth={0}
               first={index === 0}
+              active={item.id === topic?.id}
               dismissal={dismissal}
               expanded={expanded}
               toggle={toggle}
@@ -442,23 +448,7 @@ export function MainNav() {
           ))}
         </ul>
       </div>
-      {topic && (
-        <section id={topic.href.slice(1)} aria-label={topic.label} className="mx-auto mt-3 max-w-7xl rounded-lg border border-amber-700/60 bg-black/90 p-4">
-          <h2 className="gold-text mb-3 text-xl leading-loose">{topic.label}</h2>
-          {cards.length ? (
-            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {cards.map(card => (
-                <li key={card.id}>
-                  <a href={card.href} target={card.openInNewTab ? '_blank' : undefined} rel={card.openInNewTab ? 'noopener noreferrer' : undefined}
-                    className="gold-frame block rounded-lg px-4 py-3 leading-loose text-gold-light hover:bg-gold/20">
-                    {card.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : <p className="text-amber-100">اس موضوع سے ابھی کوئی صفحہ منسلک نہیں ہے۔</p>}
-        </section>
-      )}
+      {topic && <ManuscriptBook key={topic.id} topic={topic} cards={cards} hash={activeHash} />}
     </nav>
   )
 }

@@ -1,3 +1,4 @@
+import '@/app/deewan.css'
 
 import Image from 'next/image'
 import { MainNav } from '@/components/main-nav'
@@ -28,8 +29,8 @@ export function SiteHeader() {
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-transparent via-transparent to-night/70" />
       <Starfield count={110} seed={3} className="inset-0 z-[1]" />
 
-      <div className="relative z-20 mx-auto flex max-w-6xl flex-col items-center px-4 pt-12 pb-10 text-center md:pt-16 md:pb-14">
-        <div className="relative">
+      <div className="relative z-20 mx-auto flex max-w-6xl flex-col items-center px-4 py-3 text-center">
+        <div className="deewan-brand relative">
           <h1 className="gold-text glow-pulse font-display text-6xl leading-[1.9] md:text-8xl md:leading-[1.75]">
             <CmsText
               settingKey="site_title"

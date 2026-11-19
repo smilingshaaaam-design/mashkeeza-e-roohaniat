@@ -1,0 +1,30 @@
+.deewan-brand{position:relative;padding:.4em 0;color:#f6dda2}
+.deewan-brand h1.gold-text{display:inline-block;margin:0;font-family:var(--font-nastaliq),serif;font-size:clamp(30px,4.5vw,78px);font-weight:700;line-height:1.95;background:linear-gradient(#fff4c8 18%,#efbe63 60%,#fff0bd 76%,#b78337);background-clip:text;color:transparent;filter:drop-shadow(0 2px 1px #38200e)}
+.deewan-brand:before,.deewan-brand:after{content:"❧";position:absolute;top:45%;width:clamp(26px,8vw,140px);height:1px;background:linear-gradient(90deg,transparent,#ddb365);font:24px/0 Georgia,serif;text-align:right;color:#edc577;right:105%}
+.deewan-brand:after{right:auto;left:105%;transform:rotate(180deg)}
+.deewan-menu{position:relative;z-index:5;background:linear-gradient(#fffdfa,#fff8e9 55%,#f3e2c2);border-block:3px double #af843a;box-shadow:0 2px 5px #0006}
+.deewan-menu-list{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:0;list-style:none;margin:0;padding:4px 6px}
+.deewan-menu-list>li+li{border-inline-start:1px solid #bf9a59}
+.deewan-menu-list>li>div>a{color:#591a26;font-weight:650;padding:.22em clamp(5px,.66vw,12px);line-height:2.25}
+.deewan-menu-list>li>div>a:hover,.deewan-menu-list>li>div>a:focus-visible{background:#efddba;color:#561621}
+.deewan-menu-list>li>div>a[aria-current]{background:linear-gradient(#691c2b,#430c1c);border-radius:7px;color:#fff1ca;box-shadow:inset 0 0 0 2px #c49747,0 1px 4px #744923}
+.deewan-book{position:relative;margin:auto;width:100%;max-width:1540px;aspect-ratio:1536/747;min-height:390px;background:#161c25 url('/images/deewan/book.webp') center/100% 100% no-repeat;perspective:1400px;color:#49241a;animation:deewan-open .48s ease-out}
+@keyframes deewan-open{from{opacity:.15;transform:translateY(-8px)}}
+.deewan-index,.deewan-reading{position:absolute;top:13%;bottom:19%;width:33%;font-size:clamp(16px,1.45vw,24px);line-height:2.25}
+.deewan-index{right:10%;text-align:center;overflow:auto;scrollbar-width:thin}
+.deewan-index h2,.deewan-reading h3{color:#681d26;font-size:1.4em;font-weight:700;line-height:2.15}
+.deewan-index h3{font-size:.9em;color:#774c25}
+.deewan-index ol{margin:.4em 0;padding:0;list-style:none}
+.deewan-plaque{display:block;margin:.45em auto;width:90%;padding:.55em 1.5em;color:#fff1cf;background:url('/images/deewan/plaque.webp') center/100% 100%;line-height:2;text-shadow:0 1px 3px #220810}
+.deewan-plaque:hover,.deewan-plaque:focus-visible{filter:brightness(1.16)}
+.deewan-reading{left:10%}
+.deewan-viewport{height:100%;overflow:hidden;direction:rtl}
+.deewan-columns{width:100%;height:100%;column-count:1;column-gap:0;column-fill:auto;overflow-wrap:anywhere;color:#40251e}
+.deewan-columns img{max-height:12em;object-fit:contain!important}
+.deewan-columns a{color:#691d29}
+.deewan-leaf{pointer-events:none;position:absolute;left:5%;width:45%;top:4%;height:91%;opacity:0;transform-origin:right center;background:url('/images/deewan/book.webp') 6% center/222% 109%;border-radius:5% 1% 1% 4%}
+.deewan-controls{position:absolute;bottom:8%;left:12%;width:30%;display:flex;align-items:center;justify-content:center;gap:.8em;font-size:clamp(12px,1.2vw,19px)}
+.deewan-controls button{cursor:pointer;border:1px solid #a7824c;background:#f8e7c4;border-radius:5px;padding:.1em .65em;line-height:2;color:#501b22}
+.deewan-controls button:disabled{opacity:.45;cursor:default}
+@media(max-width:650px){.deewan-menu-list>li>div>a{font-size:13px}.deewan-book{min-height:460px}.deewan-reading,.deewan-index{width:38%;font-size:15px}.deewan-index{right:6%}.deewan-reading{left:6%}.deewan-controls{left:5%;width:40%;gap:3px}.deewan-plaque{width:100%;padding:.45em .7em}}
+@media(prefers-reduced-motion:reduce){.deewan-book{animation:none}}
