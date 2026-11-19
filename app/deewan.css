@@ -1,9 +1,10 @@
 .reshmi-header {
   --mast-gap:48px;
+  --sky-depth:274px;
   padding-top:var(--mast-gap);
 }
 @media (min-width:768px) {
-  .reshmi-header {--mast-gap:64px;}
+  .reshmi-header {--mast-gap:64px;--sky-depth:370px;}
 }
 .reshmi-backdrop {
   position:absolute;
@@ -19,16 +20,16 @@
   content:"";
   position:absolute;
   inset:0 0 auto;
-  aspect-ratio:1752 / 112;
-  box-sizing:content-box;
-  padding-top:var(--mast-gap);
-  background:linear-gradient(to bottom,transparent 50%,rgb(7 10 31 / 70%)),url('/images/hero-sky.png') center / cover;
+  z-index:1;
+  height:var(--sky-depth);
+  background:linear-gradient(to bottom,transparent 50%,rgb(7 10 31 / 70%)),url('/images/hero-sky.png') center calc(50% + 33px) / cover;
 }
 .reshmi-mast {
   position:relative;
   aspect-ratio:1752 / 112;
 
 }
+.reshmi-mast {margin-bottom:max(0px,calc(var(--sky-depth) - var(--mast-gap) - 6.3927vw));}
 .reshmi-sky,.reshmi-title:has([data-reference-title])::before {
   position:absolute;
   inset:0;
