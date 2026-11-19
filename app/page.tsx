@@ -1,10 +1,8 @@
 import Image from 'next/image'
 import { SiteHeader } from '@/components/site-header'
-import { HomepageCards } from '@/components/homepage-cards'
 import { VisualCmsProvider } from '@/components/visual-cms'
 import { SiteFooter } from '@/components/site-footer'
 import { EditAwareMagic } from '@/components/edit-aware-magic'
-import { ArticleBrowser } from '@/components/article-browser'
 import { ShootingStars } from '@/components/shooting-stars'
 
 export default function HomePage() {
@@ -19,9 +17,6 @@ export default function HomePage() {
         <ShootingStars />
         <main className="relative z-0 flex-1">
           <section aria-label="روحانی منظر" className="relative -mt-2">
-            {/* This section is now allowed to grow with long Magical Scroll articles.
-                The desert artwork keeps its ORIGINAL hero dimensions; only the
-                content area expands. Services/cards remain in normal document flow. */}
             <div className="relative w-full min-h-[62.5vw] overflow-visible md:min-h-[50vw]">
               <div className="absolute inset-x-0 top-0 z-0 h-[62.5vw] overflow-hidden md:h-[50vw]">
                 <div id="hero-stage" className="absolute inset-y-0 left-1/2 aspect-[1584/672] h-full -translate-x-1/2 [container-type:inline-size]">
@@ -32,10 +27,10 @@ export default function HomePage() {
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-night/60 to-transparent" />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-night to-transparent" />
               </div>
-              <ArticleBrowser />
+
             </div>
           </section>
-          <HomepageCards />
+
         </main>
         <SiteFooter />
       </div>
