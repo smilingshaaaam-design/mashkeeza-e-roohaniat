@@ -1,13 +1,54 @@
-.deewan-brand{position:relative;padding:.4em 0;color:#f6dda2}
-.deewan-brand h1.gold-text{display:inline-block;margin:0;font-family:var(--font-nastaliq),serif;font-size:clamp(30px,4.5vw,78px);font-weight:700;line-height:1.95;background:linear-gradient(#fff4c8 18%,#efbe63 60%,#fff0bd 76%,#b78337);background-clip:text;color:transparent;filter:drop-shadow(0 2px 1px #38200e)}
-.deewan-brand:before,.deewan-brand:after{content:"❧";position:absolute;top:45%;width:clamp(26px,8vw,140px);height:1px;background:linear-gradient(90deg,transparent,#ddb365);font:24px/0 Georgia,serif;text-align:right;color:#edc577;right:105%}
-.deewan-brand:after{right:auto;left:105%;transform:rotate(180deg)}
-.deewan-menu{position:relative;z-index:5;background:linear-gradient(#fffdfa,#fff8e9 55%,#f3e2c2);border-block:3px double #af843a;box-shadow:0 2px 5px #0006}
-.deewan-menu-list{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:0;list-style:none;margin:0;padding:4px 6px}
-.deewan-menu-list>li+li{border-inline-start:1px solid #bf9a59}
-.deewan-menu-list>li>div>a{color:#591a26;font-weight:650;padding:.22em clamp(5px,.66vw,12px);line-height:2.25}
-.deewan-menu-list>li>div>a:hover,.deewan-menu-list>li>div>a:focus-visible{background:#efddba;color:#561621}
-.deewan-menu-list>li>div>a[aria-current]{background:linear-gradient(#691c2b,#430c1c);border-radius:7px;color:#fff1ca;box-shadow:inset 0 0 0 2px #c49747,0 1px 4px #744923}
+.reshmi-mast {
+  position:relative;
+  aspect-ratio:1752 / 112;
+  background:#14122c;
+}
+.reshmi-sky,.reshmi-title:has([data-reference-title])::before {
+  position:absolute;
+  inset:0;
+  background:url('/images/reshmi/masthead.webp') center / 100% 100% no-repeat;
+}
+.reshmi-sky { clip-path:polygon(0 0,38.5% 0,38.5% 100%,62% 100%,62% 0,100% 0,100% 100%,0 100%); }
+.reshmi-title {
+  position:absolute;inset:0;z-index:20;display:grid;place-items:center;
+  margin:0;color:#ffdea0;font-family:var(--font-nastaliq),serif;font-size:3.9vw;line-height:1.55;
+}
+.reshmi-title:has([data-reference-title])::before {content:"";clip-path:inset(0 38% 0 38.5%);}
+.reshmi-title [data-reference-title] {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+.reshmi-sand {position:absolute;inset:0 38%;pointer-events:none;z-index:21;}
+.deewan-menu {
+  position:relative;z-index:5;
+  background:#f5e6c5 url('/images/reshmi/paper.webp') repeat;
+  border-top:3px double #ab823d;padding-bottom:clamp(4px,.55vw,10px);
+}
+.deewan-menu::after {
+  content:"";position:absolute;inset:auto 0 0;height:clamp(4px,.55vw,10px);
+  background:url('/images/reshmi/trim.webp') repeat-x center / auto 100%;pointer-events:none;
+}
+.deewan-menu-list {
+  margin:0;padding:0 .5%;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-evenly;list-style:none;
+  font-family:var(--font-nastaliq),serif;
+}
+.deewan-menu-list>li {position:relative;flex:1 0 auto;text-align:center;}
+.deewan-menu-list>li+li::before {
+  content:"";position:absolute;inset-inline-start:0;top:28%;height:44%;width:1px;background:#b58a50;
+}
+.deewan-menu-list>li>div>a {
+  position:relative;justify-content:center;color:#501a20;font-size:clamp(13px,1.07vw,22px);
+  font-weight:700;padding:.15em .38em;line-height:2.65;
+}
+.deewan-menu-list>li>div>a>svg {display:none}
+.deewan-menu-list>li>div>a:hover,.deewan-menu-list>li>div>a:focus-visible {color:#67152a;background:#debd8159}
+.deewan-menu-list>li>div>a[aria-current] {
+  background:linear-gradient(120deg,#380712,#6c1827 48%,#3a0816);color:#fff2d1;
+  border-radius:9px;box-shadow:inset 0 0 0 2px #ba8a3b,inset 0 0 0 4px #f9df91,0 1px 5px #715123;
+  padding-inline:.8em;
+}
+.deewan-menu-list>li>div>a[aria-current]::after {
+  content:"";position:absolute;z-index:2;left:50%;top:84%;width:1.6em;aspect-ratio:40/27;transform:translateX(-50%);
+  background:url('/images/reshmi/seal.webp') center / contain no-repeat;
+  clip-path:polygon(0 34%,28% 25%,50% 0,73% 25%,100% 34%,68% 67%,50% 100%,30% 67%);
+}
 .deewan-book{position:relative;margin:auto;width:100%;max-width:1540px;aspect-ratio:1536/747;min-height:390px;background:#161c25 url('/images/deewan/book.webp') center/100% 100% no-repeat;perspective:1400px;color:#49241a;animation:deewan-open .48s ease-out}
 @keyframes deewan-open{from{opacity:.15;transform:translateY(-8px)}}
 .deewan-index,.deewan-reading{position:absolute;top:13%;bottom:19%;width:33%;font-size:clamp(16px,1.45vw,24px);line-height:2.25}
@@ -22,7 +63,11 @@
 .deewan-columns{width:100%;height:100%;column-count:1;column-gap:0;column-fill:auto;overflow-wrap:anywhere;color:#40251e}
 .deewan-columns img{max-height:12em;object-fit:contain!important}
 .deewan-columns a{color:#691d29}
-.deewan-leaf{pointer-events:none;position:absolute;left:5%;width:45%;top:4%;height:91%;opacity:0;transform-origin:right center;background:url('/images/deewan/book.webp') 6% center/222% 109%;border-radius:5% 1% 1% 4%}
+.deewan-leaf {pointer-events:none;position:absolute;inset:4% 5% 5%;transform-style:preserve-3d;}
+.deewan-band {position:absolute;top:0;right:100%;width:100%;height:100%;transform-origin:right center;transform-style:preserve-3d;}
+.deewan-leaf>.deewan-band {right:50%;width:calc(50% / 12);}
+.deewan-paper {position:absolute;inset:0 -.35px 0 0;opacity:0;background-image:url('/images/deewan/book.webp');background-repeat:no-repeat;}
+.deewan-turn-shadow {position:absolute;inset:3% 27%;opacity:0;background:radial-gradient(ellipse,#39200f 12%,transparent 70%);}
 .deewan-controls{position:absolute;bottom:8%;left:12%;width:30%;display:flex;align-items:center;justify-content:center;gap:.8em;font-size:clamp(12px,1.2vw,19px)}
 .deewan-controls button{cursor:pointer;border:1px solid #a7824c;background:#f8e7c4;border-radius:5px;padding:.1em .65em;line-height:2;color:#501b22}
 .deewan-controls button:disabled{opacity:.45;cursor:default}

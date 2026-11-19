@@ -2,6 +2,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { ChevronDown, ChevronLeft, Home } from 'lucide-react'
 import { ManuscriptBook } from '@/components/manuscript-book'
 import { cn } from '@/lib/utils'
@@ -331,6 +332,7 @@ function MenuEntry({
 }
 
 export function MainNav() {
+  const pathname = usePathname()
   const cms = useVisualCms()
   const [navItems, setNavItems] =
     useState<NavItem[]>(defaultNavItems)
@@ -437,7 +439,7 @@ export function MainNav() {
               item={item}
               depth={0}
               first={index === 0}
-              active={item.id === topic?.id}
+              active={item.id === topic?.id || (item.href === '/' && pathname === '/' && !activeHash)}
               dismissal={dismissal}
               expanded={expanded}
               toggle={toggle}

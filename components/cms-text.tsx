@@ -106,5 +106,5 @@ export default function CmsText({
     ? value.replace(/سید\s+شاہ/g, "سید حسن شاہ")
     : value;
 
-  return <span className={className}>{displayValue}</span>;
+  return <span className={className} data-reference-title={settingKey === "site_title" && displayValue.trim() === "مشکیزہ روحانیت" ? "true" : undefined}>{displayValue}</span>;
 }

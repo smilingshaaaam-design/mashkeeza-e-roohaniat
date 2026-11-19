@@ -13,6 +13,54 @@ function pageSlug(href: string) {
   return /^\/pages\/?$/.test(url.pathname) ? url.searchParams.get('slug') : null
 }
 
+const leafBands = 12
+
+function PaperBand({ index }: { index: number }) {
+  const width = 0.45 / leafBands
+  const x = (0.5 - (index + 1) * width) / (1 - width)
+  return <div className="deewan-band">
+    <i className="deewan-paper" style={{
+      backgroundSize: (100 / width) + '% 109.9%',
+      backgroundPosition: (100 * x) + '% 44.45%'
+    }} />
+    {index + 1 < leafBands && <PaperBand index={index + 1} />}
+  </div>
+}
+
+function animateLeaf(leaf: HTMLElement, reverse: boolean) {
+  const options: KeyframeAnimationOptions = { duration: 1060, direction: reverse ? 'reverse' : 'normal' }
+  const animations: Animation[] = []
+  const bands = Array.from(leaf.querySelectorAll<HTMLElement>('.deewan-band'))
+  bands.forEach((band, index) => {
+    const poses: Keyframe[] = []
+    const light: Keyframe[] = []
+    for (let step = 0; step <= 32; step++) {
+      const t = step / 32
+      const p = t * t * (3 - 2 * t)
+      const bend = Math.sin(Math.PI * p)
+      // Absolute tangent of the sheet, from the sewn edge to the loose tip.
+      const tangent = (u: number) => 180 * p + bend * (
+        48 * u * Math.cos(Math.PI * p) + 12 * u * Math.sin(2 * Math.PI * p - 2.4 * u)
+      )
+      const u = (index + 0.5) / leafBands
+      const angle = tangent(u)
+      const relative = index ? angle - tangent(u - 1 / leafBands) : angle
+      const twist = bend * Math.sin(2 * Math.PI * p - u) * (index ? 0.16 : 0.7)
+      poses.push({ transform: 'rotateY(' + relative + 'deg) rotateZ(' + twist + 'deg)' })
+      const shade = 1 - 0.24 * Math.sin(angle * Math.PI / 180) ** 2
+      light.push({ filter: 'brightness(' + shade + ')', opacity: Math.min(1, t * 18, (1 - t) * 12) })
+    }
+    animations.push(band.animate(poses, options), band.firstElementChild!.animate(light, options))
+  })
+  const shadow = leaf.querySelector('.deewan-turn-shadow')
+  if (shadow) animations.push(shadow.animate([
+    { opacity: 0, transform: 'translateX(-55%) scaleX(.85)' },
+    { opacity: .32, transform: 'translateX(0) scaleX(.37)', offset: .5 },
+    { opacity: 0, transform: 'translateX(55%) scaleX(.85)' }
+  ], options))
+  return () => animations.forEach(animation => animation.cancel())
+}
+
 export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: NavItem[]; hash: string }) {
   const articles = cards.filter(item => pageSlug(item.href))
   const current = articles.findIndex(item => hash === topic.href + '/read/' + encodeURIComponent(item.id))
@@ -67,12 +115,13 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
   useLayoutEffect(() => {
     const node = paper.current
     if (node) node.scrollLeft = -page * node.clientWidth
+  }, [hash, page, count])
+  useLayoutEffect(() => {
     const el = leaf.current
     if (el && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      const anim = el.animate([{ transform: 'rotateY(0deg)', opacity: 0.9 }, { opacity: 0.9, offset: 0.65 }, { transform: 'rotateY(' + (backwards.current ? -175 : 175) + 'deg)', opacity: 0 }], { duration: 520, easing: 'ease-in-out' })
-      return () => anim.cancel()
+      return animateLeaf(el, backwards.current)
     }
-  }, [hash, page, count])
+  }, [hash, page])
 
   function open(i: number, fromEnd = false) {
     const next = articles[i]
@@ -120,7 +169,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
           <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}
       </div></div>
     </div>}
-    <div aria-hidden="true" className="deewan-leaf" ref={leaf} />
+    <div aria-hidden="true" className="deewan-leaf" ref={leaf}><div className="deewan-turn-shadow" /><PaperBand index={0} /></div>
     <div className="deewan-controls">
       <button disabled={current < 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1} / {count}</span>}
