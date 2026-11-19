@@ -14,8 +14,10 @@
 }
 .reshmi-backdrop img {object-fit:cover;object-position:center top;}
 .reshmi-header:has(.deewan-book) .reshmi-backdrop {
+  background:linear-gradient(to bottom, rgb(7 10 31 / 32%), rgb(7 10 31 / 52%)), url('/images/deewan/desert-sky.webp') center / cover no-repeat;
   mask-image:linear-gradient(to bottom,#000 calc(100% - 4.8vw),transparent);
 }
+.reshmi-header:has(.deewan-book) .reshmi-backdrop > img {display:none;}
 .reshmi-backdrop::before {
   content:"";
   position:absolute;
@@ -77,13 +79,13 @@
   background:url('/images/reshmi/seal.webp') center / contain no-repeat;
   clip-path:polygon(0 34%,28% 25%,50% 0,73% 25%,100% 34%,68% 67%,50% 100%,30% 67%);
 }
-.deewan-book{position:relative;margin:2in auto 0;width:100%;max-width:1540px;--book-extension:1.5in;min-height:calc(528px + var(--book-extension));isolation:isolate;perspective:1400px;color:#49241a;animation:deewan-open .48s ease-out}
+.deewan-book{position:relative;--book-extra-width:min(1in, 10vw);width:calc(min(100%, 1540px) + var(--book-extra-width));margin:2in calc((100% - min(100%, 1540px) - var(--book-extra-width)) / 2) 0;--book-extension:1.5in;min-height:calc(528px + var(--book-extension));isolation:isolate;perspective:1400px;color:#49241a;animation:deewan-open .48s ease-out}
 /* Preserve the original width-based height and extend both book faces together. */
 .deewan-book::after {
   content:"";
   display:block;
   width:100%;
-  padding-top:calc(65.88541667% + var(--book-extension));
+  padding-top:calc(65.88541667% - var(--book-extra-width) * .6588541667 + var(--book-extension));
   pointer-events:none;
 }
 .deewan-book::before {
