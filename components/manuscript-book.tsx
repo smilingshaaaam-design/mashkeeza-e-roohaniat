@@ -44,12 +44,16 @@ function animateLeaf(leaf: HTMLElement, reverse: boolean) {
   // A diagonal bend reaches the bottom outside corner first in both directions.
   const nx = -Math.cos(0.44), ny = Math.sin(0.44)
   const start = nx * width
-  const step = (ny * height - start) / leafBands
+  // One unbent panel spans the entire binding. Every flexible strip starts
+  // beyond the lower end of the seam, so no point on that seam can lift.
+  const sewnEdge = start + ny * height
+  const step = -start / (leafBands - 1)
+  const stripEdge = (i: number) => i === 0 ? start : sewnEdge + (i - 1) * step
   leaf.style.transform = reverse ? 'scaleX(-1)' : ''
   const pieces = Array.from(leaf.querySelectorAll<HTMLElement>('[data-fold]'))
   const frames: Keyframe[][] = pieces.map(() => [])
   pieces.forEach((piece, i) => {
-    piece.style.clipPath = foldedStrip(start + i * step - 0.45, start + (i + 1) * step + 0.45, width, height, nx, ny)
+    piece.style.clipPath = foldedStrip(stripEdge(i) - 0.45, stripEdge(i + 1) + 0.45, width, height, nx, ny)
   })
   const eased = (v: number) => {
     const t = Math.max(0, Math.min(1, v))
@@ -57,12 +61,14 @@ function animateLeaf(leaf: HTMLElement, reverse: boolean) {
   }
   for (let frame = 0; frame <= 42; frame++) {
     const t = frame / 42
-    const hinge = 180 * eased((t - 0.18) / 0.82)
+    const hinge = 180 * eased(t)
     let distance = start, lift = 0
     pieces.forEach((_, i) => {
-      const edge = start + i * step
-      const u = (i + 0.5) / leafBands
-      const bend = 65 * eased((t - 0.48 * (1 - u)) / 0.23) * (1 - eased((t - 0.43) / 0.54))
+      const edge = stripEdge(i)
+      const span = stripEdge(i + 1) - edge
+      const u = i / (leafBands - 1)
+      const bend = 52 * u * Math.sin(Math.PI * t) *
+        eased((t - 0.14 * (1 - u)) / 0.26) * (1 - eased((t - 0.45) / 0.48))
       const radians = bend * Math.PI / 180
       const drift = distance - edge
       const transform = 'translateX(' + width + 'px) rotateY(' + hinge + 'deg) translateX(-' + width + 'px) ' +
@@ -71,8 +77,8 @@ function animateLeaf(leaf: HTMLElement, reverse: boolean) {
         'translate(' + (-nx * edge) + 'px,' + (-ny * edge) + 'px)'
       frames[i].push({transform, opacity:Math.min(1,t * 18,(1 - t) * 14),
         filter:'brightness(' + (1 - 0.22 * Math.sin((hinge + bend) * Math.PI / 180) ** 2) + ')'})
-      distance += step * Math.cos(radians)
-      lift += step * Math.sin(radians)
+      distance += span * Math.cos(radians)
+      lift += span * Math.sin(radians)
     })
   }
   const animations = pieces.map((piece,i) => piece.animate(frames[i], { duration }))
@@ -193,8 +199,8 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
           <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}
       </div></div>
     </div>}
-    <div aria-hidden="true" className="deewan-leaf" ref={leaf}><div className="deewan-turn-shadow" />{Array.from({length:leafBands}, (_,i) => <i key={i} data-fold="" className="deewan-paper" style={{
-      left:0, right:'auto', width:'50%', transformOrigin:'0 0', backgroundSize:'222.222% 109.9%', backgroundPosition:'9.09% 44.45%'
+    <div aria-hidden="true" className="deewan-leaf" style={{top:"5.6%", bottom:"8.2%"}} ref={leaf}><div className="deewan-turn-shadow" />{Array.from({length:leafBands}, (_,i) => <i key={i} data-fold="" className="deewan-paper" style={{
+      left:0, right:'auto', width:'50%', transformOrigin:'0 0', backgroundSize:'480% 170%', backgroundPosition:'76% 47%', borderRadius:'1% 0 0 1%'
     }} />)}</div>
     <div className="deewan-controls">
       <button disabled={current < 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
