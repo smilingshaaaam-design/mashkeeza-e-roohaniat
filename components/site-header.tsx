@@ -8,11 +8,13 @@ import CmsText from '@/components/cms-text'
 
 export function SiteHeader() {
   return (
-    <header className="relative">
-      <div className="reshmi-mast">
+    <header className="reshmi-header relative">
+      <div className="reshmi-backdrop" aria-hidden="true">
         <Image src="/images/hero-sky.png" alt="" fill priority className="object-cover" />
-        <div className="reshmi-sky" aria-hidden="true" />
         <Starfield count={110} seed={3} className="inset-0 z-[1]" />
+      </div>
+      <div className="reshmi-mast">
+        <div className="reshmi-sky" aria-hidden="true" />
         <h1 className="reshmi-title glow-pulse">
           <CmsText settingKey="site_title" fallback="مشکیزہ روحانیت" />
         </h1>

@@ -1,3 +1,16 @@
+.reshmi-header {
+  padding-top:clamp(48px,5vw,96px);
+}
+.reshmi-backdrop {
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  pointer-events:none;
+}
+.reshmi-backdrop img {object-fit:cover;object-position:center top;}
+.reshmi-header:has(.deewan-book) .reshmi-backdrop {
+  mask-image:linear-gradient(to bottom,#000 calc(100% - 4.8vw),transparent);
+}
 .reshmi-mast {
   position:relative;
   aspect-ratio:1752 / 112;
@@ -49,7 +62,7 @@
   background:url('/images/reshmi/seal.webp') center / contain no-repeat;
   clip-path:polygon(0 34%,28% 25%,50% 0,73% 25%,100% 34%,68% 67%,50% 100%,30% 67%);
 }
-.deewan-book{position:relative;margin:clamp(16px,1.65vw,30px) auto 0;width:100%;max-width:1540px;aspect-ratio:1536/920;min-height:480px;isolation:isolate;perspective:1400px;color:#49241a;animation:deewan-open .48s ease-out}
+.deewan-book{position:relative;margin:1.5in auto 0;width:100%;max-width:1540px;aspect-ratio:1536/920;min-height:480px;isolation:isolate;perspective:1400px;color:#49241a;animation:deewan-open .48s ease-out}
 .deewan-book::before {
   content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
   background:url('/images/deewan/book.webp') center / 100% 100% no-repeat;
