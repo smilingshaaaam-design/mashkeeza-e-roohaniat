@@ -13,51 +13,75 @@ function pageSlug(href: string) {
   return /^\/pages\/?$/.test(url.pathname) ? url.searchParams.get('slug') : null
 }
 
-const leafBands = 12
+const leafBands = 16
+const duration = 1350
 
-function PaperBand({ index }: { index: number }) {
-  const width = 0.45 / leafBands
-  const x = (0.5 - (index + 1) * width) / (1 - width)
-  return <div className="deewan-band">
-    <i className="deewan-paper" style={{
-      backgroundSize: (100 / width) + '% 109.9%',
-      backgroundPosition: (100 * x) + '% 44.45%'
-    }} />
-    {index + 1 < leafBands && <PaperBand index={index + 1} />}
-  </div>
+// Clip the sheet into adjoining strips perpendicular to the moving crease.
+function foldedStrip(left: number, right: number, width: number, height: number, nx: number, ny: number) {
+  type Point = [number, number]
+  let points: Point[] = [[0, 0], [width, 0], [width, height], [0, height]]
+  for (const [edge, sign] of [[left, 1], [right, -1]]) {
+    const clipped: Point[] = []
+    points.forEach((a, i) => {
+      const b = points[(i + 1) % points.length]
+      const da = sign * (a[0] * nx + a[1] * ny - edge)
+      const db = sign * (b[0] * nx + b[1] * ny - edge)
+      if (da >= 0) clipped.push(a)
+      if ((da >= 0) !== (db >= 0)) {
+        const f = da / (da - db)
+        clipped.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f])
+      }
+    })
+    points = clipped
+  }
+  return 'polygon(' + points.map(([x,y]) => x + 'px ' + y + 'px').join(',') + ')'
 }
 
 function animateLeaf(leaf: HTMLElement, reverse: boolean) {
-  const options: KeyframeAnimationOptions = { duration: 1060, direction: reverse ? 'reverse' : 'normal' }
-  const animations: Animation[] = []
-  const bands = Array.from(leaf.querySelectorAll<HTMLElement>('.deewan-band'))
-  bands.forEach((band, index) => {
-    const poses: Keyframe[] = []
-    const light: Keyframe[] = []
-    for (let step = 0; step <= 32; step++) {
-      const t = step / 32
-      const p = t * t * (3 - 2 * t)
-      const bend = Math.sin(Math.PI * p)
-      // Absolute tangent of the sheet, from the sewn edge to the loose tip.
-      const tangent = (u: number) => 180 * p + bend * (
-        48 * u * Math.cos(Math.PI * p) + 12 * u * Math.sin(2 * Math.PI * p - 2.4 * u)
-      )
-      const u = (index + 0.5) / leafBands
-      const angle = tangent(u)
-      const relative = index ? angle - tangent(u - 1 / leafBands) : angle
-      const twist = bend * Math.sin(2 * Math.PI * p - u) * (index ? 0.16 : 0.7)
-      poses.push({ transform: 'rotateY(' + relative + 'deg) rotateZ(' + twist + 'deg)' })
-      const shade = 1 - 0.24 * Math.sin(angle * Math.PI / 180) ** 2
-      light.push({ filter: 'brightness(' + shade + ')', opacity: Math.min(1, t * 18, (1 - t) * 12) })
-    }
-    animations.push(band.animate(poses, options), band.firstElementChild!.animate(light, options))
+  const width = leaf.clientWidth / 2
+  const height = leaf.clientHeight
+  if (!width || !height) return
+  // A diagonal bend reaches the bottom outside corner first in both directions.
+  const nx = -Math.cos(0.44), ny = Math.sin(0.44)
+  const start = nx * width
+  const step = (ny * height - start) / leafBands
+  leaf.style.transform = reverse ? 'scaleX(-1)' : ''
+  const pieces = Array.from(leaf.querySelectorAll<HTMLElement>('[data-fold]'))
+  const frames: Keyframe[][] = pieces.map(() => [])
+  pieces.forEach((piece, i) => {
+    piece.style.clipPath = foldedStrip(start + i * step - 0.45, start + (i + 1) * step + 0.45, width, height, nx, ny)
   })
+  const eased = (v: number) => {
+    const t = Math.max(0, Math.min(1, v))
+    return t * t * (3 - 2 * t)
+  }
+  for (let frame = 0; frame <= 42; frame++) {
+    const t = frame / 42
+    const hinge = 180 * eased((t - 0.18) / 0.82)
+    let distance = start, lift = 0
+    pieces.forEach((_, i) => {
+      const edge = start + i * step
+      const u = (i + 0.5) / leafBands
+      const bend = 65 * eased((t - 0.48 * (1 - u)) / 0.23) * (1 - eased((t - 0.43) / 0.54))
+      const radians = bend * Math.PI / 180
+      const drift = distance - edge
+      const transform = 'translateX(' + width + 'px) rotateY(' + hinge + 'deg) translateX(-' + width + 'px) ' +
+        'translate3d(' + nx * drift + 'px,' + ny * drift + 'px,' + lift + 'px) ' +
+        'translate(' + nx * edge + 'px,' + ny * edge + 'px) rotate3d(' + ny + ',' + (-nx) + ',0,' + bend + 'deg) ' +
+        'translate(' + (-nx * edge) + 'px,' + (-ny * edge) + 'px)'
+      frames[i].push({transform, opacity:Math.min(1,t * 18,(1 - t) * 14),
+        filter:'brightness(' + (1 - 0.22 * Math.sin((hinge + bend) * Math.PI / 180) ** 2) + ')'})
+      distance += step * Math.cos(radians)
+      lift += step * Math.sin(radians)
+    })
+  }
+  const animations = pieces.map((piece,i) => piece.animate(frames[i], { duration }))
   const shadow = leaf.querySelector('.deewan-turn-shadow')
   if (shadow) animations.push(shadow.animate([
-    { opacity: 0, transform: 'translateX(-55%) scaleX(.85)' },
-    { opacity: .32, transform: 'translateX(0) scaleX(.37)', offset: .5 },
-    { opacity: 0, transform: 'translateX(55%) scaleX(.85)' }
-  ], options))
+    {opacity:0,transform:'translate(-55%,8%) scale(.4,.85)'},
+    {opacity:.28,transform:'translateX(0) scaleX(.42)',offset:.56},
+    {opacity:0,transform:'translateX(55%) scaleX(.85)'}
+  ], {duration}))
   return () => animations.forEach(animation => animation.cancel())
 }
 
@@ -169,7 +193,9 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
           <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}
       </div></div>
     </div>}
-    <div aria-hidden="true" className="deewan-leaf" ref={leaf}><div className="deewan-turn-shadow" /><PaperBand index={0} /></div>
+    <div aria-hidden="true" className="deewan-leaf" ref={leaf}><div className="deewan-turn-shadow" />{Array.from({length:leafBands}, (_,i) => <i key={i} data-fold="" className="deewan-paper" style={{
+      left:0, right:'auto', width:'50%', transformOrigin:'0 0', backgroundSize:'222.222% 109.9%', backgroundPosition:'9.09% 44.45%'
+    }} />)}</div>
     <div className="deewan-controls">
       <button disabled={current < 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1} / {count}</span>}
