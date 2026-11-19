@@ -1,8 +1,9 @@
 .reshmi-header {
-  padding-top:48px;
+  --mast-gap:48px;
+  padding-top:var(--mast-gap);
 }
 @media (min-width:768px) {
-  .reshmi-header {padding-top:64px;}
+  .reshmi-header {--mast-gap:64px;}
 }
 .reshmi-backdrop {
   position:absolute;
@@ -14,17 +15,27 @@
 .reshmi-header:has(.deewan-book) .reshmi-backdrop {
   mask-image:linear-gradient(to bottom,#000 calc(100% - 4.8vw),transparent);
 }
+.reshmi-backdrop::before {
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  aspect-ratio:1752 / 112;
+  box-sizing:content-box;
+  padding-top:var(--mast-gap);
+  background:linear-gradient(to bottom,transparent 50%,rgb(7 10 31 / 70%)),url('/images/hero-sky.png') center / cover;
+}
 .reshmi-mast {
   position:relative;
   aspect-ratio:1752 / 112;
-  background:#14122c;
+
 }
 .reshmi-sky,.reshmi-title:has([data-reference-title])::before {
   position:absolute;
   inset:0;
   background:url('/images/reshmi/masthead.webp') center / 100% 100% no-repeat;
+  filter:url(#reshmi-gold-ink);
 }
-.reshmi-sky { clip-path:polygon(0 0,38.5% 0,38.5% 100%,62% 100%,62% 0,100% 0,100% 100%,0 100%); }
+.reshmi-sky {clip-path:polygon(26% 36%,38% 36%,38% 90%,62% 90%,62% 36%,75% 36%,75% 78%,26% 78%);}
 .reshmi-title {
   position:absolute;inset:0;z-index:20;display:grid;place-items:center;
   margin:0;color:#ffdea0;font-family:var(--font-nastaliq),serif;font-size:3.9vw;line-height:1.55;

@@ -13,6 +13,13 @@ export function SiteHeader() {
         <Image src="/images/hero-sky.png" alt="" fill priority className="object-cover" />
         <Starfield count={110} seed={3} className="inset-0 z-[1]" />
       </div>
+      <svg aria-hidden="true" width="0" height="0" className="absolute pointer-events-none">
+        <defs>
+          <filter id="reshmi-gold-ink" colorInterpolationFilters="sRGB">
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  9.5 0 -9 0 -0.55" />
+          </filter>
+        </defs>
+      </svg>
       <div className="reshmi-mast">
         <div className="reshmi-sky" aria-hidden="true" />
         <h1 className="reshmi-title glow-pulse">
