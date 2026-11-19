@@ -77,7 +77,7 @@
   background:url('/images/reshmi/seal.webp') center / contain no-repeat;
   clip-path:polygon(0 34%,28% 25%,50% 0,73% 25%,100% 34%,68% 67%,50% 100%,30% 67%);
 }
-.deewan-book{position:relative;margin:1.5in auto 0;width:100%;max-width:1540px;aspect-ratio:1536/920;min-height:480px;isolation:isolate;perspective:1400px;color:#49241a;animation:deewan-open .48s ease-out}
+.deewan-book{position:relative;margin:3in auto 0;width:100%;max-width:1540px;aspect-ratio:1536/1012;min-height:528px;isolation:isolate;perspective:1400px;color:#49241a;animation:deewan-open .48s ease-out}
 .deewan-book::before {
   content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
   background:url('/images/deewan/book.webp') center / 100% 100% no-repeat;
@@ -104,7 +104,7 @@
 .deewan-controls{position:absolute;bottom:8%;left:12%;width:30%;display:flex;align-items:center;justify-content:center;gap:.8em;font-size:clamp(12px,1.2vw,19px)}
 .deewan-controls button{cursor:pointer;border:1px solid #a7824c;background:#f8e7c4;border-radius:5px;padding:.1em .65em;line-height:2;color:#501b22}
 .deewan-controls button:disabled{opacity:.45;cursor:default}
-@media(max-width:650px){.deewan-menu-list>li>div>a{font-size:13px}.deewan-book{min-height:565px}.deewan-reading,.deewan-index{width:38%;font-size:15px}.deewan-index{right:6%}.deewan-reading{left:6%}.deewan-controls{left:5%;width:40%;gap:3px}.deewan-plaque{width:100%;padding:.45em .7em}}
+@media(max-width:650px){.deewan-menu-list>li>div>a{font-size:13px}.deewan-book{min-height:622px}.deewan-reading,.deewan-index{width:38%;font-size:15px}.deewan-index{right:6%}.deewan-reading{left:6%}.deewan-controls{left:5%;width:40%;gap:3px}.deewan-plaque{width:100%;padding:.45em .7em}}
 @media(prefers-reduced-motion:reduce){.deewan-book{animation:none}}
 
 /* Keep the moon close to the binding as the reading area grows. */
