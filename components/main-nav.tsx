@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { ChevronDown, ChevronLeft, Home } from 'lucide-react'
+import { usePublishedArticles } from './article-browser'
 import { ManuscriptBook } from '@/components/manuscript-book'
 import { cn } from '@/lib/utils'
 import { useVisualCms } from '@/components/visual-cms'
@@ -132,6 +133,7 @@ function containsMenu(item: NavItem, id: string): boolean {
 type MenuEntryProps = {
   item: NavItem
   depth: number
+  emptyMessage?: string
   active?: boolean
   first?: boolean
   dismissal: number
@@ -146,6 +148,7 @@ type MenuEntryProps = {
 function MenuEntry({
   item,
   depth,
+  emptyMessage,
   active = false,
   first = false,
   dismissal,
@@ -157,9 +160,10 @@ function MenuEntry({
   selectedMenuId,
 }: MenuEntryProps) {
   const isContact = depth === 0 && item.id === 'contact'
+  const isArticles = depth === 0 && item.id === 'published-articles'
   // Older saved menus have an empty contact entry.
   const children = isContact && !item.children?.length ? contactLinks : item.children || []
-  const hasChildren = children.length > 0 && !item.href.startsWith('#topic-')
+  const hasChildren = (children.length > 0 || isArticles) && !item.href.startsWith('#topic-')
   const isExpanded = expanded.has(item.id)
   const isRoot = depth === 0
   const [hoverSession, setHoverSession] = useState<number | null>(null)
@@ -206,6 +210,7 @@ function MenuEntry({
       >
         <a
           href={item.href}
+          aria-expanded={isArticles ? Boolean(showChildren) : undefined}
           aria-current={active ? 'true' : undefined}
           target={
             item.openInNewTab ? '_blank' : undefined
@@ -219,7 +224,7 @@ function MenuEntry({
             if (editing) {
               e.preventDefault()
               onEdit?.(item.id)
-            } else if (isContact && item.href === '#contact') {
+            } else if (isArticles || (isContact && item.href === '#contact')) {
               e.preventDefault()
               toggle(item.id)
             } else {
@@ -300,7 +305,7 @@ function MenuEntry({
             'gold-frame rounded-sm bg-black/95 py-1',
             'max-h-[75vh] overflow-y-auto',
             'shadow-[0_10px_30px_rgba(0,0,0,0.65)]',
-            'lg:overflow-visible',
+            isArticles ? 'lg:max-h-[65vh] lg:overflow-y-auto' : 'lg:overflow-visible',
             'lg:absolute lg:z-[120]',
             isRoot
               ? 'lg:right-0 lg:top-full lg:min-w-56'
@@ -308,9 +313,10 @@ function MenuEntry({
             showChildren
               ? cn('absolute z-50 block min-w-48 visible opacity-100', isRoot ? 'right-0 top-full' : 'right-full top-0')
               : 'hidden',
-            isContact && 'left-0 right-auto lg:left-0 lg:right-auto' 
+            (isContact || isArticles) && 'left-0 right-auto lg:left-0 lg:right-auto' 
           )}
         >
+          {isArticles && !children.length && <li className="px-4 py-2 text-amber-100" role="status">{emptyMessage}</li>}
           {children.map(child => (
             <MenuEntry
               key={child.id}
@@ -333,6 +339,7 @@ function MenuEntry({
 
 export function MainNav() {
   const pathname = usePathname()
+  const { articles, status: articleStatus } = usePublishedArticles()
   const cms = useVisualCms()
   const [navItems, setNavItems] =
     useState<NavItem[]>(defaultNavItems)
@@ -402,6 +409,12 @@ export function MainNav() {
     return () => window.removeEventListener('hashchange', update)
   }, [])
   const items = topicNavigation(cms?.menus ?? navItems).filter(item => item.visible !== false)
+  const articleMenu: NavItem = {
+    id: 'published-articles', label: 'مضامین', href: '#published-articles',
+    children: articles.map(article => ({ id: 'article-' + article.id, label: article.title, href: '/#article-' + encodeURIComponent(article.id) }))
+  }
+  const contactIndex = items.findIndex(item => item.id === 'contact')
+  items.splice(contactIndex < 0 ? items.length : contactIndex, 0, articleMenu)
   const bookTopics = items.filter(item => item.href.startsWith('#topic-'))
   const topic = bookTopics.find(item => item.href === activeHash.split('/read/')[0])
   const cards = topic?.children?.filter(card => card.visible !== false && isSafeHref(card.href) && !card.href.startsWith('#')) ?? []
@@ -439,7 +452,8 @@ export function MainNav() {
               item={item}
               depth={0}
               first={index === 0}
-              active={item.id === topic?.id || (item.href === '/' && pathname === '/' && !activeHash)}
+              emptyMessage={articleStatus === 'loading' ? 'مضامین لوڈ ہو رہے ہیں…' : articleStatus === 'error' ? 'مضامین دستیاب نہیں ہیں۔' : 'ابھی کوئی شائع شدہ مضمون نہیں ہے۔'}
+              active={(item.id === 'published-articles' && activeHash.startsWith('#article-')) || item.id === topic?.id || (item.href === '/' && pathname === '/' && !activeHash)}
               dismissal={dismissal}
               expanded={expanded}
               toggle={toggle}
