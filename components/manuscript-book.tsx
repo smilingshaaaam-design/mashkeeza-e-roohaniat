@@ -28,7 +28,7 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
   const face = document.createElement('div')
   face.inert = true
   Object.assign(face.style, {
-    position:'absolute', inset:'0', overflow:'hidden', fontStyle:'normal', direction:'rtl',
+    position:'absolute', inset:'0', overflow:'visible', fontStyle:'normal', direction:'rtl',
     backgroundImage:"url('/images/deewan/book.webp')",
     backgroundSize:book.clientWidth + 'px ' + book.clientHeight + 'px',
     backgroundPosition:-left + 'px ' + (-top) + 'px'
