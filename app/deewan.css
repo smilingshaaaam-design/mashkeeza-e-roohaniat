@@ -119,7 +119,7 @@
 .deewan-band {position:absolute;top:0;right:100%;width:100%;height:100%;transform-origin:right center;transform-style:preserve-3d;}
 .deewan-leaf>.deewan-band {right:50%;width:calc(50% / 12);}
 .deewan-paper {position:absolute;inset:0 -.35px 0 0;opacity:0;background-image:url('/images/deewan/book.webp');background-repeat:no-repeat;}
-.deewan-turn-shadow {position:absolute;inset:3% 27%;opacity:0;background:radial-gradient(ellipse,#39200f 12%,transparent 70%);}
+
 .deewan-controls{position:absolute;bottom:8%;left:12%;width:30%;display:flex;align-items:center;justify-content:center;gap:.8em;font-size:clamp(12px,1.2vw,19px)}
 .deewan-controls button{cursor:pointer;border:1px solid #a7824c;background:#f8e7c4;border-radius:5px;padding:.1em .65em;line-height:2;color:#501b22}
 .deewan-controls button:disabled{opacity:.45;cursor:default}

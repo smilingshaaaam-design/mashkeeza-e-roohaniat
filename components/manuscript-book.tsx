@@ -94,8 +94,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   const transforms: Keyframe[] = []
   const profiles: [Keyframe[], Keyframe[]] = [[], []]
   const light: Keyframe[] = []
-  const shadowFrames: Keyframe[] = []
-  const direction = fromRight ? -1 : 1
+    const direction = fromRight ? -1 : 1
   for (let i = 0; i <= 48; i++) {
     const t = i / 48
     const progress = t * t * (3 - 2 * t)
@@ -118,8 +117,6 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
       profiles[side].push({clipPath:'path("' + path + '")'})
     }
     light.push({opacity:.78*bend,backgroundPosition:(18 + 65 * progress) + '% 50%'})
-    shadowFrames.push({opacity:.26*bend,transform:'translateX(' + direction * -52*Math.cos(angle) +
-      '%) scaleX(' + (.16 + .59*bend) + ')'})
   }
 
   const timing: KeyframeAnimationOptions = {duration, fill:'both'}
@@ -129,14 +126,12 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
     const glaze = document.createElement('div')
     Object.assign(glaze.style, {
       position:'absolute', inset:'0', pointerEvents:'none',
-      backgroundImage:'linear-gradient(105deg,transparent 10%,rgba(97,59,27,.18) 38%,rgba(255,248,219,.16) 57%,transparent 81%)',
+      backgroundImage:'linear-gradient(105deg,transparent 10%,rgba(255,248,219,.12) 55%,transparent 81%)',
       backgroundSize:'160% 100%'
     })
     face.append(glaze)
     animations.push(face.animate(profiles[index], timing), glaze.animate(light, timing))
   })
-  const shadow = leaf.querySelector('.deewan-turn-shadow')
-  if (shadow) animations.push(shadow.animate(shadowFrames,timing))
 
   const release = () => {
     motion.onfinish = null
@@ -263,7 +258,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
           <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}
       </div></div>
     </div>}
-    <div aria-hidden="true" className="deewan-leaf" style={{top:"1.5%", bottom:"2.5%"}} ref={leaf}><div className="deewan-turn-shadow" /></div>
+    <div aria-hidden="true" className="deewan-leaf" style={{top:"1.5%", bottom:"2.5%"}} ref={leaf} />
     <div className="deewan-controls">
       <button disabled={current < 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1} / {count}</span>}
