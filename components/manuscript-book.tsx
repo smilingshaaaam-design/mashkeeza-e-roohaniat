@@ -112,7 +112,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
       const inward = right ? -1 : 1
       const reach = outside + inward * width * .035 * bend
       const rise = height * .032 * bend
-      const path = 'M ' + spine + ' 0 Q ' + ((outside + spine)/2) + ' ' + (-rise*.22) + ' ' + reach + ' ' + rise*.25 +
+      const path = 'M ' + spine + ' 0 Q ' + ((outside + spine)/2) + ' ' + (rise*.12) + ' ' + reach + ' ' + rise*.25 +
         ' Q ' + (outside-inward*width*.012*bend) + ' ' + height*.52 + ' ' + outside + ' ' + (height-rise) +
         ' Q ' + ((outside + spine)/2) + ' ' + (height+rise*.15) + ' ' + spine + ' ' + height + ' Z'
       profiles[side].push({clipPath:'path("' + path + '")'})
