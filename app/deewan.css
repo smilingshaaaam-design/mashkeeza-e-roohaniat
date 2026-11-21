@@ -13,17 +13,9 @@
   pointer-events:none;
 }
 .reshmi-backdrop img {object-fit:cover;object-position:center top;}
-:root { --desert-width:147.32142857vw; }
-@media (min-width:768px) { :root { --desert-width:117.85714286vw; } }
 .reshmi-header:has(.deewan-book) .reshmi-backdrop {
-  background:
-    linear-gradient(to bottom, transparent 48%, rgb(7 10 31 / 38%)),
-    url('/images/desert-scene.png') center top / var(--desert-width) auto no-repeat;
-  mask-image:linear-gradient(to bottom,#000 82%,transparent);
+  mask-image:linear-gradient(to bottom,#000 calc(100% - 4.8vw),transparent);
 }
- .reshmi-header:has(.deewan-book) .reshmi-backdrop > img {display:none;}
-.reshmi-header:has(.deewan-book) .reshmi-backdrop::before {display:none;}
-.deewan-reading-stars {top:0;height:100%;}
 .reshmi-backdrop::before {
   content:"";
   position:absolute;
@@ -139,3 +131,19 @@
 
 /* Keep the moon close to the binding as the reading area grows. */
 div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-4.8vw,-20px); }
+
+/* Soft starry sky follows the book area without altering the masthead. */
+.deewan-book::marker { content: none; }
+.deewan-sky-backdrop {
+  position:absolute;
+  z-index:-2;
+  inset:-3rem -8% -2rem;
+  overflow:hidden;
+  pointer-events:none;
+  border-radius:50%;
+  background:
+    linear-gradient(to bottom, rgb(5 8 24 / 12%), rgb(5 8 24 / 38%)),
+    url('/images/desert-scene.png') center top / var(--desert-width) auto no-repeat;
+  -webkit-mask-image:radial-gradient(ellipse at center, #000 35%, transparent 78%);
+  mask-image:radial-gradient(ellipse at center, #000 35%, transparent 78%);
+}

@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { isMagicalScrollEnabled } from './magical-scroll'
+import { Starfield } from './magic/starfield'
 import { ArticleRichBody } from './article-rich-body'
 import type { NavItem } from './main-nav'
 
@@ -241,6 +242,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
       const dx = e.changedTouches[0].clientX - start[0]
       if (Math.abs(dx) > 45 && Math.abs(dx) > 1.6 * Math.abs(e.changedTouches[0].clientY - start[1])) turn(dx > 0 ? 1 : -1)
     }}>
+    <div aria-hidden="true" className="deewan-sky-backdrop"><Starfield count={125} seed={41} className="inset-0" /></div>
     <div className="deewan-index">
       <h2>{topic.label}</h2>
       <h3>فہرست</h3>
