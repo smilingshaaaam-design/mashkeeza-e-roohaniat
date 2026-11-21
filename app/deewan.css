@@ -21,7 +21,8 @@
     url('/images/desert-scene.png') center top / var(--desert-width) auto no-repeat;
   mask-image:linear-gradient(to bottom,#000 82%,transparent);
 }
-.reshmi-header:has(.deewan-book) .reshmi-backdrop > img {display:none;}
+ .reshmi-header:has(.deewan-book) .reshmi-backdrop > img {display:none;}
+.reshmi-header:has(.deewan-book) .reshmi-backdrop::before {display:none;}
 .deewan-reading-stars {top:0;height:100%;}
 .reshmi-backdrop::before {
   content:"";
