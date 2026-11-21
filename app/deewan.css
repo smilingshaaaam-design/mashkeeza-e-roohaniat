@@ -13,11 +13,16 @@
   pointer-events:none;
 }
 .reshmi-backdrop img {object-fit:cover;object-position:center top;}
+:root { --desert-width:147.32142857vw; }
+@media (min-width:768px) { :root { --desert-width:117.85714286vw; } }
 .reshmi-header:has(.deewan-book) .reshmi-backdrop {
-  background:linear-gradient(to bottom, rgb(7 10 31 / 32%), rgb(7 10 31 / 52%)), url('/images/deewan/desert-sky.webp') center / cover no-repeat;
-  mask-image:linear-gradient(to bottom,#000 calc(100% - 4.8vw),transparent);
+  background:
+    linear-gradient(to bottom, transparent 48%, rgb(7 10 31 / 38%)),
+    url('/images/desert-scene.png') center top / var(--desert-width) auto no-repeat;
+  mask-image:linear-gradient(to bottom,#000 82%,transparent);
 }
 .reshmi-header:has(.deewan-book) .reshmi-backdrop > img {display:none;}
+.deewan-reading-stars {top:0;height:100%;}
 .reshmi-backdrop::before {
   content:"";
   position:absolute;

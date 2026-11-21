@@ -12,6 +12,7 @@ export function SiteHeader() {
       <div className="reshmi-backdrop" aria-hidden="true">
         <Image src="/images/hero-sky.png" alt="" fill priority className="object-cover" />
         <Starfield count={110} seed={3} className="inset-0 z-[1]" />
+        <Starfield count={95} seed={41} className="deewan-reading-stars inset-x-0 z-[2]" />
       </div>
       <svg aria-hidden="true" width="0" height="0" className="absolute pointer-events-none">
         <defs>
