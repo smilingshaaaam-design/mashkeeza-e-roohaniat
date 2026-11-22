@@ -109,11 +109,13 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
       const spine = right ? 0 : width
       const outside = right ? width : 0
       const inward = right ? -1 : 1
+      const paperTop = height * .045
+      const paperBottom = height * .955
       const reach = outside + inward * width * .035 * bend
       const rise = height * .032 * bend
-      const path = 'M ' + spine + ' 0 Q ' + ((outside + spine)/2) + ' ' + (rise*.12) + ' ' + reach + ' ' + rise*.25 +
-        ' Q ' + (outside-inward*width*.012*bend) + ' ' + height*.52 + ' ' + outside + ' ' + (height-rise) +
-        ' Q ' + ((outside + spine)/2) + ' ' + (height+rise*.15) + ' ' + spine + ' ' + height + ' Z'
+      const path = 'M ' + spine + ' ' + paperTop + ' Q ' + ((outside + spine)/2) + ' ' + (paperTop+rise*.12) + ' ' + reach + ' ' + (paperTop+rise*.25) +
+        ' Q ' + (outside-inward*width*.012*bend) + ' ' + (paperTop+(paperBottom-paperTop)*.52) + ' ' + outside + ' ' + (paperBottom-rise) +
+        ' Q ' + ((outside + spine)/2) + ' ' + (paperBottom-rise*.15) + ' ' + spine + ' ' + paperBottom + ' Z'
       profiles[side].push({clipPath:'path("' + path + '")'})
     }
     light.push({opacity:.78*bend,backgroundPosition:(18 + 65 * progress) + '% 50%'})
@@ -258,7 +260,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
           <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}
       </div></div>
     </div>}
-    <div aria-hidden="true" className="deewan-leaf" style={{top:"5.5%", bottom:"6.5%"}} ref={leaf} />
+    <div aria-hidden="true" className="deewan-leaf" style={{top:"1.5%", bottom:"2.5%"}} ref={leaf} />
     <div className="deewan-controls">
       <button disabled={current < 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1} / {count}</span>}
