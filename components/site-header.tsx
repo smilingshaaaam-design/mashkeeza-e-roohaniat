@@ -21,8 +21,8 @@ export function SiteHeader() {
         </defs>
       </svg>
       <div className="reshmi-mast">
-        <div className="reshmi-sky" aria-hidden="true" />
         <h1 className="reshmi-title glow-pulse">
+          <img className="title-ornaments" src="/images/reshmi/title-ornaments.png" alt="" aria-hidden="true" />
           <CmsText settingKey="site_title" fallback="مشکیزہ روحانیت" />
         </h1>
         <div className="reshmi-sand"><GoldenSand className="inset-x-0 top-0 w-full" /></div>

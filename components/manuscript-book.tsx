@@ -29,7 +29,7 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
   face.inert = true
   Object.assign(face.style, {
     position:'absolute', inset:'0', overflow:'visible', fontStyle:'normal', direction:'rtl',
-    backgroundImage:"url('/images/deewan/book.webp')",
+    backgroundImage:"url('/images/deewan/paper-surface.webp')",
     backgroundSize:book.clientWidth + 'px ' + book.clientHeight + 'px',
     backgroundPosition:-left + 'px ' + (-top) + 'px'
   })
@@ -87,7 +87,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   Object.assign(still.style, {
     inset:'auto', left:(leaf.offsetLeft + (turn.landing.right ? width : 0))+'px',
     top:leaf.offsetTop+'px', width:width+'px', height:height+'px', pointerEvents:'none',
-    clipPath:'inset(4.5% 0 4.5% 0)'
+    backgroundRepeat:'no-repeat'
   })
   still.setAttribute('aria-hidden','true')
   leaf.before(still)
@@ -111,12 +111,12 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
       const outside = right ? width : 0
       const inward = right ? -1 : 1
       // Follow the curved paper edge in the artwork, including its dip at the spine.
-      const spineTop = height * .041
-      const outerTop = height * .011
-      const paperBottom = height * .955
+      const spineTop = 0
+      const outerTop = 0
+      const paperBottom = height
       const reach = outside + inward * width * .035 * bend
       const rise = height * .032 * bend
-      const path = 'M ' + spine + ' ' + spineTop + ' C ' + (spine + (outside-spine)*.12) + ' 0 ' + (spine + (outside-spine)*.55) + ' 0 ' + reach + ' ' + (outerTop+rise*.25) +
+      const path = 'M ' + spine + ' ' + spineTop + ' C ' + (spine + (outside-spine)*.12) + ' 0 ' + (spine + (outside-spine)*.55) + ' 0 ' + reach + ' ' + outerTop +
         ' Q ' + (outside-inward*width*.012*bend) + ' ' + (height*.52) + ' ' + outside + ' ' + (paperBottom-rise) +
         ' Q ' + ((outside + spine)/2) + ' ' + (paperBottom-rise*.15) + ' ' + spine + ' ' + paperBottom + ' Z'
       profiles[side].push({clipPath:'path("' + path + '")'})
@@ -263,7 +263,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
           <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}
       </div></div>
     </div>}
-    <div aria-hidden="true" className="deewan-leaf" style={{top:"1.5%", bottom:"2.5%"}} ref={leaf} />
+    <div aria-hidden="true" className="deewan-leaf" style={{inset:"0 4%"}} ref={leaf} />
     <div className="deewan-controls">
       <button disabled={current < 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1} / {count}</span>}

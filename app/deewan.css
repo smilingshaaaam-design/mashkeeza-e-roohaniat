@@ -144,3 +144,5 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
   -webkit-mask-image:radial-gradient(ellipse at center, #000 35%, transparent 78%);
   mask-image:radial-gradient(ellipse at center, #000 35%, transparent 78%);
 }
+
+.reshmi-title > .title-ornaments { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
