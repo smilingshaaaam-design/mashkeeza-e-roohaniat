@@ -86,7 +86,8 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   const still = turn.landing.face
   Object.assign(still.style, {
     inset:'auto', left:(leaf.offsetLeft + (turn.landing.right ? width : 0))+'px',
-    top:leaf.offsetTop+'px', width:width+'px', height:height+'px', pointerEvents:'none'
+    top:leaf.offsetTop+'px', width:width+'px', height:height+'px', pointerEvents:'none',
+    clipPath:'inset(4.5% 0 4.5% 0)'
   })
   still.setAttribute('aria-hidden','true')
   leaf.before(still)
