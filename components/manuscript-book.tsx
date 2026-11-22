@@ -258,7 +258,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
           <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}
       </div></div>
     </div>}
-    <div aria-hidden="true" className="deewan-leaf" style={{top:"1.5%", bottom:"2.5%"}} ref={leaf} />
+    <div aria-hidden="true" className="deewan-leaf" style={{top:"2.5%", bottom:"5%"}} ref={leaf} />
     <div className="deewan-controls">
       <button disabled={current < 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1} / {count}</span>}
