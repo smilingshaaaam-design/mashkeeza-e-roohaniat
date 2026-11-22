@@ -110,12 +110,14 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
       const spine = right ? 0 : width
       const outside = right ? width : 0
       const inward = right ? -1 : 1
-      const paperTop = height * .045
+      // Follow the curved paper edge in the artwork, including its dip at the spine.
+      const spineTop = height * .041
+      const outerTop = height * .011
       const paperBottom = height * .955
       const reach = outside + inward * width * .035 * bend
       const rise = height * .032 * bend
-      const path = 'M ' + spine + ' ' + paperTop + ' Q ' + ((outside + spine)/2) + ' ' + (paperTop+rise*.12) + ' ' + reach + ' ' + (paperTop+rise*.25) +
-        ' Q ' + (outside-inward*width*.012*bend) + ' ' + (paperTop+(paperBottom-paperTop)*.52) + ' ' + outside + ' ' + (paperBottom-rise) +
+      const path = 'M ' + spine + ' ' + spineTop + ' C ' + (spine + (outside-spine)*.12) + ' 0 ' + (spine + (outside-spine)*.55) + ' 0 ' + reach + ' ' + (outerTop+rise*.25) +
+        ' Q ' + (outside-inward*width*.012*bend) + ' ' + (height*.52) + ' ' + outside + ' ' + (paperBottom-rise) +
         ' Q ' + ((outside + spine)/2) + ' ' + (paperBottom-rise*.15) + ' ' + spine + ' ' + paperBottom + ' Z'
       profiles[side].push({clipPath:'path("' + path + '")'})
     }

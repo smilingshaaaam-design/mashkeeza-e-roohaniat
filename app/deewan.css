@@ -36,7 +36,7 @@
   background:url('/images/reshmi/masthead.webp') center / 100% 100% no-repeat;
   filter:url(#reshmi-gold-ink);
 }
-.reshmi-sky {translate:0 var(--moon-title-offset);clip-path:polygon(26% 36%,38% 36%,38% 90%,62% 90%,62% 36%,75% 36%,75% 78%,26% 78%);}
+.reshmi-sky {z-index:2;pointer-events:none;translate:0 var(--moon-title-offset);clip-path:polygon(26% 36%,38% 36%,38% 90%,62% 90%,62% 36%,75% 36%,75% 78%,26% 78%);}
 .reshmi-title {
   position:absolute;inset:0;z-index:20;display:grid;place-items:center;
   translate:0 var(--moon-title-offset);
