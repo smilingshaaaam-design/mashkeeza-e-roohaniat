@@ -194,11 +194,16 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
     if (node) node.scrollLeft = -page * node.clientWidth
     if (leftPaper.current && page + 1 < count) leftPaper.current.scrollLeft = -(page + 1) * leftPaper.current.clientWidth
   }, [hash, page, count])
+  const stopTurn = useRef<(() => void) | undefined>(undefined)
+  useLayoutEffect(() => () => stopTurn.current?.(), [])
   useLayoutEffect(() => {
     const el = leaf.current
     const sheet = pendingSheet.current
     pendingSheet.current = null
-    if (el && sheet) return animateLeaf(el, sheet)
+    if (el && sheet) {
+      stopTurn.current?.()
+      stopTurn.current = animateLeaf(el, sheet)
+    }
   }, [hash, page])
 
   function open(i: number, fromEnd = false) {
@@ -253,7 +258,11 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
         const internal = Boolean(pageSlug(item.href))
         return <li key={item.id}><a className="deewan-plaque" href={internal ? topic.href + '/read/' + encodeURIComponent(item.id) : item.href}
           target={!internal && item.openInNewTab ? '_blank' : undefined} rel={!internal && item.openInNewTab ? 'noopener noreferrer' : undefined}
-          onClick={() => { lastPage.current = null }}>{item.label}</a></li>
+          onClick={event => {
+            if (!internal || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+            lastPage.current = null
+            rememberSheet(side === 'right')
+          }}>{item.label}</a></li>
       })}</ol> : <p>اس موضوع سے ابھی کوئی تحریر منسلک نہیں ہے۔</p>}</>}
         </div>
       </div>
