@@ -290,3 +290,20 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 [data-opening="opening"] .manuscript-cover {animation:open-binding 1.8s linear both}
 .reopen-cover {z-index:2;touch-action:manipulation;transform:translateZ(3px)}
 @media(prefers-reduced-motion:reduce){[data-opening="opening"] .manuscript-cover{animation:none}}
+
+/* Expose the stationary paper only as the free edge travels towards the spine. */
+@keyframes uncover-left-sheet {
+  0% {mask-size:0% 100%}
+  18% {mask-size:1% 100%}
+  30% {mask-size:8% 100%}
+  40% {mask-size:24% 100%}
+  50%,100% {mask-size:50% 100%}
+}
+.deewan-book:is([data-opening="opening"],[data-opening="closing"])::before {
+  mask-image:linear-gradient(#000,#000);mask-position:left;mask-repeat:no-repeat;
+  animation:uncover-left-sheet 1.8s linear both;
+}
+.deewan-book[data-opening="closing"]::before {animation-direction:reverse}
+@media(prefers-reduced-motion:reduce) {
+  .deewan-book:is([data-opening="opening"],[data-opening="closing"])::before {animation:none;visibility:hidden}
+}

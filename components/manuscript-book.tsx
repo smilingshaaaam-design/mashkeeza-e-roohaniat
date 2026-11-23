@@ -171,6 +171,7 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
   const [page, setPage] = useState(0)
   const [count, setCount] = useState(1)
   const paper = useRef<HTMLDivElement>(null)
+  const measuredPage = useRef(0)
   const leftPaper = useRef<HTMLDivElement>(null)
   const leaf = useRef<HTMLDivElement>(null)
   const pendingSheet = useRef<PageTurn | null>(null)
@@ -211,12 +212,15 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     const measure = () => {
       if (!active || !node.clientWidth) return
       const pages = Math.max(1, Math.round(node.scrollWidth / node.clientWidth))
+      measuredPage.current = Math.min(measuredPage.current, 2 * Math.floor((pages - 1) / 2))
       setCount(pages)
       if ((entry || !card) && lastPage.current === hash) {
-        setPage(2 * Math.floor((pages - 1) / 2))
+        measuredPage.current = 2 * Math.floor((pages - 1) / 2)
+        setPage(measuredPage.current)
         lastPage.current = null
       } else setPage(old => Math.min(old, 2 * Math.floor((pages - 1) / 2)))
     }
+    measuredPage.current = 0
     setPage(0)
     measure()
     const observer = new ResizeObserver(measure)
@@ -238,6 +242,16 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     pendingSheet.current = null
     if (el && sheet) {
       stopTurn.current?.()
+      // Position the destination columns before cloning the reverse face.
+      const right = paper.current
+      const left = leftPaper.current
+      if (right && left && right.clientWidth) {
+        const total = Math.max(1, Math.round(right.scrollWidth / right.clientWidth))
+        const destination = Math.min(2 * Math.floor((total - 1) / 2), measuredPage.current)
+        right.scrollLeft = -destination * right.clientWidth
+        left.style.visibility = destination + 1 < total ? 'visible' : 'hidden'
+        left.scrollLeft = -(destination + 1) * left.clientWidth
+      }
       stopTurn.current = animateLeaf(el, sheet)
     }
   }, [stage, hash, page])
@@ -252,7 +266,7 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
   useEffect(() => {
     if (stage !== 'closing') return
     const timer = window.setTimeout(() => setStage('closed'),
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1800)
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1900)
     return () => window.clearTimeout(timer)
   }, [stage])
   function turn(delta: number) {
@@ -273,6 +287,7 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     const next = page + 2 * delta
     if (next >= 0 && next < count) {
       rememberSheet(delta < 0)
+      measuredPage.current = next
       setPage(next)
     } else if (!mainIndex && current + delta >= -1 && current + delta < articles.length) {
       open(current + delta, delta < 0)
@@ -303,7 +318,9 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     {intro && stage === 'cover' && <div className="cover-sand" aria-hidden="true">{Array.from({length:32}, (_, i) =>
       <i key={i} style={{left:(i * 37 % 100) + '%',animationDelay:(i * 83 % 1050) + 'ms'}} />)}</div>}
     {intro && (stage === 'cover' || stage === 'opening' || stage === 'closing' || stage === 'closed') && <div className="manuscript-cover" onAnimationEnd={event => {
-      if (event.target === event.currentTarget && event.animationName === 'open-binding' && stage === 'opening') setStage('dedication')
+      if (event.target !== event.currentTarget || event.animationName !== 'open-binding') return
+      if (stage === 'opening') setStage('dedication')
+      if (stage === 'closing') setStage('closed')
     }}><div><span aria-hidden="true">❦</span><strong>مشکیزہ روحانیت</strong>
       <p lang="ur" dir="rtl">روحانیت کا ایک ایسا مشکیزہ جس میں علمِ جفر، علمُ الاعداد، علمِ نجوم، طلسمات، توسل، دعائیں، اعمالِ روحانی، جفری حسابات، عملیات، واقعات اور تجربات کا مجموعہ پیش کیا گیا ہے۔ یہ مجموعہ آپ کی زندگی کو بدلنے کی مکمل صلاحیت رکھتا ہے۔</p>
       <span aria-hidden="true">❦</span></div>{(stage === 'closed' || stage === 'cover') && <button type="button" className="reopen-cover" aria-label="کتاب کھولیں" onClick={() => setStage('opening')} />}</div>}
