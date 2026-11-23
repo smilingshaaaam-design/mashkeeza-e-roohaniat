@@ -139,6 +139,27 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
   const articles = cards.filter(item => pageSlug(item.href))
   const current = articles.findIndex(item => hash === topic.href + '/read/' + encodeURIComponent(item.id))
   const card = articles[current]
+  const [stage, setStage] = useState<'cover' | 'title' | 'contents'>(() =>
+    hash.includes('/read/') ? 'contents' : 'cover')
+  useEffect(() => {
+    const restart = (event: MouseEvent) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      const link = event.target instanceof Element ? event.target.closest('.deewan-menu a') : null
+      if (link?.getAttribute('href') === topic.href) setStage('cover')
+    }
+    document.addEventListener('click', restart)
+    return () => document.removeEventListener('click', restart)
+  }, [topic.href])
+  const intro = stage !== 'contents' && !card
+  useEffect(() => {
+    if (card) setStage('contents')
+  }, [card?.id])
+  useEffect(() => {
+    if (stage !== 'cover') return
+    const timer = window.setTimeout(() => setStage('title'),
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 600 : 2100)
+    return () => window.clearTimeout(timer)
+  }, [stage])
   const [entries, setEntries] = useState<Entry[] | null>(null)
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -190,7 +211,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
     node.addEventListener('load', measure, true)
     document.fonts.ready.then(measure)
     return () => { active = false; observer.disconnect(); node.removeEventListener('load', measure, true) }
-  }, [hash, entry, cards.map(item => item.id + item.label).join('|')])
+  }, [stage, hash, entry, cards.map(item => item.id + item.label).join('|')])
   useLayoutEffect(() => {
     const node = paper.current
     if (node) node.scrollLeft = -page * node.clientWidth
@@ -206,7 +227,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
       stopTurn.current?.()
       stopTurn.current = animateLeaf(el, sheet)
     }
-  }, [hash, page])
+  }, [stage, hash, page])
 
   function open(i: number, fromEnd = false) {
     const next = articles[i]
@@ -216,6 +237,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
     window.location.hash = target
   }
   function turn(delta: number) {
+    if (intro) return
     const next = page + 2 * delta
     if (next >= 0 && next < count) {
       rememberSheet(delta < 0)
@@ -235,7 +257,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
     if (!card) setPage(0)
     window.location.hash = topic.href
   }
-  return <section className="deewan-book" tabIndex={0} aria-label={topic.label}
+  return <section className="deewan-book" data-opening={intro ? stage : undefined} tabIndex={0} aria-label={topic.label}
     onKeyDown={e => {
       if (e.altKey || e.metaKey || e.ctrlKey) return
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); turn(e.key === 'ArrowLeft' ? 1 : -1) }
@@ -250,7 +272,17 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
       if (Math.abs(dx) > 45 && Math.abs(dx) > 1.6 * Math.abs(e.changedTouches[0].clientY - start[1])) turn(dx > 0 ? 1 : -1)
     }}>
     <div aria-hidden="true" className="deewan-sky-backdrop"><Starfield count={125} seed={41} className="inset-0" /></div>
-    {(['right', 'left'] as const).map(side => <div key={side} data-side={side}
+    {intro && <div className="deewan-index book-panel frontispiece" inert={stage === 'cover'}>
+      <div className="frontispiece-frame">
+        <span aria-hidden="true">❦</span>
+        <h2>{topic.label}</h2>
+        <p>فہرست کھولیں</p>
+        <button type="button" onClick={() => { rememberSheet(true); setStage('contents') }}>فہرست</button>
+        <span aria-hidden="true">❦</span>
+      </div>
+    </div>}
+    {intro && stage === 'cover' && <div className="manuscript-cover"><div><span aria-hidden="true">❦</span><strong>مشکیزہ روحانیت</strong><span aria-hidden="true">❦</span></div></div>}
+    {!intro && (['right', 'left'] as const).map(side => <div key={side} data-side={side}
       className={side === 'right' ? 'deewan-index book-panel' : 'deewan-reading book-panel'}>
       <div ref={side === 'right' ? paper : leftPaper} className="deewan-viewport"
         style={{visibility: side === 'left' && page + 1 >= count ? 'hidden' : 'visible'}}>
@@ -274,12 +306,12 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
         </div>
       </div>
     </div>)}
-    {['right','left'].map(side => <button key={side} type="button" className={'index-return index-return-' + side} onClick={() => firstIndex(side === 'right')}>فہرست</button>)}
+    {!intro && ['right','left'].map(side => <button key={side} type="button" className={'index-return index-return-' + side} onClick={() => firstIndex(side === 'right')}>فہرست</button>)}
     <div aria-hidden="true" className="deewan-leaf" style={{inset:"0 4%"}} ref={leaf} />
-    <div className="deewan-controls">
+    {!intro && <div className="deewan-controls">
       <button disabled={current < 0 && page === 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1}–{Math.min(page + 2, count)} / {count}</span>}
       <button disabled={current + 1 >= articles.length && page + 2 >= count} onClick={() => turn(1)}>اگلا صفحہ</button>
-    </div>
+    </div>}
   </section>
 }
