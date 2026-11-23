@@ -139,7 +139,7 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
   const articles = cards.filter(item => pageSlug(item.href))
   const current = articles.findIndex(item => hash === topic.href + '/read/' + encodeURIComponent(item.id))
   const card = articles[current]
-  const [stage, setStage] = useState<'cover' | 'title' | 'contents'>(() =>
+  const [stage, setStage] = useState<'cover' | 'blank' | 'title' | 'contents'>(() =>
     hash.includes('/read/') ? 'contents' : 'cover')
   useEffect(() => {
     const restart = (event: MouseEvent) => {
@@ -151,15 +151,14 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     return () => document.removeEventListener('click', restart)
   }, [topic.href])
   const mainIndex = hash === topic.href + '/contents'
-  const intro = stage === 'cover' && !card && !mainIndex
+  const intro = (stage === 'cover' || stage === 'blank') && !card && !mainIndex
   const indexItems = mainIndex ? topics : cards
   useEffect(() => {
     if (card || mainIndex) setStage('contents')
   }, [card?.id, mainIndex])
   useEffect(() => {
-    if (stage !== 'cover') return
-    const timer = window.setTimeout(() => setStage('title'),
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 5000 : 8400)
+    if (stage !== 'cover' || !window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const timer = window.setTimeout(() => setStage('blank'), 5000)
     return () => window.clearTimeout(timer)
   }, [stage])
   const [entries, setEntries] = useState<Entry[] | null>(null)
@@ -176,6 +175,14 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
       pendingSheet.current = { duration:turnDuration(distance), outgoing:captureSheet(leaf.current, fromRight), landing:captureSheet(leaf.current, !fromRight) }
     }
   }
+  useEffect(() => {
+    if (stage !== 'blank' || !intro) return
+    const timer = window.setTimeout(() => {
+      rememberSheet(false)
+      setStage('title')
+    }, 750)
+    return () => window.clearTimeout(timer)
+  }, [stage, intro])
   const lastPage = useRef<string | null>(null)
   const touch = useRef<[number, number] | null>(null)
   useEffect(() => {
@@ -270,12 +277,14 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
       if (Math.abs(dx) > 45 && Math.abs(dx) > 1.6 * Math.abs(e.changedTouches[0].clientY - start[1])) turn(dx > 0 ? 1 : -1)
     }}>
     <div aria-hidden="true" className="deewan-sky-backdrop"><Starfield count={125} seed={41} className="inset-0" /></div>
-    {intro && <div className="cover-sand" aria-hidden="true">{Array.from({length:32}, (_, i) =>
+    {intro && stage === 'cover' && <div className="cover-sand" aria-hidden="true">{Array.from({length:32}, (_, i) =>
       <i key={i} style={{left:(i * 37 % 100) + '%',animationDelay:(i * 83 % 1050) + 'ms'}} />)}</div>}
-    {intro && stage === 'cover' && <div className="manuscript-cover"><div><span aria-hidden="true">❦</span><strong>مشکیزہ روحانیت</strong>
+    {intro && stage === 'cover' && <div className="manuscript-cover" onAnimationEnd={event => {
+      if (event.target === event.currentTarget && event.animationName === 'open-binding') setStage('blank')
+    }}><div><span aria-hidden="true">❦</span><strong>مشکیزہ روحانیت</strong>
       <p lang="ur" dir="rtl">روحانیت کا ایک ایسا مشکیزہ جس میں علمِ جفر، علمُ الاعداد، علمِ نجوم، طلسمات، توسل، دعائیں، اعمالِ روحانی، جفری حسابات، عملیات، واقعات اور تجربات کا مجموعہ پیش کیا گیا ہے۔ یہ مجموعہ آپ کی زندگی کو بدلنے کی مکمل صلاحیت رکھتا ہے۔</p>
       <span aria-hidden="true">❦</span></div></div>}
-    {(['right', 'left'] as const).map(side => <div key={side} data-side={side} inert={intro}
+    {!intro && (['right', 'left'] as const).map(side => <div key={side} data-side={side} inert={intro}
       className={side === 'right' ? 'deewan-index book-panel' : 'deewan-reading book-panel'}>
       <div ref={side === 'right' ? paper : leftPaper} className="deewan-viewport"
         style={{visibility: side === 'left' && page + 1 >= count ? 'hidden' : 'visible'}}>
