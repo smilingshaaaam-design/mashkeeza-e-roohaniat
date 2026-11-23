@@ -120,7 +120,7 @@
 .deewan-leaf>.deewan-band {right:50%;width:calc(50% / 12);}
 .deewan-paper {position:absolute;inset:0 -.35px 0 0;opacity:0;background-image:url('/images/deewan/book.webp');background-repeat:no-repeat;}
 
-.deewan-controls{position:absolute;bottom:8%;left:12%;width:30%;display:flex;align-items:center;justify-content:center;gap:.8em;font-size:clamp(12px,1.2vw,19px)}
+.deewan-controls{position:absolute;bottom:16%;left:12%;width:30%;display:flex;align-items:center;justify-content:center;gap:.8em;font-size:clamp(12px,1.2vw,19px)}
 .deewan-controls button{cursor:pointer;border:1px solid #a7824c;background:#f8e7c4;border-radius:5px;padding:.1em .65em;line-height:2;color:#501b22}
 .deewan-controls button:disabled{opacity:.45;cursor:default}
 @media(max-width:650px){.deewan-menu-list>li>div>a{font-size:13px}.deewan-book{min-height:calc(622px + var(--book-extension))}.deewan-reading,.deewan-index{width:38%;font-size:15px}.deewan-index{right:6%}.deewan-reading{left:6%}.deewan-controls{left:5%;width:40%;gap:3px}.deewan-plaque{width:100%;padding:.45em .7em}}
@@ -174,7 +174,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .printed-text {font-family:var(--font-nastaliq),serif;color:#493423;line-height:2.35}
 .printed-text p {orphans:2;widows:2}
 .printed-text img {max-width:100%;max-height:100%}
-.deewan-book .index-return {position:absolute;bottom:17%;font-family:var(--font-nastaliq),serif;color:#702934;font-size:clamp(14px,1.1vw,18px);line-height:2.4;cursor:pointer}
+.deewan-book .index-return {position:absolute;top:88.6%;transform:translateY(-50%);font-family:var(--font-nastaliq),serif;color:#702934;font-size:clamp(17px,1.45vw,23px);font-weight:700;line-height:1.65;cursor:pointer}
 .index-return-right {right:24%}
 .index-return-left {left:24%}
 

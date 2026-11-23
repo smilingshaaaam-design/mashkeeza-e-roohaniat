@@ -14,7 +14,9 @@ function pageSlug(href: string) {
   return /^\/pages\/?$/.test(url.pathname) ? url.searchParams.get('slug') : null
 }
 
-const duration = 1350
+function turnDuration(distance: number) {
+  return Math.round(680 + 670 / Math.sqrt(Math.max(1, distance)))
+}
 
 type Sheet = { face: HTMLDivElement; right: boolean }
 
@@ -55,7 +57,7 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
   return {face, right}
 }
 
-type PageTurn = { outgoing: Sheet; landing: Sheet }
+type PageTurn = { duration: number; outgoing: Sheet; landing: Sheet }
 
 function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   const width = leaf.clientWidth / 2
@@ -108,7 +110,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
 
   }
 
-  const timing: KeyframeAnimationOptions = {duration, fill:'both'}
+  const timing: KeyframeAnimationOptions = {duration:turn.duration, fill:'both'}
   const motion = sheet.animate(transforms, timing)
   const animations = [motion]
   ;[front, back].forEach(face => {
@@ -146,9 +148,9 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
   const leftPaper = useRef<HTMLDivElement>(null)
   const leaf = useRef<HTMLDivElement>(null)
   const pendingSheet = useRef<PageTurn | null>(null)
-  function rememberSheet(fromRight: boolean) {
+  function rememberSheet(fromRight: boolean, distance = 1) {
     if (leaf.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      pendingSheet.current = { outgoing:captureSheet(leaf.current, fromRight), landing:captureSheet(leaf.current, !fromRight) }
+      pendingSheet.current = { duration:turnDuration(distance), outgoing:captureSheet(leaf.current, fromRight), landing:captureSheet(leaf.current, !fromRight) }
     }
   }
   const lastPage = useRef<string | null>(null)
@@ -222,10 +224,15 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
       open(current + delta, delta < 0)
     }
   }
-  function firstIndex() {
-    pendingSheet.current = null
+  function firstIndex(fromRight: boolean) {
+    rememberSheet(fromRight, Math.max(1, current + 1) + page / 2)
+    if (!card && page === 0 && pendingSheet.current && leaf.current) {
+      stopTurn.current?.()
+      stopTurn.current = animateLeaf(leaf.current, pendingSheet.current)
+      pendingSheet.current = null
+    }
     lastPage.current = null
-    setPage(0)
+    if (!card) setPage(0)
     window.location.hash = topic.href
   }
   return <section className="deewan-book" tabIndex={0} aria-label={topic.label}
@@ -261,13 +268,13 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
           onClick={event => {
             if (!internal || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
             lastPage.current = null
-            rememberSheet(side === 'right')
+            rememberSheet(side === 'right', Math.max(1, Math.ceil((count - page) / 2)) + articles.indexOf(item))
           }}>{item.label}</a></li>
       })}</ol> : <p>اس موضوع سے ابھی کوئی تحریر منسلک نہیں ہے۔</p>}</>}
         </div>
       </div>
     </div>)}
-    {['right','left'].map(side => <button key={side} type="button" className={'index-return index-return-' + side} onClick={firstIndex}>فہرست</button>)}
+    {['right','left'].map(side => <button key={side} type="button" className={'index-return index-return-' + side} onClick={() => firstIndex(side === 'right')}>فہرست</button>)}
     <div aria-hidden="true" className="deewan-leaf" style={{inset:"0 4%"}} ref={leaf} />
     <div className="deewan-controls">
       <button disabled={current < 0 && page === 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
