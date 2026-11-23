@@ -14,6 +14,11 @@ function pageSlug(href: string) {
   return /^\/pages\/?$/.test(url.pathname) ? url.searchParams.get('slug') : null
 }
 
+function topicDestination(item: NavItem) {
+  const pages = (item.children ?? []).filter(child => child.visible !== false && pageSlug(child.href))
+  return pages.length === 1 ? item.href + '/read/' + encodeURIComponent(pages[0].id) : item.href + '/section'
+}
+
 function turnDuration(distance: number) {
   return Math.round(680 + 670 / Math.sqrt(Math.max(1, distance)))
 }
@@ -141,7 +146,7 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
   const current = articles.findIndex(item => hash === topic.href + '/read/' + encodeURIComponent(item.id))
   const card = articles[current]
   const [stage, setStage] = useState<'cover' | 'opening' | 'dedication' | 'returning' | 'closing' | 'closed' | 'title' | 'contents'>(() =>
-    hash.includes('/read/') ? 'contents' : 'cover')
+    hash === topic.href ? 'cover' : 'contents')
   useEffect(() => {
     const restart = (event: MouseEvent) => {
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
@@ -373,19 +378,19 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
         {entry && isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
         {entry ? <>{entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} /></> :
           failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> :
-          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{!mainIndex && <nav className="topic-title-page" aria-label="مرکزی فہرست" style={{display:'block'}}>
+          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{!mainIndex && hash !== topic.href + '/section' && <nav className="topic-title-page" aria-label="مرکزی فہرست" style={{display:'block'}}>
       <h2>مرکزی فہرست</h2>
       <ol style={{display:'grid', gridTemplateColumns:'repeat(2,minmax(0,1fr))', alignContent:'start', gap:'.15em'}}>
         {topics.map(item => <li key={item.id}><a className="deewan-plaque"
           style={{width:'100%', padding:'.35em .5em', fontSize:'.82em', margin:0, color:'#ffd700'}}
-          href={item.href}>{item.label}</a></li>)}
+          href={topicDestination(item)}>{item.label}</a></li>)}
       </ol>
     </nav>}
       {!mainIndex && <h2>{topic.label}</h2>}
       <h3>{mainIndex ? 'مرکزی فہرست' : 'فہرست'}</h3>
       {indexItems.length ? <ol>{indexItems.map(item => {
         const internal = Boolean(pageSlug(item.href))
-        return <li key={item.id}><a className="deewan-plaque" href={internal ? topic.href + '/read/' + encodeURIComponent(item.id) : item.href}
+        return <li key={item.id}><a className="deewan-plaque" href={mainIndex ? topicDestination(item) : internal ? topic.href + '/read/' + encodeURIComponent(item.id) : item.href}
           target={!internal && item.openInNewTab ? '_blank' : undefined} rel={!internal && item.openInNewTab ? 'noopener noreferrer' : undefined}
           onClick={event => {
             if (!internal || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
