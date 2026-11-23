@@ -1,0 +1,257 @@
+.reshmi-header {
+  --mast-gap:48px;
+  --sky-depth:274px;
+  padding-top:var(--mast-gap);
+}
+@media (min-width:768px) {
+  .reshmi-header {--mast-gap:64px;--sky-depth:370px;}
+}
+.reshmi-backdrop {
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  pointer-events:none;
+}
+.reshmi-backdrop img {object-fit:cover;object-position:center top;}
+.reshmi-header:has(.deewan-book) .reshmi-backdrop {
+  bottom:calc(-1 * var(--sky-blend));
+}
+.reshmi-backdrop::before {
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  z-index:1;
+  height:var(--sky-depth);
+  background:linear-gradient(to bottom,transparent 50%,rgb(7 10 31 / 70%)),url('/images/hero-sky.png') center calc(50% + 33px) / cover;
+}
+.reshmi-mast {
+  position:relative;
+  aspect-ratio:1752 / 112;
+  --moon-title-offset:clamp(48px, 4vw, 56px);
+}
+.reshmi-mast {margin-bottom:max(0px,calc(var(--sky-depth) - var(--mast-gap) - 6.3927vw));}
+.reshmi-sky,.reshmi-title:has([data-reference-title])::before {
+  position:absolute;
+  inset:0;
+  background:url('/images/reshmi/masthead.webp') center / 100% 100% no-repeat;
+  filter:url(#reshmi-gold-ink);
+}
+.reshmi-sky {z-index:2;pointer-events:none;translate:0 var(--moon-title-offset);clip-path:polygon(26% 36%,38% 36%,38% 90%,62% 90%,62% 36%,75% 36%,75% 78%,26% 78%);}
+.reshmi-title {
+  position:absolute;inset:0;z-index:20;display:grid;place-items:center;
+  translate:0 var(--moon-title-offset);
+  margin:0;color:#ffdea0;font-family:var(--font-nastaliq),serif;font-size:3.9vw;line-height:1.55;
+}
+.reshmi-title:has([data-reference-title])::before {content:"";clip-path:inset(0 38% 0 38.5%);}
+.reshmi-title [data-reference-title] {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+.reshmi-sand {position:absolute;inset:0 38%;pointer-events:none;z-index:21;}
+.deewan-menu {
+  position:relative;z-index:5;
+  background:#f5e6c5 url('/images/reshmi/paper.webp') repeat;  border-top:3px double #ab823d;padding-bottom:clamp(4px,.55vw,10px);}
+.deewan-menu::after {
+  content:"";position:absolute;inset:auto 0 0;height:clamp(4px,.55vw,10px);
+  background:url('/images/reshmi/trim.webp') repeat-x center / auto 100%;pointer-events:none;
+}
+.deewan-menu-list {
+  margin:0;padding:0 .5%;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-evenly;list-style:none;
+  font-family:var(--font-nastaliq),serif;
+}
+.deewan-menu-list>li {position:relative;flex:1 0 auto;text-align:center;}
+.deewan-menu-list>li+li::before {
+  content:"";position:absolute;inset-inline-start:0;top:28%;height:44%;width:1px;background:#b58a50;
+}
+.deewan-menu-list>li>div>a {
+  position:relative;justify-content:center;color:#501a20;font-size:clamp(13px,1.07vw,22px);
+  font-weight:700;padding:.15em .38em;line-height:2.65;
+}
+.deewan-menu-list>li>div>a>svg {display:none}
+.deewan-menu-list>li>div>a:hover,.deewan-menu-list>li>div>a:focus-visible {color:#67152a;background:#debd8159}
+.deewan-menu-list>li>div>a[aria-current] {
+  background:linear-gradient(120deg,#380712,#6c1827 48%,#3a0816);color:#fff2d1;
+  border-radius:9px;box-shadow:inset 0 0 0 2px #ba8a3b,inset 0 0 0 4px #f9df91,0 1px 5px #715123;
+  padding-inline:.8em;
+}
+.deewan-menu-list>li>div>a[aria-current]::after {
+  content:"";position:absolute;z-index:2;left:50%;top:84%;width:1.6em;aspect-ratio:40/27;transform:translateX(-50%);
+  background:url('/images/reshmi/seal.webp') center / contain no-repeat;
+  clip-path:polygon(0 34%,28% 25%,50% 0,73% 25%,100% 34%,68% 67%,50% 100%,30% 67%);
+}
+.deewan-book{position:relative;--book-extra-width:min(1in, 10vw);width:calc(min(100%, 1540px) + var(--book-extra-width));margin:2in calc((100% - min(100%, 1540px) - var(--book-extra-width)) / 2) 0;--book-extension:1.5in;min-height:calc(528px + var(--book-extension));isolation:isolate;perspective:1400px;color:#49241a;animation:deewan-open .48s ease-out}
+/* Preserve the original width-based height and extend both book faces together. */
+.deewan-book::after {
+  content:"";
+  display:block;
+  width:100%;
+  padding-top:calc(65.88541667% - var(--book-extra-width) * .6588541667 + var(--book-extension));
+  pointer-events:none;
+}
+.deewan-book::before {
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:url('/images/deewan/book.webp') center / 100% 100% no-repeat;
+  clip-path:polygon(1.95% 93.05%, 2.21% 54.81%, 2.73% 8.02%, 2.86% 5.61%, 3.39% 4.01%, 4.30% 3.48%, 5.99% 3.21%, 6.64% 2.14%, 18.10% 1.87%, 27.73% 1.60%, 38.80% 1.34%, 43.23% 1.60%, 45.57% 2.14%, 46.48% 1.87%, 48.31% 2.67%, 48.96% 3.74%, 49.74% 5.61%, 50.52% 4.28%, 52.34% 2.67%, 55.08% 1.60%, 58.33% 1.34%, 73.70% 1.87%, 91.02% 1.87%, 93.36% 1.87%, 94.40% 2.67%, 96.09% 3.21%, 97.01% 4.01%, 97.53% 5.61%, 97.79% 24.60%, 98.18% 76.47%, 98.31% 92.25%, 98.05% 94.12%, 97.40% 95.19%, 94.66% 95.19%, 76.69% 94.39%, 57.55% 93.85%, 52.86% 94.39%, 52.21% 95.45%, 51.69% 96.26%, 47.53% 96.26%, 46.74% 95.72%, 46.35% 94.65%, 42.45% 93.85%, 27.47% 94.39%, 8.59% 95.45%, 3.39% 95.72%, 2.60% 95.19%, 2.08% 94.39%);
+}
+@keyframes deewan-open{from{opacity:.15;transform:translateY(-8px)}}
+.deewan-index,.deewan-reading{position:absolute;top:13%;bottom:19%;width:33%;font-size:clamp(16px,1.45vw,24px);line-height:2.25}
+.deewan-index{right:10%;text-align:center;overflow:auto;scrollbar-width:thin}
+.deewan-index h2,.deewan-reading h3{color:#681d26;font-size:1.4em;font-weight:700;line-height:2.15}
+.deewan-index h3{font-size:.9em;color:#774c25}
+.deewan-index ol{margin:.4em 0;padding:0;list-style:none}.deewan-plaque {
+  position:relative;isolation:isolate;display:block;margin:.45em auto;width:90%;  padding:.55em 1.5em;color:#fff1cf;line-height:2;text-shadow:0 1px 3px #220810;
+  transition:filter .2s ease,color .2s ease;
+}
+.deewan-plaque::before {
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:url('/images/deewan/plaque.webp') center / 100% 100% no-repeat;
+  clip-path:polygon(1% 50%,3% 47%,4.7% 41%,6% 31%,7.2% 25%,9.5% 20%,9% 16%,11% 17%,12.4% 10%,14.2% 6.5%,16.5% 6.2%,18% 7.3%,82% 7.3%,83.5% 6.2%,85.8% 6.5%,87.6% 10%,89% 17%,91% 16%,90.5% 20%,92.8% 25%,94% 31%,95.3% 41%,97% 47%,99% 50%,97% 53%,95.3% 59%,94% 69%,92.8% 75%,90.5% 80%,91% 84%,89% 83%,87.6% 90%,85.8% 93.5%,83.5% 93.8%,82% 92.7%,18% 92.7%,16.5% 93.8%,14.2% 93.5%,12.4% 90%,11% 83%,9% 84%,9.5% 80%,7.2% 75%,6% 69%,4.7% 59%,3% 53%);
+}
+.deewan-plaque:is(:hover,:focus-visible) {
+  color:#fff2ba;background:transparent;outline:none;
+  filter:drop-shadow(0 0 1px #fff1a7) drop-shadow(0 0 4px #e5ad37) drop-shadow(0 0 8px rgb(171 99 12 / 55%));
+}
+@media(prefers-reduced-motion:reduce){.deewan-plaque{transition:none}}
+@media(forced-colors:active){.deewan-plaque:focus-visible{outline:2px solid Highlight}}
+.deewan-reading{left:10%}
+.deewan-viewport{height:100%;overflow:hidden;direction:rtl}
+.deewan-columns{width:100%;height:100%;column-count:1;column-gap:0;column-fill:auto;overflow-wrap:anywhere;color:#40251e}
+.deewan-columns img{max-height:12em;object-fit:contain!important}
+.deewan-columns a:where(:not(.deewan-plaque)){color:#691d29}
+.deewan-leaf {pointer-events:none;position:absolute;inset:4% 5% 5%;transform-style:preserve-3d;}
+.deewan-band {position:absolute;top:0;right:100%;width:100%;height:100%;transform-origin:right center;transform-style:preserve-3d;}
+.deewan-leaf>.deewan-band {right:50%;width:calc(50% / 12);}
+.deewan-paper {position:absolute;inset:0 -.35px 0 0;opacity:0;background-image:url('/images/deewan/book.webp');background-repeat:no-repeat;}
+
+.deewan-controls{position:absolute;bottom:16%;left:12%;width:30%;display:flex;align-items:center;justify-content:center;gap:.8em;font-size:clamp(12px,1.2vw,19px)}
+.deewan-controls button{cursor:pointer;border:1px solid #a7824c;background:#f8e7c4;border-radius:5px;padding:.1em .65em;line-height:2;color:#501b22}
+.deewan-controls button:disabled{opacity:.45;cursor:default}
+@media(max-width:650px){.deewan-menu-list>li>div>a{font-size:13px}.deewan-book{min-height:calc(622px + var(--book-extension))}.deewan-reading,.deewan-index{width:38%;font-size:15px}.deewan-index{right:6%}.deewan-reading{left:6%}.deewan-controls{left:5%;width:40%;gap:3px}.deewan-plaque{width:100%;padding:.45em .7em}}
+@media(prefers-reduced-motion:reduce){.deewan-book{animation:none}}
+
+/* Blend only the desert artwork over the opaque sky behind it. */
+div:has(> .relative .deewan-book) {
+  --sky-blend:clamp(88px,10vw,180px);
+}
+div:has(> .relative .deewan-book) > .deewan-home-main section > div > div:has(> #hero-stage) {
+  mask-image:linear-gradient(to bottom, transparent, #000 var(--sky-blend));
+}
+
+/* Keep the moon close to the binding as the reading area grows. */
+div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-4.8vw,-20px); }
+
+/* Keep the existing masthead artwork above the book's starry sky. */
+.reshmi-header:has(.deewan-book) .reshmi-backdrop {
+  background:#100f2d;
+}
+.reshmi-header:has(.deewan-book) .reshmi-backdrop img {
+  clip-path: inset(0 0 calc(100% - var(--sky-depth)) 0);
+}
+.deewan-sky-backdrop {
+  position:absolute;
+  z-index:-2;
+  inset:-3rem -8% -2rem;
+  overflow:hidden;
+  pointer-events:none;
+}
+
+.reshmi-title > .title-ornaments { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+
+.book-sky-texture {display:none;}
+.reshmi-header:has(.deewan-book) .book-sky-texture {
+  display:block;
+  position:absolute;
+  top:var(--sky-depth);
+  left:0;
+  height:calc(100% - var(--sky-depth));
+}
+
+.deewan-book .book-panel {top:18%;bottom:24%;width:30%;overflow:hidden;text-align:start;mix-blend-mode:multiply}
+.deewan-book .book-panel[data-side="right"] {right:12%}
+.deewan-book .book-panel[data-side="left"] {left:12%}
+.book-panel .printed-index {text-align:center}
+.book-panel .printed-index h2,.book-panel .printed-text h3 {font-size:1.35em;color:#68252b;line-height:2.15;font-weight:700}
+.book-panel .printed-index h3 {font-size:.9em;color:#774c25}
+.book-panel .printed-index ol {list-style:none;margin:.4em 0;padding:0}
+.printed-index li {break-inside:avoid;display:flow-root}
+.printed-text {font-family:var(--font-nastaliq),serif;color:#493423;line-height:2.35}
+.printed-text p {orphans:2;widows:2}
+.printed-text img {max-width:100%;max-height:100%}
+.deewan-book .index-return {position:absolute;top:88.6%;transform:translateY(-50%);font-family:var(--font-nastaliq),serif;color:#702934;font-size:clamp(17px,1.45vw,23px);font-weight:700;line-height:1.65;cursor:pointer}
+.index-return-right {right:24%}
+.index-return-left {left:24%}
+
+/* Gilded lettering on the manuscript's maroon index plaques. */
+.book-panel:has(.printed-index) {mix-blend-mode:normal}
+.printed-index a.deewan-plaque,
+.printed-index a.deewan-plaque:is(:visited,:hover,:focus-visible,:active) {
+  color:#ffd700;
+  text-shadow:0 -.45px .35px #fff1a0, 0 .65px .45px #99600c, 0 1px 2px #380c12;
+}
+
+/* The gilded binding swings around the same spine as the manuscript leaves. */
+.deewan-book[data-opening="cover"]::before {animation:reveal-binding 1.8s 6.6s both}
+@keyframes reveal-binding {0%{opacity:0} 55%,100%{opacity:1}}
+.manuscript-cover {
+ position:absolute;z-index:8;inset:3% 50% 8% 4%;transform-origin:right center;transform-style:preserve-3d;
+ display:grid;place-items:center;border:4px double #aa803f;border-radius:2% 5% 5% 2%;
+ background:linear-gradient(90deg,#25120c 0%,transparent 7%,#e4bd6c42 8%,transparent 10%),radial-gradient(ellipse,#613324,#351819 68%,#211114);
+ box-shadow:inset 0 0 2em #1a0b09,3px 4px 0 #755733,5px 7px 0 #342317;
+ animation:open-binding 1.8s cubic-bezier(.42,0,.22,1) 6.6s both, arrive-binding 1.6s cubic-bezier(.24,.68,.32,1);
+}
+@keyframes open-binding {from{transform:rotateY(0)} to{transform:rotateY(180deg)}}
+.manuscript-cover::after {content:"";position:absolute;inset:0;border-radius:inherit;backface-visibility:hidden;transform:rotateY(180deg) translateZ(2px);background:#e2bf87 url('/images/deewan/paper-surface.webp') 92.6% 33.33% / 217.3913% 112.3596% no-repeat;border:0}
+.manuscript-cover>div {backface-visibility:hidden;transform:translateZ(2px)}
+.manuscript-cover>div,.frontispiece-frame {display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.manuscript-cover>div {width:81%;height:84%;border:5px double #c99c4c;outline:1px solid #966c36;outline-offset:6px;color:#e7c070;gap:1em;background:linear-gradient(0deg,#32171299,#32171299),url('/images/reshmi/trim.webp') center top / auto 9px repeat-x}
+.manuscript-cover strong {font:700 clamp(24px,4vw,72px)/2.1 var(--font-nastaliq),serif;text-shadow:0 2px #29110a}
+.manuscript-cover span,.frontispiece-frame span {font-size:2em;color:#ad803b}
+.deewan-book .frontispiece {display:grid;place-items:center;text-align:center}
+.frontispiece-frame {width:96%;height:94%;gap:.45em;border-block:3px double #a47737;color:#6c3022}
+.frontispiece-frame h2 {font:700 clamp(22px,3vw,56px)/2 var(--font-nastaliq),serif}
+.frontispiece-frame button {background:#591523 url('/images/deewan/plaque.webp') center/100% 100%;border:1px solid #b78536;color:#ffd700;padding:.12em 1.6em;border-radius:1em;font-weight:700;cursor:pointer}
+[data-opening="cover"] .frontispiece {animation:reveal-binding 1.8s 6.6s both}
+@media(prefers-reduced-motion:reduce){.deewan-book[data-opening="cover"]::before,[data-opening="cover"] .frontispiece{opacity:0;animation:none}.manuscript-cover{animation:none;transform:none}}
+
+.manuscript-cover p {margin:0;width:88%;color:#f4d99e;font:400 clamp(15px,1.45vw,24px)/2.2 var(--font-nastaliq),serif;text-wrap:pretty}
+
+/* The supplied front artwork includes its title, lettering and binding. */
+.manuscript-cover {
+  background:transparent;
+  border:0;
+  box-shadow:none;
+}
+.manuscript-cover::before {
+  content:"";position:absolute;inset:0;
+  background:url('/images/deewan/ornate-cover.webp') right center / contain no-repeat;
+  backface-visibility:hidden;transform:translateZ(2px);
+}
+.manuscript-cover>div {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
+
+.topic-title-page {height:100%;display:grid;place-items:center;break-after:column;break-inside:avoid}
+.book-panel .topic-title-page h2 {font:700 clamp(28px,3.4vw,64px)/2.1 var(--font-nastaliq),serif;color:#6a2026}
+[data-opening="cover"] .book-panel {animation:reveal-binding 1.8s 6.6s both}
+@media(prefers-reduced-motion:reduce){[data-opening="cover"] .book-panel {animation:none;visibility:hidden}}
+
+@keyframes arrive-binding {
+  from {translate:0 100%;clip-path:inset(0 0 100% 0)}
+  to {translate:0 0;clip-path:inset(0)}
+}
+.cover-sand {position:absolute;z-index:9;bottom:8%;left:4%;width:46%;height:1px;pointer-events:none}
+.cover-sand i {position:absolute;opacity:0;width:3px;height:2px;border-radius:50%;background:#efc16b;box-shadow:3px 2px #99713c,-3px 1px #c48e40;animation:cover-grain .65s ease-out}
+.cover-sand i:nth-child(2n){--drift:-9px}
+@keyframes cover-grain {0%{opacity:0;transform:translateY(0)} 22%{opacity:.9;transform:translate(var(--drift,8px),-9px)} 100%{opacity:0;transform:translate(var(--drift,8px),8px)}}
+@media(prefers-reduced-motion:reduce){.cover-sand{display:none}}
+
+.deewan-leaf {z-index:2}
+.book-panel.dedication {display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.6em;color:#63321e}
+.dedication h2 {font:700 clamp(25px,3vw,58px)/1.9 var(--font-nastaliq),serif;color:#722735}
+.dedication p {font-size:1.22em;line-height:2.2}
+.dedication-arch {width:100%;display:grid;grid-template-columns:repeat(5,1fr);align-items:start;padding-top:1.8em;color:#754c1b;font-size:.96em}
+.dedication-arch span {white-space:nowrap}
+.dedication-arch span:nth-child(2),.dedication-arch span:nth-child(4){transform:translateY(-.95em)}
+.dedication-arch span:nth-child(3){transform:translateY(-1.28em)}
+
+[data-opening="closing"] .manuscript-cover {animation:open-binding 1.8s cubic-bezier(.42,0,.22,1) reverse both}
+.deewan-book[data-opening="closing"]::before,[data-opening="closing"] .dedication {animation:reveal-binding 1.8s reverse both}
+[data-opening="closed"] .manuscript-cover {animation:none;transform:none}
+.deewan-book[data-opening="closed"]::before,[data-opening="closed"] .dedication {visibility:hidden}
+.reopen-cover {position:absolute;inset:0;cursor:pointer;background:transparent}
+@media(prefers-reduced-motion:reduce){[data-opening="closing"] .manuscript-cover {animation:none}}

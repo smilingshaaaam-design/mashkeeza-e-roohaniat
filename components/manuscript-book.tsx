@@ -309,7 +309,7 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
       <h2>مشکیزہ روحانیت</h2>
       <p lang="ar">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ</p>
       <div className="dedication-arch" aria-label="پنجتن پاک علیہم السلام" dir="rtl">
-        {['محمد ﷺ', 'علیؑ', 'فاطمہؑ', 'حسنؑ', 'حسینؑ'].map(name => <span key={name}>{name}</span>)}
+        {['محمد', 'علی', 'فاطمہ', 'حسن', 'حسین'].map(name => <span key={name}>{name}</span>)}
       </div>
     </div>}
     {!intro && (['right', 'left'] as const).map(side => <div key={side} data-side={side} inert={intro}
