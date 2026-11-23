@@ -143,11 +143,12 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
   const [page, setPage] = useState(0)
   const [count, setCount] = useState(1)
   const paper = useRef<HTMLDivElement>(null)
+  const leftPaper = useRef<HTMLDivElement>(null)
   const leaf = useRef<HTMLDivElement>(null)
   const pendingSheet = useRef<PageTurn | null>(null)
-  function rememberSheet() {
+  function rememberSheet(fromRight: boolean) {
     if (leaf.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      pendingSheet.current = { outgoing:captureSheet(leaf.current, !card), landing:captureSheet(leaf.current, Boolean(card)) }
+      pendingSheet.current = { outgoing:captureSheet(leaf.current, fromRight), landing:captureSheet(leaf.current, !fromRight) }
     }
   }
   const lastPage = useRef<string | null>(null)
@@ -175,10 +176,10 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
       if (!active || !node.clientWidth) return
       const pages = Math.max(1, Math.round(node.scrollWidth / node.clientWidth))
       setCount(pages)
-      if (entry && lastPage.current === hash) {
-        setPage(pages - 1)
+      if ((entry || !card) && lastPage.current === hash) {
+        setPage(2 * Math.floor((pages - 1) / 2))
         lastPage.current = null
-      } else setPage(old => Math.min(old, pages - 1))
+      } else setPage(old => Math.min(old, 2 * Math.floor((pages - 1) / 2)))
     }
     setPage(0)
     measure()
@@ -187,10 +188,11 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
     node.addEventListener('load', measure, true)
     document.fonts.ready.then(measure)
     return () => { active = false; observer.disconnect(); node.removeEventListener('load', measure, true) }
-  }, [hash, entry])
+  }, [hash, entry, cards.map(item => item.id + item.label).join('|')])
   useLayoutEffect(() => {
     const node = paper.current
     if (node) node.scrollLeft = -page * node.clientWidth
+    if (leftPaper.current && page + 1 < count) leftPaper.current.scrollLeft = -(page + 1) * leftPaper.current.clientWidth
   }, [hash, page, count])
   useLayoutEffect(() => {
     const el = leaf.current
@@ -202,16 +204,24 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
   function open(i: number, fromEnd = false) {
     const next = articles[i]
     const target = next ? topic.href + '/read/' + encodeURIComponent(next.id) : topic.href
-    rememberSheet()
+    rememberSheet(fromEnd)
     lastPage.current = fromEnd ? target : null
     window.location.hash = target
   }
   function turn(delta: number) {
-    if (card && page + delta >= 0 && page + delta < count) {
-      rememberSheet()
-      setPage(page + delta)
+    const next = page + 2 * delta
+    if (next >= 0 && next < count) {
+      rememberSheet(delta < 0)
+      setPage(next)
+    } else if (current + delta >= -1 && current + delta < articles.length) {
+      open(current + delta, delta < 0)
     }
-    else if (current + delta >= -1 && current + delta < articles.length) open(current + delta, delta < 0 && current > 0)
+  }
+  function firstIndex() {
+    pendingSheet.current = null
+    lastPage.current = null
+    setPage(0)
+    window.location.hash = topic.href
   }
   return <section className="deewan-book" tabIndex={0} aria-label={topic.label}
     onKeyDown={e => {
@@ -228,31 +238,32 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
       if (Math.abs(dx) > 45 && Math.abs(dx) > 1.6 * Math.abs(e.changedTouches[0].clientY - start[1])) turn(dx > 0 ? 1 : -1)
     }}>
     <div aria-hidden="true" className="deewan-sky-backdrop"><Starfield count={125} seed={41} className="inset-0" /></div>
-    <div className="deewan-index">
-      <h2>{topic.label}</h2>
+    {(['right', 'left'] as const).map(side => <div key={side} data-side={side}
+      className={side === 'right' ? 'deewan-index book-panel' : 'deewan-reading book-panel'}>
+      <div ref={side === 'right' ? paper : leftPaper} className="deewan-viewport"
+        style={{visibility: side === 'left' && page + 1 >= count ? 'hidden' : 'visible'}}>
+        <div className={'deewan-columns ' + (card ? 'printed-text' : 'printed-index')}>
+          {card ? <><h3>{entry?.title || card.label}</h3>
+        {entry && isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
+        {entry ? <>{entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} /></> :
+          failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> :
+          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <><h2>{topic.label}</h2>
       <h3>فہرست</h3>
       {cards.length ? <ol>{cards.map(item => {
         const internal = Boolean(pageSlug(item.href))
         return <li key={item.id}><a className="deewan-plaque" href={internal ? topic.href + '/read/' + encodeURIComponent(item.id) : item.href}
-          aria-current={item.id === card?.id ? 'page' : undefined}
           target={!internal && item.openInNewTab ? '_blank' : undefined} rel={!internal && item.openInNewTab ? 'noopener noreferrer' : undefined}
-          onClick={() => { lastPage.current = null; if (internal && (card?.id !== item.id || page !== 0)) rememberSheet(); if (card?.id === item.id) setPage(0) }}>{item.label}</a></li>
-      })}</ol> : <p>اس موضوع سے ابھی کوئی تحریر منسلک نہیں ہے۔</p>}
-    </div>
-    {card && <div className="deewan-reading">
-      <div className="deewan-viewport" ref={paper}><div className="deewan-columns">
-        <h3>{entry?.title || card.label}</h3>
-        {entry && isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
-        {entry ? <>{entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} /></> :
-          failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> :
-          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}
-      </div></div>
-    </div>}
+          onClick={() => { lastPage.current = null }}>{item.label}</a></li>
+      })}</ol> : <p>اس موضوع سے ابھی کوئی تحریر منسلک نہیں ہے۔</p>}</>}
+        </div>
+      </div>
+    </div>)}
+    {['right','left'].map(side => <button key={side} type="button" className={'index-return index-return-' + side} onClick={firstIndex}>فہرست</button>)}
     <div aria-hidden="true" className="deewan-leaf" style={{inset:"0 4%"}} ref={leaf} />
     <div className="deewan-controls">
-      <button disabled={current < 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
-      {card && <span aria-live="polite">{page + 1} / {count}</span>}
-      <button disabled={current + 1 >= articles.length && page + 1 >= count} onClick={() => turn(1)}>اگلا صفحہ</button>
+      <button disabled={current < 0 && page === 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
+      {card && <span aria-live="polite">{page + 1}–{Math.min(page + 2, count)} / {count}</span>}
+      <button disabled={current + 1 >= articles.length && page + 2 >= count} onClick={() => turn(1)}>اگلا صفحہ</button>
     </div>
   </section>
 }
