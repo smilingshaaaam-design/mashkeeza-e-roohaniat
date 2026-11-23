@@ -14,7 +14,7 @@
 }
 .reshmi-backdrop img {object-fit:cover;object-position:center top;}
 .reshmi-header:has(.deewan-book) .reshmi-backdrop {
-  mask-image:linear-gradient(to bottom,#000 calc(100% - 4.8vw),transparent);
+  bottom:calc(-1 * var(--sky-blend));
 }
 .reshmi-backdrop::before {
   content:"";
@@ -125,6 +125,14 @@
 .deewan-controls button:disabled{opacity:.45;cursor:default}
 @media(max-width:650px){.deewan-menu-list>li>div>a{font-size:13px}.deewan-book{min-height:calc(622px + var(--book-extension))}.deewan-reading,.deewan-index{width:38%;font-size:15px}.deewan-index{right:6%}.deewan-reading{left:6%}.deewan-controls{left:5%;width:40%;gap:3px}.deewan-plaque{width:100%;padding:.45em .7em}}
 @media(prefers-reduced-motion:reduce){.deewan-book{animation:none}}
+
+/* Blend only the desert artwork over the opaque sky behind it. */
+div:has(> .relative .deewan-book) {
+  --sky-blend:clamp(88px,10vw,180px);
+}
+div:has(> .relative .deewan-book) > .deewan-home-main section > div > div:has(> #hero-stage) {
+  mask-image:linear-gradient(to bottom, transparent, #000 var(--sky-blend));
+}
 
 /* Keep the moon close to the binding as the reading area grows. */
 div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-4.8vw,-20px); }
