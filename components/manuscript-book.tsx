@@ -201,6 +201,26 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     }, 4000)
     return () => window.clearTimeout(timer)
   }, [stage, intro])
+  const [zoomed, setZoomed] = useState(false)
+  function isMagnified() {
+    const width = window.visualViewport?.width
+    return Boolean(width && document.documentElement.clientWidth > width * 1.02)
+  }
+  useEffect(() => {
+    const viewport = window.visualViewport
+    const update = () => {
+      const magnified = isMagnified()
+      if (magnified) touch.current = null
+      setZoomed(magnified)
+    }
+    update()
+    viewport?.addEventListener('resize', update)
+    window.addEventListener('resize', update)
+    return () => {
+      viewport?.removeEventListener('resize', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [])
   const lastPage = useRef<string | null>(null)
   const touch = useRef<[number, number] | null>(null)
   useEffect(() => {
@@ -313,17 +333,17 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     if (mainIndex) setPage(0)
     else window.location.hash = topic.href + '/contents'
   }
-  return <section className="deewan-book" data-opening={intro ? stage : undefined} tabIndex={0} aria-label={topic.label}
+  return <section className="deewan-book" style={zoomed ? {touchAction:"manipulation"} : undefined} data-opening={intro ? stage : undefined} tabIndex={0} aria-label={topic.label}
     onKeyDown={e => {
       if (e.altKey || e.metaKey || e.ctrlKey) return
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); turn(e.key === 'ArrowLeft' ? 1 : -1) }
     }}
-    onTouchStart={e => { touch.current = e.touches.length === 1 ? [e.touches[0].clientX, e.touches[0].clientY] : null }}
+    onTouchStart={e => { touch.current = !isMagnified() && e.touches.length === 1 ? [e.touches[0].clientX, e.touches[0].clientY] : null }}
     onTouchCancel={() => { touch.current = null }}
     onTouchEnd={e => {
       const start = touch.current
       touch.current = null
-      if (!start) return
+      if (!start || isMagnified() || e.touches.length) return
       const dx = e.changedTouches[0].clientX - start[0]
       if (Math.abs(dx) > 45 && Math.abs(dx) > 1.6 * Math.abs(e.changedTouches[0].clientY - start[1])) turn(dx > 0 ? 1 : -1)
     }}>
