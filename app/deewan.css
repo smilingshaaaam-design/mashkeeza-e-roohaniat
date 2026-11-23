@@ -267,13 +267,13 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .book-panel.dedication {display:grid;place-content:center;justify-items:center;container-type:inline-size;text-align:center;color:#63321e}
 .book-panel.dedication h2 {margin:0;font:700 10.4cqw/1.9 var(--font-nastaliq),serif;color:#722735}
 .dedication p {margin:0;font-size:5.2cqw;line-height:2.2}
-.dedication-arch {position:relative;width:100cqw;height:22cqw;color:#754c1b;font:700 7.2cqw/1.75 var(--font-nastaliq),serif}
+.dedication-arch {position:relative;width:100cqw;height:22cqw;top:4cqw;color:#754c1b;font:700 8.5cqw/1.75 var(--font-nastaliq),serif}
 .dedication-arch span {position:absolute;white-space:nowrap;transform:translateX(-50%)}
-.dedication-arch span:nth-child(1){left:92%;top:-25cqw}
+.dedication-arch span:nth-child(1){left:90%;top:-25cqw}
 .dedication-arch span:nth-child(2){left:78%;top:-3cqw}
 .dedication-arch span:nth-child(3){left:50%;top:5cqw}
 .dedication-arch span:nth-child(4){left:22%;top:-3cqw}
-.dedication-arch span:nth-child(5){left:8%;top:-25cqw}
+.dedication-arch span:nth-child(5){left:10%;top:-25cqw}
 
 
 [data-opening="closing"] .manuscript-cover {animation:open-binding 1.8s linear reverse both}
