@@ -282,7 +282,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
       </div>
     </div>}
     {intro && stage === 'cover' && <div className="manuscript-cover"><div><span aria-hidden="true">❦</span><strong>مشکیزہ روحانیت</strong>
-      <p lang="ur" dir="rtl">روحانیت کا ایک ایسا مشکیزہ جس میں علمِ جفر، علمُ الاعداد، علمِ نجوم اور طلسمات کے ساتھ ساتھ جفری حسابات، عملیات، واقعات اور تجربات کا مجموعہ پیش کیا گیا ہے۔ یہ مجموعہ آپ کی زندگی بدلنے کی پوری صلاحیت رکھتا ہے۔</p>
+      <p lang="ur" dir="rtl">روحانیت کا ایک ایسا مشکیزہ جس میں علمِ جفر، علمُ الاعداد، علمِ نجوم، طلسمات، توسل، دعائیں، اعمالِ روحانی، جفری حسابات، عملیات، واقعات اور تجربات کا مجموعہ پیش کیا گیا ہے۔ یہ مجموعہ آپ کی زندگی کو بدلنے کی مکمل صلاحیت رکھتا ہے۔</p>
       <button type="button" className="cover-skip" aria-label="کتاب کھولیں" onClick={() => setStage('title')} /><span aria-hidden="true">❦</span></div></div>}
     {!intro && (['right', 'left'] as const).map(side => <div key={side} data-side={side}
       className={side === 'right' ? 'deewan-index book-panel' : 'deewan-reading book-panel'}>
