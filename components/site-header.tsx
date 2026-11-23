@@ -11,6 +11,19 @@ export function SiteHeader() {
     <header className="reshmi-header relative">
       <div className="reshmi-backdrop" aria-hidden="true">
         <Image src="/images/hero-sky.png" alt="" fill priority className="object-cover" />
+        <svg aria-hidden="true" width="100%" height="100%" className="book-sky-texture">
+          <defs>
+            <pattern id="book-sky-repeat" width="384" height="128" patternUnits="userSpaceOnUse">
+              <svg id="book-sky-sample" width="192" height="64" viewBox="40 4 20 14" preserveAspectRatio="none">
+                <image href="/images/hero-sky.png" width="100" height="100" preserveAspectRatio="none" />
+              </svg>
+              <use href="#book-sky-sample" transform="translate(384 0) scale(-1 1)" />
+              <use href="#book-sky-sample" transform="translate(0 128) scale(1 -1)" />
+              <use href="#book-sky-sample" transform="translate(384 128) scale(-1 -1)" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#book-sky-repeat)" />
+        </svg>
         <Starfield count={110} seed={3} className="inset-0 z-[1]" />
       </div>
       <svg aria-hidden="true" width="0" height="0" className="absolute pointer-events-none">
