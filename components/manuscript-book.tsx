@@ -140,7 +140,7 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
   const articles = cards.filter(item => pageSlug(item.href))
   const current = articles.findIndex(item => hash === topic.href + '/read/' + encodeURIComponent(item.id))
   const card = articles[current]
-  const [stage, setStage] = useState<'cover' | 'dedication' | 'returning' | 'closing' | 'closed' | 'title' | 'contents'>(() =>
+  const [stage, setStage] = useState<'cover' | 'opening' | 'dedication' | 'returning' | 'closing' | 'closed' | 'title' | 'contents'>(() =>
     hash.includes('/read/') ? 'contents' : 'cover')
   useEffect(() => {
     const restart = (event: MouseEvent) => {
@@ -152,15 +152,17 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     return () => document.removeEventListener('click', restart)
   }, [topic.href])
   const mainIndex = hash === topic.href + '/contents'
-  const intro = (stage === 'cover' || stage === 'dedication' || stage === 'returning' || stage === 'closing' || stage === 'closed') && !card && !mainIndex
+  const intro = (stage === 'cover' || stage === 'opening' || stage === 'dedication' || stage === 'returning' || stage === 'closing' || stage === 'closed') && !card && !mainIndex
   const indexItems = mainIndex ? topics : cards
   useEffect(() => {
     if (card || mainIndex) setStage('contents')
   }, [card?.id, mainIndex])
   useEffect(() => {
-    if (stage !== 'cover') return
+    if (stage !== 'cover' && stage !== 'opening') return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const timer = window.setTimeout(() => setStage('dedication'), reduced ? 5000 : 8500)
+    const next = stage === 'cover' ? 'opening' : 'dedication'
+    const delay = stage === 'cover' ? (reduced ? 5000 : 6600) : (reduced ? 0 : 1850)
+    const timer = window.setTimeout(() => setStage(next), delay)
     return () => window.clearTimeout(timer)
   }, [stage])
   const [entries, setEntries] = useState<Entry[] | null>(null)
@@ -300,11 +302,11 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     <div aria-hidden="true" className="deewan-sky-backdrop"><Starfield count={125} seed={41} className="inset-0" /></div>
     {intro && stage === 'cover' && <div className="cover-sand" aria-hidden="true">{Array.from({length:32}, (_, i) =>
       <i key={i} style={{left:(i * 37 % 100) + '%',animationDelay:(i * 83 % 1050) + 'ms'}} />)}</div>}
-    {intro && (stage === 'cover' || stage === 'closing' || stage === 'closed') && <div className="manuscript-cover" onAnimationEnd={event => {
-      if (event.target === event.currentTarget && event.animationName === 'open-binding' && stage === 'cover') setStage('dedication')
+    {intro && (stage === 'cover' || stage === 'opening' || stage === 'closing' || stage === 'closed') && <div className="manuscript-cover" onAnimationEnd={event => {
+      if (event.target === event.currentTarget && event.animationName === 'open-binding' && stage === 'opening') setStage('dedication')
     }}><div><span aria-hidden="true">❦</span><strong>مشکیزہ روحانیت</strong>
       <p lang="ur" dir="rtl">روحانیت کا ایک ایسا مشکیزہ جس میں علمِ جفر، علمُ الاعداد، علمِ نجوم، طلسمات، توسل، دعائیں، اعمالِ روحانی، جفری حسابات، عملیات، واقعات اور تجربات کا مجموعہ پیش کیا گیا ہے۔ یہ مجموعہ آپ کی زندگی کو بدلنے کی مکمل صلاحیت رکھتا ہے۔</p>
-      <span aria-hidden="true">❦</span></div>{stage === 'closed' && <button className="reopen-cover" aria-label="کتاب کھولیں" onClick={() => setStage('cover')} />}</div>}
+      <span aria-hidden="true">❦</span></div>{(stage === 'closed' || stage === 'cover') && <button type="button" className="reopen-cover" aria-label="کتاب کھولیں" onClick={() => setStage('opening')} />}</div>}
     {intro && <div className="deewan-reading book-panel dedication" data-side="left">
       <h2>مشکیزہ روحانیت</h2>
       <p lang="ar">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ</p>
