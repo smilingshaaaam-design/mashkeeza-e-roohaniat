@@ -162,3 +162,18 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
   left:0;
   height:calc(100% - var(--sky-depth));
 }
+
+.deewan-book .book-panel {top:18%;bottom:24%;width:30%;overflow:hidden;text-align:start;mix-blend-mode:multiply}
+.deewan-book .book-panel[data-side="right"] {right:12%}
+.deewan-book .book-panel[data-side="left"] {left:12%}
+.book-panel .printed-index {text-align:center}
+.book-panel .printed-index h2,.book-panel .printed-text h3 {font-size:1.35em;color:#68252b;line-height:2.15;font-weight:700}
+.book-panel .printed-index h3 {font-size:.9em;color:#774c25}
+.book-panel .printed-index ol {list-style:none;margin:.4em 0;padding:0}
+.printed-index li {break-inside:avoid;display:flow-root}
+.printed-text {font-family:var(--font-nastaliq),serif;color:#493423;line-height:2.35}
+.printed-text p {orphans:2;widows:2}
+.printed-text img {max-width:100%;max-height:100%}
+.deewan-book .index-return {position:absolute;bottom:17%;font-family:var(--font-nastaliq),serif;color:#702934;font-size:clamp(14px,1.1vw,18px);line-height:2.4;cursor:pointer}
+.index-return-right {right:24%}
+.index-return-left {left:24%}
