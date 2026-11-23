@@ -45,15 +45,18 @@ export function usePublishedArticles() {
   return { articles, status }
 }
 
-export function ArticleBrowser() {
+export function ArticleBrowser({ dedicated = false }: { dedicated?: boolean }) {
   const { articles, status } = usePublishedArticles()
   const [hash, setHash] = useState('')
   useEffect(() => {
-    const update = () => setHash(window.location.hash)
+    const update = () => {
+      const id = dedicated && new URLSearchParams(window.location.search).get('id')
+      setHash(id ? '#article-' + encodeURIComponent(id) : window.location.hash)
+    }
     update()
     window.addEventListener('hashchange', update)
     return () => window.removeEventListener('hashchange', update)
-  }, [])
+  }, [dedicated])
   const selected = articles.find(item => hash === '#article-' + encodeURIComponent(item.id))
   if (!hash.startsWith('#article-')) return null
   if (!selected) return <p role="status" className="relative z-20 p-6 text-center text-amber-100">{status === 'loading' ? 'مضمون لوڈ ہو رہا ہے…' : 'مضمون دستیاب نہیں ہے۔'}</p>

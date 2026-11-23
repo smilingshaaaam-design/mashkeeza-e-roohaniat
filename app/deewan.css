@@ -162,3 +162,11 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
   left:0;
   height:calc(100% - var(--sky-depth));
 }
+
+@media (max-width:639px), (pointer:coarse) {
+  .deewan-book[data-single-page="true"] { background-size:200% 100%; background-position:left; }
+  .deewan-book[data-single-page="true"] > .deewan-index,
+  .deewan-book[data-single-page="true"] > .deewan-leaf {display:none;}
+  .deewan-book[data-single-page="true"] > .deewan-reading {left:9%;right:9%;width:auto;}
+  .deewan-book[data-single-page="true"] > .deewan-controls {left:8%;width:84%;}
+}
