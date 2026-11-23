@@ -11,6 +11,15 @@ const aliases: Record<string,string> = {
 function normalize(s:string) {
   return s.toLowerCase().normalize('NFKC').replace(/[\u064B-\u065Fـ]/g,'').replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[-_]/g,' ')
 }
+const letters: Record<string,string> = {
+  ا:'a', آ:'a', ب:'b', پ:'p', ت:'t', ٹ:'t', ث:'s', ج:'j', چ:'ch', ح:'h', خ:'kh',
+  د:'d', ڈ:'d', ذ:'z', ر:'r', ڑ:'r', ز:'z', ژ:'zh', س:'s', ش:'sh', ص:'s', ض:'z',
+  ط:'t', ظ:'z', ع:'a', غ:'gh', ف:'f', ق:'q', ک:'k', گ:'g', ل:'l', م:'m', ن:'n',
+  ں:'n', و:'o', ہ:'h', ھ:'h', ی:'i', ے:'e', ء:'', ئ:'i', ۃ:'h'
+}
+function romanKey(word:string) {
+  return Array.from(word, char=>letters[char] ?? char).join('').replace(/[aeiou]/g,'').replace(/(.)\1+/g,'$1')
+}
 export function BookSearch({topics,articles}:{topics:NavItem[];articles:NavItem[]}) {
   const dialog=useRef<HTMLDialogElement>(null)
   const [query,setQuery]=useState('')
@@ -24,7 +33,9 @@ export function BookSearch({topics,articles}:{topics:NavItem[];articles:NavItem[
   )]
   const matches=query.trim()?candidates.filter(item=>{
     const haystack=normalize([item.label,item.id,'keywords' in item?item.keywords:''].join(' '))
-    return terms.every(term=>haystack.includes(term))
+    const words=haystack.split(/[^a-z\u0600-\u06ff]+/).map(romanKey)
+    return terms.every(term=>haystack.includes(term) || (/^[a-z]+$/.test(term) &&
+      romanKey(term).length>=2 && words.includes(romanKey(term))))
   }):[]
   return <><button type="button" onClick={()=>dialog.current?.showModal()}>تلاش</button>
     <dialog ref={dialog} className="m-auto w-80 max-w-full rounded bg-amber-50 p-4 text-right text-red-950 backdrop:bg-black/60">
