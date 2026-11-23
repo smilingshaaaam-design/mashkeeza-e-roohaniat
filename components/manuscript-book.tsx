@@ -91,6 +91,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
     top:leaf.offsetTop+'px', width:width+'px', height:height+'px', pointerEvents:'none',
     backgroundRepeat:'no-repeat'
   })
+  still.style.zIndex = '1'
   still.setAttribute('aria-hidden','true')
   leaf.before(still)
 
@@ -139,7 +140,7 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
   const articles = cards.filter(item => pageSlug(item.href))
   const current = articles.findIndex(item => hash === topic.href + '/read/' + encodeURIComponent(item.id))
   const card = articles[current]
-  const [stage, setStage] = useState<'cover' | 'blank' | 'title' | 'contents'>(() =>
+  const [stage, setStage] = useState<'cover' | 'dedication' | 'title' | 'contents'>(() =>
     hash.includes('/read/') ? 'contents' : 'cover')
   useEffect(() => {
     const restart = (event: MouseEvent) => {
@@ -151,14 +152,15 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     return () => document.removeEventListener('click', restart)
   }, [topic.href])
   const mainIndex = hash === topic.href + '/contents'
-  const intro = (stage === 'cover' || stage === 'blank') && !card && !mainIndex
+  const intro = (stage === 'cover' || stage === 'dedication') && !card && !mainIndex
   const indexItems = mainIndex ? topics : cards
   useEffect(() => {
     if (card || mainIndex) setStage('contents')
   }, [card?.id, mainIndex])
   useEffect(() => {
-    if (stage !== 'cover' || !window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const timer = window.setTimeout(() => setStage('blank'), 5000)
+    if (stage !== 'cover') return
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const timer = window.setTimeout(() => setStage('dedication'), reduced ? 5000 : 8500)
     return () => window.clearTimeout(timer)
   }, [stage])
   const [entries, setEntries] = useState<Entry[] | null>(null)
@@ -176,11 +178,11 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     }
   }
   useEffect(() => {
-    if (stage !== 'blank' || !intro) return
+    if (stage !== 'dedication' || !intro) return
     const timer = window.setTimeout(() => {
       rememberSheet(false)
       setStage('title')
-    }, 750)
+    }, 4000)
     return () => window.clearTimeout(timer)
   }, [stage, intro])
   const lastPage = useRef<string | null>(null)
@@ -280,10 +282,17 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     {intro && stage === 'cover' && <div className="cover-sand" aria-hidden="true">{Array.from({length:32}, (_, i) =>
       <i key={i} style={{left:(i * 37 % 100) + '%',animationDelay:(i * 83 % 1050) + 'ms'}} />)}</div>}
     {intro && stage === 'cover' && <div className="manuscript-cover" onAnimationEnd={event => {
-      if (event.target === event.currentTarget && event.animationName === 'open-binding') setStage('blank')
+      if (event.target === event.currentTarget && event.animationName === 'open-binding') setStage('dedication')
     }}><div><span aria-hidden="true">❦</span><strong>مشکیزہ روحانیت</strong>
       <p lang="ur" dir="rtl">روحانیت کا ایک ایسا مشکیزہ جس میں علمِ جفر، علمُ الاعداد، علمِ نجوم، طلسمات، توسل، دعائیں، اعمالِ روحانی، جفری حسابات، عملیات، واقعات اور تجربات کا مجموعہ پیش کیا گیا ہے۔ یہ مجموعہ آپ کی زندگی کو بدلنے کی مکمل صلاحیت رکھتا ہے۔</p>
       <span aria-hidden="true">❦</span></div></div>}
+    {intro && <div className="deewan-reading book-panel dedication" data-side="left">
+      <h2>مشکیزہ روحانیت</h2>
+      <p lang="ar">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ</p>
+      <div className="dedication-arch" aria-label="پنجتن پاک علیہم السلام" dir="rtl">
+        {['محمد ﷺ', 'علیؑ', 'فاطمہؑ', 'حسنؑ', 'حسینؑ'].map(name => <span key={name}>{name}</span>)}
+      </div>
+    </div>}
     {!intro && (['right', 'left'] as const).map(side => <div key={side} data-side={side} inert={intro}
       className={side === 'right' ? 'deewan-index book-panel' : 'deewan-reading book-panel'}>
       <div ref={side === 'right' ? paper : leftPaper} className="deewan-viewport"

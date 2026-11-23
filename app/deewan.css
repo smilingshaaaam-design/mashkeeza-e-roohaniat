@@ -197,7 +197,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
  animation:open-binding 1.8s cubic-bezier(.42,0,.22,1) 6.6s both, arrive-binding 1.6s cubic-bezier(.24,.68,.32,1);
 }
 @keyframes open-binding {from{transform:rotateY(0)} to{transform:rotateY(180deg)}}
-.manuscript-cover::after {content:"";position:absolute;inset:0;border-radius:inherit;backface-visibility:hidden;transform:rotateY(180deg) translateZ(2px);background:#e2bf87 url('/images/reshmi/paper.webp') repeat;border:3px double #966c36}
+.manuscript-cover::after {content:"";position:absolute;inset:0;border-radius:inherit;backface-visibility:hidden;transform:rotateY(180deg) translateZ(2px);background:#e2bf87 url('/images/deewan/paper-surface.webp') 92.6% 33.33% / 217.3913% 112.3596% no-repeat;border:0}
 .manuscript-cover>div {backface-visibility:hidden;transform:translateZ(2px)}
 .manuscript-cover>div,.frontispiece-frame {display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .manuscript-cover>div {width:81%;height:84%;border:5px double #c99c4c;outline:1px solid #966c36;outline-offset:6px;color:#e7c070;gap:1em;background:linear-gradient(0deg,#32171299,#32171299),url('/images/reshmi/trim.webp') center top / auto 9px repeat-x}
@@ -239,3 +239,12 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .cover-sand i:nth-child(2n){--drift:-9px}
 @keyframes cover-grain {0%{opacity:0;transform:translateY(0)} 22%{opacity:.9;transform:translate(var(--drift,8px),-9px)} 100%{opacity:0;transform:translate(var(--drift,8px),8px)}}
 @media(prefers-reduced-motion:reduce){.cover-sand{display:none}}
+
+.deewan-leaf {z-index:2}
+.book-panel.dedication {display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.6em;color:#63321e}
+.dedication h2 {font:700 clamp(25px,3vw,58px)/1.9 var(--font-nastaliq),serif;color:#722735}
+.dedication p {font-size:1.22em;line-height:2.2}
+.dedication-arch {width:100%;display:grid;grid-template-columns:repeat(5,1fr);align-items:start;padding-top:1.8em;color:#754c1b;font-size:.96em}
+.dedication-arch span {white-space:nowrap}
+.dedication-arch span:nth-child(2),.dedication-arch span:nth-child(4){transform:translateY(-.95em)}
+.dedication-arch span:nth-child(3){transform:translateY(-1.28em)}
