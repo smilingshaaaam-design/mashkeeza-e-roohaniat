@@ -5,7 +5,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { ChevronDown, ChevronLeft, Home } from 'lucide-react'
 import { usePublishedArticles } from './article-browser'
-import { BookSearch } from './book-search'
 import { ManuscriptBook } from '@/components/manuscript-book'
 import { cn } from '@/lib/utils'
 import { useVisualCms } from '@/components/visual-cms'
@@ -412,7 +411,7 @@ export function MainNav() {
   const items = topicNavigation(cms?.menus ?? navItems).filter(item => item.visible !== false)
   const articleMenu: NavItem = {
     id: 'published-articles', label: 'مضامین', href: '#published-articles',
-    children: articles.map(article => ({ id: 'article-' + article.id, label: article.title, href: '/articles/?id=' + encodeURIComponent(article.id) }))
+    children: articles.map(article => ({ id: 'article-' + article.id, label: article.title, href: '/#article-' + encodeURIComponent(article.id) }))
   }
   const contactIndex = items.findIndex(item => item.id === 'contact')
   items.splice(contactIndex < 0 ? items.length : contactIndex, 0, articleMenu)
@@ -447,7 +446,6 @@ export function MainNav() {
     >
       <div className="deewan-menu">
         <ul className="deewan-menu-list">
-          <li><BookSearch topics={bookTopics} articles={articleMenu.children ?? []} /></li>
           {items.map((item, index) => (
             <MenuEntry
               key={item.id}
