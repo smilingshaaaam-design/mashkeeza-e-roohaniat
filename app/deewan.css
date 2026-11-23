@@ -190,14 +190,32 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book[data-opening="cover"]::before {animation:reveal-binding 1.8s 6.6s both}
 @keyframes reveal-binding {0%{opacity:0} 55%,100%{opacity:1}}
 .manuscript-cover {
- position:absolute;z-index:8;inset:3% 50% 8% 4%;transform-origin:right center;transform-style:preserve-3d;
+ position:absolute;z-index:8;inset:0 50% 0 4%;transform-origin:right center;transform-style:preserve-3d;
  display:grid;place-items:center;border:4px double #aa803f;border-radius:2% 5% 5% 2%;
  background:linear-gradient(90deg,#25120c 0%,transparent 7%,#e4bd6c42 8%,transparent 10%),radial-gradient(ellipse,#613324,#351819 68%,#211114);
  box-shadow:inset 0 0 2em #1a0b09,3px 4px 0 #755733,5px 7px 0 #342317;
- animation:open-binding 1.8s cubic-bezier(.42,0,.22,1) 6.6s both, arrive-binding 1.6s cubic-bezier(.24,.68,.32,1);
+ animation:open-binding 1.8s linear 6.6s both, arrive-binding 1.6s cubic-bezier(.24,.68,.32,1);
 }
-@keyframes open-binding {from{transform:rotateY(0)} to{transform:rotateY(180deg)}}
-.manuscript-cover::after {content:"";position:absolute;inset:0;border-radius:inherit;backface-visibility:hidden;transform:rotateY(180deg) translateZ(2px);background:#e2bf87 url('/images/deewan/paper-surface.webp') 92.6% 33.33% / 217.3913% 112.3596% no-repeat;border:0}
+@keyframes open-binding {
+0%{transform:rotateY(0deg) skewY(0deg) scaleX(1)}
+6.25%{transform:rotateY(2.021deg) skewY(0.078deg) scaleX(0.99937)}
+12.5%{transform:rotateY(7.734deg) skewY(0.295deg) scaleX(0.99758)}
+18.75%{transform:rotateY(16.611deg) skewY(0.616deg) scaleX(0.99485)}
+25%{transform:rotateY(28.125deg) skewY(0.976deg) scaleX(0.99151)}
+31.25%{transform:rotateY(41.748deg) skewY(1.279deg) scaleX(0.98801)}
+37.5%{transform:rotateY(56.953deg) skewY(1.425deg) scaleX(0.98491)}
+43.75%{transform:rotateY(73.213deg) skewY(1.357deg) scaleX(0.98277)}
+50%{transform:rotateY(90deg) skewY(1.1deg) scaleX(0.982)}
+56.25%{transform:rotateY(106.787deg) skewY(0.749deg) scaleX(0.98277)}
+62.5%{transform:rotateY(123.047deg) skewY(0.419deg) scaleX(0.98491)}
+68.75%{transform:rotateY(138.252deg) skewY(0.186deg) scaleX(0.98801)}
+75%{transform:rotateY(151.875deg) skewY(0.061deg) scaleX(0.99151)}
+81.25%{transform:rotateY(163.389deg) skewY(0.013deg) scaleX(0.99485)}
+87.5%{transform:rotateY(172.266deg) skewY(0.001deg) scaleX(0.99758)}
+93.75%{transform:rotateY(177.979deg) skewY(0deg) scaleX(0.99937)}
+100%{transform:rotateY(180deg) skewY(0deg) scaleX(1)}
+}
+.manuscript-cover::after {content:"";position:absolute;inset:0;border-radius:inherit;backface-visibility:hidden;transform:rotateY(180deg) translateZ(.15px);background:transparent url('/images/deewan/paper-surface.webp') 92.5926% 0 / 217.3913% 100% no-repeat;border:0}
 .manuscript-cover>div {backface-visibility:hidden;transform:translateZ(2px)}
 .manuscript-cover>div,.frontispiece-frame {display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .manuscript-cover>div {width:81%;height:84%;border:5px double #c99c4c;outline:1px solid #966c36;outline-offset:6px;color:#e7c070;gap:1em;background:linear-gradient(0deg,#32171299,#32171299),url('/images/reshmi/trim.webp') center top / auto 9px repeat-x}
@@ -219,7 +237,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
   box-shadow:none;
 }
 .manuscript-cover::before {
-  content:"";position:absolute;inset:0;
+  content:"";position:absolute;inset:3% 0 8%;
   background:url('/images/deewan/ornate-cover.webp') right center / contain no-repeat;
   backface-visibility:hidden;transform:translateZ(2px);
 }
@@ -253,7 +271,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .dedication-arch span:nth-child(5){left:8%;top:-25cqw}
 
 
-[data-opening="closing"] .manuscript-cover {animation:open-binding 1.8s cubic-bezier(.42,0,.22,1) reverse both}
+[data-opening="closing"] .manuscript-cover {animation:open-binding 1.8s linear reverse both}
 .deewan-book[data-opening="closing"]::before,[data-opening="closing"] .dedication {animation:reveal-binding 1.8s reverse both}
 [data-opening="closed"] .manuscript-cover {animation:none;transform:none}
 .deewan-book[data-opening="closed"]::before,[data-opening="closed"] .dedication {visibility:hidden}
