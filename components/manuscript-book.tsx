@@ -152,6 +152,19 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     return () => document.removeEventListener('click', restart)
   }, [topic.href])
   const mainIndex = hash === topic.href + '/contents'
+  const arrivalStarted = useRef(0)
+  const earlyTap = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useLayoutEffect(() => {
+    if (stage === 'cover') arrivalStarted.current = performance.now()
+    return () => clearTimeout(earlyTap.current)
+  }, [stage])
+  function openByTouch() {
+    const remaining = stage === 'cover' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 1600 - (performance.now() - arrivalStarted.current) : 0
+    clearTimeout(earlyTap.current)
+    if (remaining > 0) earlyTap.current = setTimeout(() => setStage('opening'), remaining)
+    else setStage('opening')
+  }
   const intro = (stage === 'cover' || stage === 'opening' || stage === 'dedication' || stage === 'returning' || stage === 'closing' || stage === 'closed') && !card && !mainIndex
   const indexItems = mainIndex ? topics : cards
   useEffect(() => {
@@ -323,7 +336,7 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
       if (stage === 'closing') setStage('closed')
     }}><div><span aria-hidden="true">❦</span><strong>مشکیزہ روحانیت</strong>
       <p lang="ur" dir="rtl">روحانیت کا ایک ایسا مشکیزہ جس میں علمِ جفر، علمُ الاعداد، علمِ نجوم، طلسمات، توسل، دعائیں، اعمالِ روحانی، جفری حسابات، عملیات، واقعات اور تجربات کا مجموعہ پیش کیا گیا ہے۔ یہ مجموعہ آپ کی زندگی کو بدلنے کی مکمل صلاحیت رکھتا ہے۔</p>
-      <span aria-hidden="true">❦</span></div>{(stage === 'closed' || stage === 'cover') && <button type="button" className="reopen-cover" aria-label="کتاب کھولیں" onClick={() => setStage('opening')} />}</div>}
+      <span aria-hidden="true">❦</span></div>{(stage === 'closed' || stage === 'cover') && <button type="button" className="reopen-cover" aria-label="کتاب کھولیں" onClick={openByTouch} />}</div>}
     {intro && <div className="deewan-reading book-panel dedication" data-side="left">
       <h2>مشکیزہ روحانیت</h2>
       <p lang="ar">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ</p>
