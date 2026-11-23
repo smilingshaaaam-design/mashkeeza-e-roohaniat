@@ -93,9 +93,8 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   leaf.before(still)
 
   const transforms: Keyframe[] = []
-  const profiles: [Keyframe[], Keyframe[]] = [[], []]
   const light: Keyframe[] = []
-    const direction = fromRight ? -1 : 1
+  const direction = fromRight ? -1 : 1
   for (let i = 0; i <= 48; i++) {
     const t = i / 48
     const progress = t * t * (3 - 2 * t)
@@ -105,37 +104,23 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
     // Shear along the free edge. Points on the vertical binding stay fixed.
     transforms.push({transform:'rotateY(' + direction * 180 * progress + 'deg) skewY(' +
       direction * (2.3 * bend + 1.6 * easingOut) + 'deg) scaleX(' + (1 - .045 * bend) + ')'})
-    for (const side of [0, 1] as const) {
-      const right = side === 0 ? fromRight : !fromRight
-      const spine = right ? 0 : width
-      const outside = right ? width : 0
-      const inward = right ? -1 : 1
-      // Follow the curved paper edge in the artwork, including its dip at the spine.
-      const spineTop = 0
-      const outerTop = 0
-      const paperBottom = height
-      const reach = outside + inward * width * .035 * bend
-      const rise = height * .032 * bend
-      const path = 'M ' + spine + ' ' + spineTop + ' C ' + (spine + (outside-spine)*.12) + ' 0 ' + (spine + (outside-spine)*.55) + ' 0 ' + reach + ' ' + outerTop +
-        ' Q ' + (outside-inward*width*.012*bend) + ' ' + (height*.52) + ' ' + outside + ' ' + (paperBottom-rise) +
-        ' Q ' + ((outside + spine)/2) + ' ' + (paperBottom-rise*.15) + ' ' + spine + ' ' + paperBottom + ' Z'
-      profiles[side].push({clipPath:'path("' + path + '")'})
-    }
-    light.push({opacity:.78*bend,backgroundPosition:(18 + 65 * progress) + '% 50%'})
+    light.push({opacity:.70*bend, transform:'translateX(' + direction * (progress - .5) * 28 + '%)'})
+
   }
 
   const timing: KeyframeAnimationOptions = {duration, fill:'both'}
   const motion = sheet.animate(transforms, timing)
   const animations = [motion]
-  ;[front, back].forEach((face, index) => {
+  ;[front, back].forEach(face => {
+    face.style.overflow = 'hidden'
     const glaze = document.createElement('div')
     Object.assign(glaze.style, {
-      position:'absolute', inset:'0', pointerEvents:'none',
+      position:'absolute', inset:'0 -20%', pointerEvents:'none',
       backgroundImage:'linear-gradient(105deg,transparent 10%,rgba(255,248,219,.12) 55%,transparent 81%)',
       backgroundSize:'160% 100%'
     })
     face.append(glaze)
-    animations.push(face.animate(profiles[index], timing), glaze.animate(light, timing))
+    animations.push(glaze.animate(light, timing))
   })
 
   const release = () => {
