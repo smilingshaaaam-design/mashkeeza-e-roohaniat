@@ -363,8 +363,8 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
       <p lang="ur" dir="rtl">روحانیت کا ایک ایسا مشکیزہ جس میں علمِ جفر، علمُ الاعداد، علمِ نجوم، طلسمات، توسل، دعائیں، اعمالِ روحانی، جفری حسابات، عملیات، واقعات اور تجربات کا مجموعہ پیش کیا گیا ہے۔ یہ مجموعہ آپ کی زندگی کو بدلنے کی مکمل صلاحیت رکھتا ہے۔</p>
       <span aria-hidden="true">❦</span></div>{(stage === 'closed' || stage === 'cover') && <button type="button" className="reopen-cover" aria-label="کتاب کھولیں" onClick={openByTouch} />}</div>}
     {intro && <div className="deewan-reading book-panel dedication" data-side="left">
-      <h2>مشکیزہ روحانیت</h2>
       <p lang="ar">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ</p>
+      <h2>مشکیزہ روحانیت</h2>
       <div className="dedication-arch" aria-label="پنجتن پاک علیہم السلام" dir="rtl">
         {['محمد', 'علی', 'فاطمہ', 'حسن', 'حسین'].map(name => <span key={name}>{name}</span>)}
       </div>
