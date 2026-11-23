@@ -166,6 +166,12 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
     }
   }
   const lastPage = useRef<string | null>(null)
+  const [mobileReading,setMobileReading] = useState(false)
+  const [headings,setHeadings] = useState<string[]>([])
+  useEffect(() => {
+    const nodes=paper.current?.querySelectorAll('.break-words h2, .break-words h3')
+    setHeadings(Array.from(nodes ?? [], node => node.textContent ?? ''))
+  }, [entry,hash])
   const touch = useRef<[number, number] | null>(null)
   useEffect(() => {
     if (entries) return
@@ -229,6 +235,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
     else if (current + delta >= -1 && current + delta < articles.length) open(current + delta, delta < 0 && current > 0)
   }
   return <section className="deewan-book" tabIndex={0} aria-label={topic.label}
+    data-single-page={mobileReading && Boolean(card)}
     onKeyDown={e => {
       if (e.altKey || e.metaKey || e.ctrlKey) return
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); turn(e.key === 'ArrowLeft' ? 1 : -1) }
@@ -258,13 +265,23 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
       <div className="deewan-viewport" ref={paper}><div className="deewan-columns">
         <h3>{entry?.title || card.label}</h3>
         {entry && isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
-        {entry ? <>{entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} /></> :
+        {headings.length > 1 && <details onToggle={() => {
+          const node=paper.current
+          if(node?.clientWidth) setCount(Math.max(1,Math.round(node.scrollWidth/node.clientWidth)))
+        }}><summary>اس تحریر کی فہرست</summary>{headings.map((heading,i)=><button className="block" key={i} onClick={()=>{
+          const node=paper.current
+          const target=node?.querySelectorAll('.break-words h2, .break-words h3')[i]
+          if(node && target) setPage(Math.max(0,Math.round((node.getBoundingClientRect().right-target.getBoundingClientRect().right-node.scrollLeft)/node.clientWidth)))
+        }}>{heading}</button>)}</details>}
+        {entry ? <>{entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} />
+          {cards.length>1 && <aside><h4>اسی موضوع سے متعلق</h4>{cards.filter(item=>item.id!==card.id).map(item=><a className="block" key={item.id} href={pageSlug(item.href)?topic.href+'/read/'+encodeURIComponent(item.id):item.href}>{item.label}</a>)}</aside>}</> :
           failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> :
           <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}
       </div></div>
     </div>}
     <div aria-hidden="true" className="deewan-leaf" style={{inset:"0 4%"}} ref={leaf} />
     <div className="deewan-controls">
+      {card && <button className="sm:hidden" onClick={()=>setMobileReading(value=>!value)}>{mobileReading ? "دو صفحات" : "ایک صفحہ"}</button>}
       <button disabled={current < 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1} / {count}</span>}
       <button disabled={current + 1 >= articles.length && page + 1 >= count} onClick={() => turn(1)}>اگلا صفحہ</button>
