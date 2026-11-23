@@ -131,10 +131,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 
 /* Keep the existing masthead artwork above the book's starry sky. */
 .reshmi-header:has(.deewan-book) .reshmi-backdrop {
-  background:
-    radial-gradient(ellipse at 18% 66%, #523477 0%, transparent 44%),
-    radial-gradient(ellipse at 80% 78%, #382966 0%, transparent 46%),
-    linear-gradient(155deg, #100f2d, #29204d 70%, #191331);
+  background:#100f2d;
 }
 .reshmi-header:has(.deewan-book) .reshmi-backdrop img {
   clip-path: inset(0 0 calc(100% - var(--sky-depth)) 0);
@@ -148,3 +145,12 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 }
 
 .reshmi-title > .title-ornaments { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+
+.book-sky-texture {display:none;}
+.reshmi-header:has(.deewan-book) .book-sky-texture {
+  display:block;
+  position:absolute;
+  top:var(--sky-depth);
+  left:0;
+  height:calc(100% - var(--sky-depth));
+}
