@@ -11,7 +11,9 @@ export function SiteHeader() {
     <header className="reshmi-header relative">
       <div className="reshmi-backdrop" aria-hidden="true">
         <Image src="/images/hero-sky.png" alt="" fill priority className="object-cover" />
-        <div aria-hidden="true" className="book-sky-texture w-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url(/images/book-sky.jpg)" }} />
+        <div aria-hidden="true" className="book-sky-texture w-full bg-cover bg-center bg-no-repeat" style={{ backgroundImage: "url(/images/book-sky.jpg)" }}>
+          <Starfield count={90} seed={53} className="inset-0" />
+        </div>
         <Starfield count={110} seed={3} className="inset-0 z-[1]" />
       </div>
       <svg aria-hidden="true" width="0" height="0" className="absolute pointer-events-none">
