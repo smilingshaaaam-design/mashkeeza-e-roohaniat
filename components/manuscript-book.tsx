@@ -357,20 +357,6 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
     }}><div><span aria-hidden="true">❦</span><strong>مشکیزہ روحانیت</strong>
       <p lang="ur" dir="rtl">روحانیت کا ایک ایسا مشکیزہ جس میں علمِ جفر، علمُ الاعداد، علمِ نجوم، طلسمات، توسل، دعائیں، اعمالِ روحانی، جفری حسابات، عملیات، واقعات اور تجربات کا مجموعہ پیش کیا گیا ہے۔ یہ مجموعہ آپ کی زندگی کو بدلنے کی مکمل صلاحیت رکھتا ہے۔</p>
       <span aria-hidden="true">❦</span></div>{(stage === 'closed' || stage === 'cover') && <button type="button" className="reopen-cover" aria-label="کتاب کھولیں" onClick={openByTouch} />}</div>}
-    {(stage === 'dedication' || stage === 'returning') && intro && <nav
-      className="deewan-index book-panel printed-index" data-side="right" aria-label="مرکزی فہرست">
-      <h2>مرکزی فہرست</h2>
-      <ol style={{display:'grid', gridTemplateColumns:'repeat(2,minmax(0,1fr))', alignContent:'start', gap:'.15em'}}>
-        {topics.map(item => <li key={item.id}><a className="deewan-plaque"
-          style={{width:'100%', padding:'.35em .5em', fontSize:'.82em', margin:0, color:'#ffd700'}}
-          href={item.href} onClick={event => {
-            if (item.href !== topic.href || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
-            event.preventDefault()
-            rememberSheet(false)
-            setStage('title')
-          }}>{item.label}</a></li>)}
-      </ol>
-    </nav>}
     {intro && <div className="deewan-reading book-panel dedication" data-side="left">
       <h2>مشکیزہ روحانیت</h2>
       <p lang="ar">بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيمِ</p>
@@ -387,7 +373,15 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
         {entry && isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
         {entry ? <>{entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} /></> :
           failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> :
-          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{!mainIndex && <div className="topic-title-page"><div className="frontispiece-frame"><span aria-hidden="true">❦</span><h2>{topic.label}</h2><span aria-hidden="true">❦</span></div></div>}
+          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{!mainIndex && <nav className="topic-title-page" aria-label="مرکزی فہرست" style={{display:'block'}}>
+      <h2>مرکزی فہرست</h2>
+      <ol style={{display:'grid', gridTemplateColumns:'repeat(2,minmax(0,1fr))', alignContent:'start', gap:'.15em'}}>
+        {topics.map(item => <li key={item.id}><a className="deewan-plaque"
+          style={{width:'100%', padding:'.35em .5em', fontSize:'.82em', margin:0, color:'#ffd700'}}
+          href={item.href}>{item.label}</a></li>)}
+      </ol>
+    </nav>}
+      {!mainIndex && <h2>{topic.label}</h2>}
       <h3>{mainIndex ? 'مرکزی فہرست' : 'فہرست'}</h3>
       {indexItems.length ? <ol>{indexItems.map(item => {
         const internal = Boolean(pageSlug(item.href))
