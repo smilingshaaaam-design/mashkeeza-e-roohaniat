@@ -168,10 +168,6 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
   const lastPage = useRef<string | null>(null)
   const [mobileReading,setMobileReading] = useState(false)
   const [headings,setHeadings] = useState<string[]>([])
-  useEffect(() => {
-    const nodes=paper.current?.querySelectorAll('.break-words h2, .break-words h3')
-    setHeadings(Array.from(nodes ?? [], node => node.textContent ?? ''))
-  }, [entry,hash])
   const touch = useRef<[number, number] | null>(null)
   useEffect(() => {
     if (entries) return
@@ -187,6 +183,11 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
     return () => controller.abort()
   }, [entries, attempt])
   const entry = card && entries?.find(item => item.slug === pageSlug(card.href) && item.content_type === 'page')
+  useEffect(() => {
+    const nodes=paper.current?.querySelectorAll('.break-words h2, .break-words h3')
+    setHeadings(Array.from(nodes ?? [], node => node.textContent ?? ''))
+  }, [entry,hash])
+
 
   useLayoutEffect(() => {
     const node = paper.current
@@ -281,7 +282,7 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
     </div>}
     <div aria-hidden="true" className="deewan-leaf" style={{inset:"0 4%"}} ref={leaf} />
     <div className="deewan-controls">
-      {card && <button className="sm:hidden" onClick={()=>setMobileReading(value=>!value)}>{mobileReading ? "دو صفحات" : "ایک صفحہ"}</button>}
+      {card && <button className="hidden pointer-coarse:block max-sm:block" onClick={()=>setMobileReading(value=>!value)}>{mobileReading ? "دو صفحات" : "ایک صفحہ"}</button>}
       <button disabled={current < 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1} / {count}</span>}
       <button disabled={current + 1 >= articles.length && page + 1 >= count} onClick={() => turn(1)}>اگلا صفحہ</button>
