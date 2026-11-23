@@ -211,3 +211,16 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 @media(prefers-reduced-motion:reduce){.deewan-book[data-opening="cover"]::before,[data-opening="cover"] .frontispiece{opacity:0;animation:none}.manuscript-cover{animation:none;transform:none}}
 
 .manuscript-cover p {margin:0;width:88%;color:#f4d99e;font:400 clamp(15px,1.45vw,24px)/2.2 var(--font-nastaliq),serif;text-wrap:pretty}
+
+/* The supplied front artwork includes its title, lettering and binding. */
+.manuscript-cover {
+  background:transparent;
+  border:0;
+  box-shadow:none;
+}
+.manuscript-cover::before {
+  content:"";position:absolute;inset:0;
+  background:url('/images/deewan/ornate-cover.webp') right center / contain no-repeat;
+  backface-visibility:hidden;transform:translateZ(2px);
+}
+.manuscript-cover>div {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
