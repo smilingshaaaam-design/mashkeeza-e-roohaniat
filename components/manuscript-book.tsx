@@ -135,7 +135,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   return release
 }
 
-export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: NavItem[]; hash: string }) {
+export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem; cards: NavItem[]; topics: NavItem[]; hash: string }) {
   const articles = cards.filter(item => pageSlug(item.href))
   const current = articles.findIndex(item => hash === topic.href + '/read/' + encodeURIComponent(item.id))
   const card = articles[current]
@@ -150,14 +150,16 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
     document.addEventListener('click', restart)
     return () => document.removeEventListener('click', restart)
   }, [topic.href])
-  const intro = stage !== 'contents' && !card
+  const mainIndex = hash === topic.href + '/contents'
+  const intro = stage === 'cover' && !card && !mainIndex
+  const indexItems = mainIndex ? topics : cards
   useEffect(() => {
-    if (card) setStage('contents')
-  }, [card?.id])
+    if (card || mainIndex) setStage('contents')
+  }, [card?.id, mainIndex])
   useEffect(() => {
     if (stage !== 'cover') return
     const timer = window.setTimeout(() => setStage('title'),
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 5000 : 6800)
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 5000 : 7600)
     return () => window.clearTimeout(timer)
   }, [stage])
   const [entries, setEntries] = useState<Entry[] | null>(null)
@@ -242,20 +244,16 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
     if (next >= 0 && next < count) {
       rememberSheet(delta < 0)
       setPage(next)
-    } else if (current + delta >= -1 && current + delta < articles.length) {
+    } else if (!mainIndex && current + delta >= -1 && current + delta < articles.length) {
       open(current + delta, delta < 0)
     }
   }
-  function firstIndex(fromRight: boolean) {
-    rememberSheet(fromRight, Math.max(1, current + 1) + page / 2)
-    if (!card && page === 0 && pendingSheet.current && leaf.current) {
-      stopTurn.current?.()
-      stopTurn.current = animateLeaf(leaf.current, pendingSheet.current)
-      pendingSheet.current = null
-    }
+  function firstIndex() {
+    if (mainIndex && page === 0) return
+    rememberSheet(false, Math.max(1, current + 1) + page / 2)
     lastPage.current = null
-    if (!card) setPage(0)
-    window.location.hash = topic.href
+    if (mainIndex) setPage(0)
+    else window.location.hash = topic.href + '/contents'
   }
   return <section className="deewan-book" data-opening={intro ? stage : undefined} tabIndex={0} aria-label={topic.label}
     onKeyDown={e => {
@@ -272,19 +270,10 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
       if (Math.abs(dx) > 45 && Math.abs(dx) > 1.6 * Math.abs(e.changedTouches[0].clientY - start[1])) turn(dx > 0 ? 1 : -1)
     }}>
     <div aria-hidden="true" className="deewan-sky-backdrop"><Starfield count={125} seed={41} className="inset-0" /></div>
-    {intro && <div className="deewan-index book-panel frontispiece" inert={stage === 'cover'}>
-      <div className="frontispiece-frame">
-        <span aria-hidden="true">❦</span>
-        <h2>{topic.label}</h2>
-        <p>فہرست کھولیں</p>
-        <button type="button" onClick={() => { rememberSheet(true); setStage('contents') }}>فہرست</button>
-        <span aria-hidden="true">❦</span>
-      </div>
-    </div>}
     {intro && stage === 'cover' && <div className="manuscript-cover"><div><span aria-hidden="true">❦</span><strong>مشکیزہ روحانیت</strong>
       <p lang="ur" dir="rtl">روحانیت کا ایک ایسا مشکیزہ جس میں علمِ جفر، علمُ الاعداد، علمِ نجوم، طلسمات، توسل، دعائیں، اعمالِ روحانی، جفری حسابات، عملیات، واقعات اور تجربات کا مجموعہ پیش کیا گیا ہے۔ یہ مجموعہ آپ کی زندگی کو بدلنے کی مکمل صلاحیت رکھتا ہے۔</p>
       <span aria-hidden="true">❦</span></div></div>}
-    {!intro && (['right', 'left'] as const).map(side => <div key={side} data-side={side}
+    {(['right', 'left'] as const).map(side => <div key={side} data-side={side} inert={intro}
       className={side === 'right' ? 'deewan-index book-panel' : 'deewan-reading book-panel'}>
       <div ref={side === 'right' ? paper : leftPaper} className="deewan-viewport"
         style={{visibility: side === 'left' && page + 1 >= count ? 'hidden' : 'visible'}}>
@@ -293,27 +282,27 @@ export function ManuscriptBook({ topic, cards, hash }: { topic: NavItem; cards: 
         {entry && isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
         {entry ? <>{entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} /></> :
           failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> :
-          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <><h2>{topic.label}</h2>
-      <h3>فہرست</h3>
-      {cards.length ? <ol>{cards.map(item => {
+          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{!mainIndex && <div className="topic-title-page"><div className="frontispiece-frame"><span aria-hidden="true">❦</span><h2>{topic.label}</h2><span aria-hidden="true">❦</span></div></div>}
+      <h3>{mainIndex ? 'مرکزی فہرست' : 'فہرست'}</h3>
+      {indexItems.length ? <ol>{indexItems.map(item => {
         const internal = Boolean(pageSlug(item.href))
         return <li key={item.id}><a className="deewan-plaque" href={internal ? topic.href + '/read/' + encodeURIComponent(item.id) : item.href}
           target={!internal && item.openInNewTab ? '_blank' : undefined} rel={!internal && item.openInNewTab ? 'noopener noreferrer' : undefined}
           onClick={event => {
             if (!internal || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
             lastPage.current = null
-            rememberSheet(side === 'right', Math.max(1, Math.ceil((count - page) / 2)) + articles.indexOf(item))
+            rememberSheet(false, Math.max(1, Math.ceil((count - page) / 2)) + articles.indexOf(item))
           }}>{item.label}</a></li>
       })}</ol> : <p>اس موضوع سے ابھی کوئی تحریر منسلک نہیں ہے۔</p>}</>}
         </div>
       </div>
     </div>)}
-    {!intro && ['right','left'].map(side => <button key={side} type="button" className={'index-return index-return-' + side} onClick={() => firstIndex(side === 'right')}>فہرست</button>)}
+    {!intro && ['right','left'].map(side => <button key={side} type="button" className={'index-return index-return-' + side} onClick={firstIndex}>فہرست</button>)}
     <div aria-hidden="true" className="deewan-leaf" style={{inset:"0 4%"}} ref={leaf} />
     {!intro && <div className="deewan-controls">
       <button disabled={current < 0 && page === 0} onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1}–{Math.min(page + 2, count)} / {count}</span>}
-      <button disabled={current + 1 >= articles.length && page + 2 >= count} onClick={() => turn(1)}>اگلا صفحہ</button>
+      <button disabled={(mainIndex || current + 1 >= articles.length) && page + 2 >= count} onClick={() => turn(1)}>اگلا صفحہ</button>
     </div>}
   </section>
 }

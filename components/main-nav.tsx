@@ -416,7 +416,7 @@ export function MainNav() {
   const contactIndex = items.findIndex(item => item.id === 'contact')
   items.splice(contactIndex < 0 ? items.length : contactIndex, 0, articleMenu)
   const bookTopics = items.filter(item => item.href.startsWith('#topic-'))
-  const topic = bookTopics.find(item => item.href === activeHash.split('/read/')[0])
+  const topic = bookTopics.find(item => item.href === activeHash.split('/')[0])
   const cards = topic?.children?.filter(card => card.visible !== false && isSafeHref(card.href) && !card.href.startsWith('#')) ?? []
 
   const navRef = useRef<HTMLElement>(null)
@@ -464,7 +464,7 @@ export function MainNav() {
           ))}
         </ul>
       </div>
-      {topic && <ManuscriptBook key={topic.id} topic={topic} cards={cards} hash={activeHash} />}
+      {topic && <ManuscriptBook key={topic.id} topic={topic} topics={bookTopics} cards={cards} hash={activeHash} />}
     </nav>
   )
 }
