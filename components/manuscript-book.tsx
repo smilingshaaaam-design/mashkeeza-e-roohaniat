@@ -159,7 +159,7 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
   useEffect(() => {
     if (stage !== 'cover') return
     const timer = window.setTimeout(() => setStage('title'),
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 5000 : 7600)
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 5000 : 8400)
     return () => window.clearTimeout(timer)
   }, [stage])
   const [entries, setEntries] = useState<Entry[] | null>(null)
@@ -270,6 +270,8 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
       if (Math.abs(dx) > 45 && Math.abs(dx) > 1.6 * Math.abs(e.changedTouches[0].clientY - start[1])) turn(dx > 0 ? 1 : -1)
     }}>
     <div aria-hidden="true" className="deewan-sky-backdrop"><Starfield count={125} seed={41} className="inset-0" /></div>
+    {intro && <div className="cover-sand" aria-hidden="true">{Array.from({length:32}, (_, i) =>
+      <i key={i} style={{left:(i * 37 % 100) + '%',animationDelay:(i * 83 % 1050) + 'ms'}} />)}</div>}
     {intro && stage === 'cover' && <div className="manuscript-cover"><div><span aria-hidden="true">❦</span><strong>مشکیزہ روحانیت</strong>
       <p lang="ur" dir="rtl">روحانیت کا ایک ایسا مشکیزہ جس میں علمِ جفر، علمُ الاعداد، علمِ نجوم، طلسمات، توسل، دعائیں، اعمالِ روحانی، جفری حسابات، عملیات، واقعات اور تجربات کا مجموعہ پیش کیا گیا ہے۔ یہ مجموعہ آپ کی زندگی کو بدلنے کی مکمل صلاحیت رکھتا ہے۔</p>
       <span aria-hidden="true">❦</span></div></div>}
