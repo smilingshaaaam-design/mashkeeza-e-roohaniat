@@ -187,7 +187,12 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 }
 
 /* The gilded binding swings around the same spine as the manuscript leaves. */
-.deewan-book[data-opening="cover"]::before {animation:reveal-binding 1.8s 6.6s both}
+.deewan-book[data-opening="cover"] {animation:none}
+.deewan-book[data-opening="cover"]::before {
+  mask-image:linear-gradient(to right,#000 50%,transparent 50%);
+  animation:uncover-paper 1ms step-end 6.6s both;
+}
+@keyframes uncover-paper {from{visibility:hidden}to{visibility:visible}}
 @keyframes reveal-binding {0%{opacity:0} 55%,100%{opacity:1}}
 .manuscript-cover {
  position:absolute;z-index:8;inset:0 50% 0 4%;transform-origin:right center;transform-style:preserve-3d;
@@ -225,7 +230,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .frontispiece-frame {width:96%;height:94%;gap:.45em;border-block:3px double #a47737;color:#6c3022}
 .frontispiece-frame h2 {font:700 clamp(22px,3vw,56px)/2 var(--font-nastaliq),serif}
 .frontispiece-frame button {background:#591523 url('/images/deewan/plaque.webp') center/100% 100%;border:1px solid #b78536;color:#ffd700;padding:.12em 1.6em;border-radius:1em;font-weight:700;cursor:pointer}
-[data-opening="cover"] .frontispiece {animation:reveal-binding 1.8s 6.6s both}
+[data-opening="cover"] .frontispiece {animation:uncover-paper 1ms step-end 6.6s both}
 @media(prefers-reduced-motion:reduce){.deewan-book[data-opening="cover"]::before,[data-opening="cover"] .frontispiece{opacity:0;animation:none}.manuscript-cover{animation:none;transform:none}}
 
 .manuscript-cover p {margin:0;width:88%;color:#f4d99e;font:400 clamp(15px,1.45vw,24px)/2.2 var(--font-nastaliq),serif;text-wrap:pretty}
@@ -245,7 +250,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 
 .topic-title-page {height:100%;display:grid;place-items:center;break-after:column;break-inside:avoid}
 .book-panel .topic-title-page h2 {font:700 clamp(28px,3.4vw,64px)/2.1 var(--font-nastaliq),serif;color:#6a2026}
-[data-opening="cover"] .book-panel {animation:reveal-binding 1.8s 6.6s both}
+[data-opening="cover"] .book-panel {animation:uncover-paper 1ms step-end 6.6s both}
 @media(prefers-reduced-motion:reduce){[data-opening="cover"] .book-panel {animation:none;visibility:hidden}}
 
 @keyframes arrive-binding {
