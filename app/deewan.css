@@ -187,16 +187,18 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 }
 
 /* The gilded binding swings around the same spine as the manuscript leaves. */
-.deewan-book[data-opening="cover"]::before {animation:reveal-binding 2.1s 10s both}
-@keyframes reveal-binding {0%,33%{opacity:0} 68%,100%{opacity:1}}
+.deewan-book[data-opening="cover"]::before {animation:reveal-binding 1.8s 5s both}
+@keyframes reveal-binding {0%{opacity:0} 55%,100%{opacity:1}}
 .manuscript-cover {
- position:absolute;z-index:8;inset:3% 4% 8% 50%;transform-origin:left center;backface-visibility:hidden;
+ position:absolute;z-index:8;inset:3% 50% 8% 4%;transform-origin:right center;transform-style:preserve-3d;
  display:grid;place-items:center;border:4px double #aa803f;border-radius:2% 5% 5% 2%;
  background:linear-gradient(90deg,#25120c 0%,transparent 7%,#e4bd6c42 8%,transparent 10%),radial-gradient(ellipse,#613324,#351819 68%,#211114);
  box-shadow:inset 0 0 2em #1a0b09,3px 4px 0 #755733,5px 7px 0 #342317;
- animation:open-binding 2.1s 10s both;
+ animation:open-binding 1.8s cubic-bezier(.42,0,.22,1) 5s both;
 }
-@keyframes open-binding {0%,33%{transform:translateX(-50%) rotateY(0)} 53%{transform:translateX(0) rotateY(-10deg)} 100%{transform:translateX(0) rotateY(-177deg)}}
+@keyframes open-binding {from{transform:rotateY(0)} to{transform:rotateY(180deg)}}
+.manuscript-cover::after {content:"";position:absolute;inset:0;border-radius:inherit;backface-visibility:hidden;transform:rotateY(180deg) translateZ(2px);background:#e2bf87 url('/images/reshmi/paper.webp') repeat;border:3px double #966c36}
+.manuscript-cover>div {backface-visibility:hidden;transform:translateZ(2px)}
 .manuscript-cover>div,.frontispiece-frame {display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .manuscript-cover>div {width:81%;height:84%;border:5px double #c99c4c;outline:1px solid #966c36;outline-offset:6px;color:#e7c070;gap:1em;background:linear-gradient(0deg,#32171299,#32171299),url('/images/reshmi/trim.webp') center top / auto 9px repeat-x}
 .manuscript-cover strong {font:700 clamp(24px,4vw,72px)/2.1 var(--font-nastaliq),serif;text-shadow:0 2px #29110a}
@@ -205,9 +207,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .frontispiece-frame {width:96%;height:94%;gap:.45em;border-block:3px double #a47737;color:#6c3022}
 .frontispiece-frame h2 {font:700 clamp(22px,3vw,56px)/2 var(--font-nastaliq),serif}
 .frontispiece-frame button {background:#591523 url('/images/deewan/plaque.webp') center/100% 100%;border:1px solid #b78536;color:#ffd700;padding:.12em 1.6em;border-radius:1em;font-weight:700;cursor:pointer}
-[data-opening="cover"] .frontispiece {animation:reveal-binding 2.1s 10s both}
-@media(prefers-reduced-motion:reduce){.deewan-book[data-opening="cover"]::before,[data-opening="cover"] .frontispiece{opacity:0;animation:none}.manuscript-cover{animation:none;transform:translateX(-50%)}}
+[data-opening="cover"] .frontispiece {animation:reveal-binding 1.8s 5s both}
+@media(prefers-reduced-motion:reduce){.deewan-book[data-opening="cover"]::before,[data-opening="cover"] .frontispiece{opacity:0;animation:none}.manuscript-cover{animation:none;transform:none}}
 
 .manuscript-cover p {margin:0;width:88%;color:#f4d99e;font:400 clamp(15px,1.45vw,24px)/2.2 var(--font-nastaliq),serif;text-wrap:pretty}
-.manuscript-cover .cover-skip {position:absolute;inset:0;cursor:pointer;border-radius:inherit}
-.manuscript-cover .cover-skip:focus-visible {outline:2px solid #ffe7a0;outline-offset:-6px}
