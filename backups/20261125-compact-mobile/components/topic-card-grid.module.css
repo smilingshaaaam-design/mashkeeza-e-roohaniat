@@ -1,0 +1,41 @@
+.grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+  gap: clamp(8px, 1vw, 16px);
+  overflow-x: auto;
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 18px 2% 32px;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 3px double #deb568;
+  border-radius: 16% 16% 6% 6% / 11% 11% 5% 5%;
+  background: #3d0819;
+  color: #ffe199;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 5px 16px #0008;
+}
+.card:hover, .card:focus-visible { outline: 2px solid #ffe59b; outline-offset: 3px; }
+.title {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-height: 4em;
+  padding: .65em 13% .45em;
+  background: url('/images/topic-cards/plaque.webp') center / 100% 100% no-repeat;
+  font-family: var(--font-nastaliq), serif;
+  font-size: clamp(16px, 1.42vw, 23px);
+  line-height: 1.95;
+  text-shadow: 0 2px 3px #250310;
+}
+.card img { display: block; width: 100%; height: auto; aspect-ratio: 480/285; object-fit: cover; border-top: 2px solid #d6a745; }
+@media (max-width: 700px), (pointer: coarse) and (max-device-width: 800px) {
+  .grid { grid-template-columns: repeat(var(--columns), minmax(42%, 1fr)); }
+  .title { font-size: clamp(18px, 3.1vw, 42px); }
+}
