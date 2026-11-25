@@ -12,30 +12,14 @@
 }
 
 .card {
-  --torn-page: polygon(
-    1px 24px, 7px 17px, 5px 13px, 14px 6px, 22px 2px, 24% 5px,
-    35% 2px, 49% 7px, 60% 3px, 70% 5px, 79% 0, 87% 3px,
-    calc(100% - 13px) 7px, calc(100% - 5px) 16px, 100% 26px,
-    calc(100% - 6px) 26%, calc(100% - 3px) 37%,
-    calc(100% - 12px) 44%, calc(100% - 7px) 48%,
-    calc(100% - 10px) 53%, 100% 59%, calc(100% - 4px) 74%,
-    calc(100% - 1px) 87%, calc(100% - 7px) calc(100% - 12px),
-    calc(100% - 18px) calc(100% - 7px), 86% 100%,
-    76% calc(100% - 5px), 65% calc(100% - 3px),
-    58% calc(100% - 9px), 49% calc(100% - 4px), 39% 100%,
-    28% calc(100% - 6px), 20% calc(100% - 4px),
-    13% 100%, 16px calc(100% - 7px), 8px calc(100% - 12px),
-    9px calc(100% - 17px), 1px calc(100% - 22px), 4px 75%,
-    0 64%, 7px 51%, 3px 39%, 7px 27%, 3px 19%
-  );
   position: relative;
   isolation: isolate;
   display: flex;
   flex-direction: column;
+  align-items: center;
   min-width: 0;
-  padding: clamp(16px, 1.45vw, 22px);
-  clip-path: var(--torn-page);
-  background: linear-gradient(150deg, #976038, #f8dda0 27%, #ae8050 57%, #83522c);
+  padding-block: clamp(18px, 1.7vw, 29px);
+  background: transparent;
   color: #382417;
   text-align: center;
   text-decoration: none;
@@ -43,49 +27,30 @@
   transition: transform .2s ease;
 }
 
-.card:nth-child(even) {
-  --torn-page: polygon(
-    4px 5px, 13% 2px, 23% 6px, 33% 4px, 42% 0,
-    53% 2px, 65% 6px, 72% 2px, 79% 5px,
-    calc(100% - 22px) 1px, calc(100% - 15px) 7px,
-    calc(100% - 9px) 6px, calc(100% - 7px) 14px, 100% 21px,
-    calc(100% - 4px) 30%, 100% 43%, calc(100% - 6px) 55%,
-    calc(100% - 3px) 67%, 100% 79%, calc(100% - 4px) 90%,
-    calc(100% - 10px) calc(100% - 5px), 88% 100%,
-    78% calc(100% - 4px), 68% calc(100% - 1px),
-    59% calc(100% - 6px), 48% calc(100% - 2px), 36% 100%,
-    25% calc(100% - 5px), 16% calc(100% - 3px),
-    9% calc(100% - 8px), 17px calc(100% - 10px),
-    11px calc(100% - 15px), 13px calc(100% - 20px),
-    5px calc(100% - 24px), 1px 78%, 6px 70%, 3px 62%,
-    13px 54%, 8px 50%, 10px 46%, 0 39%, 5px 30%, 2px 21%, 6px 13%
-  );
-}
-
 .card::before {
   position: absolute;
   z-index: -1;
-  inset: 3px;
-  clip-path: var(--torn-page);
-  background:
-    repeating-linear-gradient(105deg, #75503813 0 1px, transparent 1px 4px),
-    radial-gradient(ellipse at 2% 92%, #ad734c8f, transparent 32%),
-    radial-gradient(ellipse at 94% 7%, #b4774b76, transparent 39%),
-    radial-gradient(ellipse at 38% 30%, #fff0cf, #ead2a0 70%, #b9884e);
+  inset: 0;
+  background: url('/images/topic-cards/torn-paper.webp') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 4px 3px #0009);
   pointer-events: none;
   content: '';
 }
 
+.card:nth-child(even)::before {
+  transform: scaleX(-1);
+}
+
 .card:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 7px #fff3bd;
+  outline: 2px solid #ffe6a3;
+  outline-offset: 3px;
 }
 
 .title {
   display: grid;
   place-items: center;
   flex: 1;
-  width: 100%;
+  width: 80%;
   min-block-size: 3.2em;
   padding: .5em 5% .3em;
   border-bottom: 1px solid #7f512c66;
@@ -102,7 +67,7 @@
 .card img {
   order: -1;
   display: block;
-  width: 100%;
+  width: 80%;
   height: auto;
   aspect-ratio: 480 / 285;
   object-fit: cover;
