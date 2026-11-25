@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import type { NavItem } from './main-nav'
 import styles from './topic-card-grid.module.css'
 
@@ -8,7 +9,7 @@ const artwork = new Set([
 
 export function TopicCardGrid({ items, openMenu }: { items: NavItem[], openMenu: (id: string) => void }) {
   return (
-    <nav className={styles.grid} dir="rtl" aria-label="موضوعات کے کارڈ">
+    <nav className={styles.grid} style={{ '--columns': Math.max(1, Math.ceil(items.length / 2)) } as CSSProperties} dir="rtl" aria-label="موضوعات کے کارڈ">
       {items.map(item => {
         const key = item.href.startsWith('#topic-') ? item.href.slice(7) : item.id
         const image = artwork.has(key) ? key : 'published-articles'
