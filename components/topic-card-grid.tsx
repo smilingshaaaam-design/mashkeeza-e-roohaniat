@@ -11,7 +11,7 @@ const artwork = new Set([
   'taweez', 'talismat', 'nawaz', 'peshgoiyan', 'jafri-hisabat', 'published-articles', 'contact',
 ])
 
-export function TopicCardGrid({ items, openMenu }: { items: NavItem[], openMenu: (id: string) => void }) {
+export function TopicCardGrid({ items, showGrid, openMenu }: { items: NavItem[], showGrid: boolean, openMenu: (id: string) => void }) {
   const cms = useVisualCms()
   const [published, setPublished] = useState(emptyGallery)
   const [paused, setPaused] = useState(false)
@@ -56,7 +56,7 @@ export function TopicCardGrid({ items, openMenu }: { items: NavItem[], openMenu:
           <div className={styles.batch} key={n} data-copy={copy + n}>{featured.map(c => renderCard(c, true, copy + n > 0))}</div>)}</div>)}
       </div></div>
     </section>}
-    <nav className={styles.grid} dir="rtl" aria-label="موضوعات کے کارڈ">{cards.map(c => renderCard(c))}</nav>
+    {showGrid && <nav className={styles.grid} dir="rtl" aria-label="موضوعات کے کارڈ">{cards.map(c => renderCard(c))}</nav>}
     {cms?.editing && cms.galleryOpen && createPortal(<TopicGalleryEditor cards={cards} settings={settings}
       change={cms.updateGallery} close={cms.closeGallery}/>, document.body)}
   </>

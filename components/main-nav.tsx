@@ -470,8 +470,8 @@ export function MainNav() {
         </ul>
       </div>
       {topic && <ManuscriptBook key={topic.id} topic={topic} topics={bookTopics} cards={cards} hash={activeHash} />}
-      {cardHost && !activeHash && createPortal(
-        <TopicCardGrid items={items} openMenu={id => {
+      {cardHost && (!activeHash || topic) && createPortal(
+        <TopicCardGrid items={items} showGrid={!topic} openMenu={id => {
           const link = navRef.current?.querySelector<HTMLAnchorElement>(
             '[data-root-menu="' + CSS.escape(id) + '"]'
           )
