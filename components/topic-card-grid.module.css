@@ -13,21 +13,63 @@
 
 .card {
   --frame-inset: clamp(6px, .75vw, 11px);
+  --torn-edge: polygon(
+    1px 5px, 4% 2px, 7% 4px, 11% 1px, 15% 3px, 20% 0,
+    25% 3px, 29% 1px, 33% 5px, 37% 2px, 43% 0, 49% 3px,
+    55% 1px, 61% 4px, 68% 2px, 72% 5px, 76% 1px, 83% 3px,
+    88% 0, 94% 3px, 98% 1px, calc(100% - 1px) 7px,
+    calc(100% - 4px) 12%, 100% 20%, calc(100% - 3px) 28%,
+    calc(100% - 1px) 37%, calc(100% - 5px) 45%, 100% 53%,
+    calc(100% - 2px) 62%, calc(100% - 5px) 72%, 100% 81%,
+    calc(100% - 3px) 89%, 100% 94%, calc(100% - 5px) 100%,
+    95% calc(100% - 3px), 91% 100%, 87% calc(100% - 5px),
+    82% calc(100% - 2px), 77% 100%, 71% calc(100% - 3px),
+    67% calc(100% - 1px), 62% calc(100% - 5px), 56% 100%,
+    51% calc(100% - 2px), 45% 100%, 39% calc(100% - 4px),
+    34% calc(100% - 1px), 28% calc(100% - 5px), 22% 100%,
+    17% calc(100% - 2px), 12% 100%, 8% calc(100% - 4px),
+    4% calc(100% - 2px), 1px calc(100% - 7px), 4px 89%,
+    1px 81%, 5px 74%, 2px 66%, 0 57%, 4px 50%, 1px 42%,
+    5px 34%, 0 26%, 4px 17%, 2px 10%
+  );
   position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   min-width: 0;
   padding: var(--frame-inset);
-  overflow: hidden;
-  border: 1px solid #bb9452;
-  border-radius: 6px 6px 15px 6px;
-  background: radial-gradient(ellipse at 42% 5%, #fff1cf, #ead7ac 69%, #d2b37e);
+  border: 1px solid transparent;
+  background: transparent;
   color: #382417;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  box-shadow: inset 0 0 0 2px #885d301e, 0 6px 14px #0008;
-  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+  filter: drop-shadow(0 5px 6px #0008);
+  transition: transform .2s ease;
+}
+
+.card::before,
+.card::after {
+  position: absolute;
+  clip-path: var(--torn-edge);
+  pointer-events: none;
+  content: '';
+}
+
+.card::before {
+  z-index: -2;
+  inset: -1px;
+  background: linear-gradient(153deg, #9e6d3e, #f8dfa7 28%, #ba8c57 52%, #8b5a32 92%);
+}
+
+.card::after {
+  z-index: -1;
+  inset: 1px;
+  background:
+    repeating-linear-gradient(104deg, #76503412 0 1px, transparent 1px 4px),
+    radial-gradient(ellipse at 2% 88%, #ac744d8c, transparent 38%),
+    radial-gradient(ellipse at 98% 3%, #a5674288, transparent 37%),
+    radial-gradient(ellipse at 42% 25%, #f8eaca, #e5ca93 70%, #b5834d);
 }
 
 .card:focus-visible {
@@ -110,7 +152,6 @@
   width: clamp(158px, 17vw, 245px);
   direction: rtl;
   flex: none;
-  border-color: #c9ab72;
 }
 
 .batch .title {
@@ -137,8 +178,6 @@
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .card:hover {
     transform: translateY(-2px);
-    border-color: #efd18b;
-    box-shadow: inset 0 0 0 2px #885d301e, 0 9px 19px #0009;
   }
 }
 
