@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { readGallery, type GallerySettings } from './topic-gallery-settings'
 import { defaultNavItems } from '@/components/main-nav'
 
 export const CMS_API = 'https://mashkeeza-cms-api.smilingshaaaam.workers.dev'
@@ -10,6 +11,10 @@ export type CardItem = { id: string; title: string; description: string; image: 
 export type SidebarLink = { id: string; title: string; href: string }
 export type SidebarGroup = { id: string; title: string; links: SidebarLink[] }
 type CmsContext = {
+  gallery: GallerySettings | null
+  galleryOpen: boolean
+  closeGallery: () => void
+  updateGallery: (settings: GallerySettings) => void
   editing: boolean; authenticated: boolean; menus: MenuItem[] | null; cards: CardItem[] | null; sidebar: SidebarGroup[] | null;
   setMenus: (v: MenuItem[]) => void; setCards: (v: CardItem[]) => void; setSidebar: (v: SidebarGroup[]) => void; initSidebar: (v: SidebarGroup[]) => void;
   initMenus: (v: MenuItem[]) => void; initCards: (v: CardItem[]) => void;
@@ -64,6 +69,9 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const [cards, setCardsState] = useState<CardItem[] | null>(null)
   const [sidebar, setSidebarState] = useState<SidebarGroup[] | null>(null)
   const [publishedSidebar, setPublishedSidebar] = useState<SidebarGroup[] | null>(null)
+  const [galleryOpen, setGalleryOpen] = useState(false)
+  const [designLoaded, setDesignLoaded] = useState(false)
+  const [publishedGallery, setPublishedGallery] = useState<GallerySettings | null>(null)
   const [designOther, setDesignOther] = useState<Record<string, unknown>>({})
   const [cardStyles, setCardStyles] = useState<Record<string, CardStyle>>({})
   const [publishedCardStyles, setPublishedCardStyles] = useState<Record<string, CardStyle>>({})
@@ -97,6 +105,7 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('edit') !== '1') return
     setEditing(true)
+    setGalleryOpen(new URLSearchParams(window.location.search).get('panel') === 'homepage-cards')
     api('/auth/me').then(() => setAuthenticated(true)).catch(() => setAuthenticated(false))
   }, [])
   useEffect(() => {
@@ -106,6 +115,8 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
       const draftDesign = design.draft || pubDesign
       setPublishedCardStyles(pubDesign.cardStyles && typeof pubDesign.cardStyles === 'object' ? pubDesign.cardStyles : {})
       setDesignOther(draftDesign)
+      setPublishedGallery(readGallery(pubDesign.topicGallery))
+      setDesignLoaded(true)
       setCardStyles(draftDesign.cardStyles && typeof draftDesign.cardStyles === 'object' ? draftDesign.cardStyles : {})
       if (Array.isArray(pubDesign.sidebar)) setPublishedSidebar(pubDesign.sidebar)
       setSidebarState(Array.isArray(draftDesign.sidebar) ? draftDesign.sidebar : [])
@@ -130,7 +141,9 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
   const activeMenus = preview ? publishedMenus : menus
   const activeCards = preview ? publishedCards : cards
   const activeSidebar = preview ? publishedSidebar : sidebar
-  const ctx = useMemo<CmsContext>(() => ({ editing: editing && authenticated && !preview, authenticated, menus: activeMenus, cards: activeCards, sidebar: activeSidebar, setMenus, setCards, setSidebar, initSidebar: v => setSidebarState(prev => prev ?? v), initMenus: v => setMenusState(prev => prev && prev.length >= 3 ? prev : clone(v)), initCards: v => setCardsState(prev => prev ?? v), cardStyles: preview ? publishedCardStyles : cardStyles, selectedMenuId: selected?.type === 'menu' ? selected.id : null, selectMenu: id => setSelected({ type: 'menu', id }), selectCard: id => setSelected({ type: 'card', id }) }), [editing, authenticated, preview, activeMenus, activeCards, activeSidebar, history, selected, cardStyles, publishedCardStyles])
+  const ctx = useMemo<CmsContext>(() => ({ editing: editing && authenticated && !preview, authenticated, galleryOpen, closeGallery: () => setGalleryOpen(false),
+    gallery: authenticated && designLoaded ? (preview ? publishedGallery : readGallery(designOther.topicGallery)) : null,
+    updateGallery: topicGallery => setDesignOther(prev => ({ ...prev, topicGallery })), menus: activeMenus, cards: activeCards, sidebar: activeSidebar, setMenus, setCards, setSidebar, initSidebar: v => setSidebarState(prev => prev ?? v), initMenus: v => setMenusState(prev => prev && prev.length >= 3 ? prev : clone(v)), initCards: v => setCardsState(prev => prev ?? v), cardStyles: preview ? publishedCardStyles : cardStyles, selectedMenuId: selected?.type === 'menu' ? selected.id : null, selectMenu: id => setSelected({ type: 'menu', id }), selectCard: id => setSelected({ type: 'card', id }) }), [editing, authenticated, preview, activeMenus, activeCards, activeSidebar, history, selected, cardStyles, publishedCardStyles, galleryOpen, designLoaded, designOther, publishedGallery])
 
   async function login(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setMessage('')
@@ -138,21 +151,21 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
     catch (e) { setMessage((e as Error).message) } finally { setBusy(false) }
   }
   async function save() {
-    if (!menus || !cards) { setMessage('Pehle menu aur cards load honay dein.'); return }
+    if (!menus || !designLoaded) { setMessage('Pehle menu aur cards load honay dein.'); return }
     if (!validateMenus(menus)) { setMessage('Menu mein invalid ya duplicate ID/link hai.'); return }
     if (!validateSidebar(sidebar)) { setMessage('Sidebar ke title ya links invalid hain.'); return }
     setBusy(true); setMessage('')
-    try { await api('/cms/navigation/draft', 'PUT', { items: menus }); await api('/cms/cards/draft', 'PUT', { items: cards }); await api('/cms/design/draft', 'PUT', { ...designOther, cardStyles, sidebar }); setMessage('Draft save ho gaya.') }
+    try { await api('/cms/navigation/draft', 'PUT', { items: menus }); if (cards) await api('/cms/cards/draft', 'PUT', { items: cards }); await api('/cms/design/draft', 'PUT', { ...designOther, cardStyles, sidebar }); setMessage('Draft save ho gaya.') }
     catch (e) { setMessage((e as Error).message) } finally { setBusy(false) }
   }
   async function publish() {
-    if (!menus || !cards || !window.confirm('Menus aur cards ko public website par publish karna hai?')) return
+    if (!menus || !designLoaded || !window.confirm('Menus aur cards ko public website par publish karna hai?')) return
     if (!validateMenus(menus) || !validateSidebar(sidebar)) { setMessage('Menu ya sidebar validation fail hui.'); return }
     setBusy(true); setMessage('')
     try {
-      await api('/cms/navigation/draft', 'PUT', { items: menus }); await api('/cms/cards/draft', 'PUT', { items: cards }); await api('/cms/design/draft', 'PUT', { ...designOther, cardStyles, sidebar })
-      await api('/cms/navigation/publish', 'POST'); await api('/cms/cards/publish', 'POST'); await api('/cms/design/publish', 'POST')
-      setPublishedMenus(clone(menus)); setPublishedCards(clone(cards)); setPublishedSidebar(clone(sidebar)); setPublishedCardStyles(clone(cardStyles)); setMessage('Published. Visitors ko refresh par changes nazar aayenge.')
+      await api('/cms/navigation/draft', 'PUT', { items: menus }); if (cards) await api('/cms/cards/draft', 'PUT', { items: cards }); await api('/cms/design/draft', 'PUT', { ...designOther, cardStyles, sidebar })
+      await api('/cms/navigation/publish', 'POST'); if (cards) await api('/cms/cards/publish', 'POST'); await api('/cms/design/publish', 'POST')
+      setPublishedGallery(readGallery(designOther.topicGallery)); setPublishedMenus(clone(menus)); setPublishedCards(clone(cards)); setPublishedSidebar(clone(sidebar)); setPublishedCardStyles(clone(cardStyles)); setMessage('Published. Visitors ko refresh par changes nazar aayenge.')
     } catch (e) { setMessage((e as Error).message) } finally { setBusy(false) }
   }
   function changeMenu(id: string, patch: Partial<MenuItem>) {
@@ -345,6 +358,11 @@ export function VisualCmsProvider({ children }: { children: React.ReactNode }) {
     {editing && authenticated && <>
       <div className="fixed inset-x-0 top-0 z-[9998] flex min-h-14 flex-wrap items-center justify-center gap-2 border-b border-amber-700 bg-[#110d09]/95 px-3 py-2 text-xs text-amber-100 shadow-2xl" dir="ltr">
         <strong>مشکیزہ • Visual Builder</strong>
+        {!preview && <button type="button" disabled={!designLoaded} aria-expanded={galleryOpen} className="rounded border border-amber-600 px-2 py-1" onClick={() => {
+          if (window.location.pathname !== '/') { window.location.assign('/?edit=1&panel=homepage-cards'); return }
+          if (window.location.hash) window.location.hash = ''
+          setCardPanelOpen(false); setMenuPanelOpen(false); setGalleryOpen(v => !v)
+        }}>Homepage cards</button>}
         <button type="button" aria-expanded={contentPanelOpen} aria-controls="mashkeeza-content-panel" className="rounded border border-amber-600 px-2 py-1" onClick={() => setContentPanelOpen(v => !v)}>Content Management</button>
         <button className="rounded border border-amber-600 px-2 py-1" onClick={() => setMenuPanelOpen(!menuPanelOpen)}>{menuPanelOpen ? 'Hide menu tree' : 'Menu builder'}</button>
         <button type="button" className="rounded border border-amber-600 px-2 py-1" onClick={() => setCardPanelOpen(v => !v)}>{cardPanelOpen ? 'Hide cards' : 'Cards builder'}</button>
