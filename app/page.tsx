@@ -31,6 +31,7 @@ export default function HomePage() {
               <ArticleBrowser />
             </div>
           </section>
+          <div id="home-topic-cards" />
 
         </main>
         <SiteFooter />

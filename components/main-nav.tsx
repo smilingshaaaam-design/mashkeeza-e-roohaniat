@@ -2,6 +2,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { TopicCardGrid } from './topic-card-grid'
 import { usePathname } from 'next/navigation'
 import { ChevronDown, ChevronLeft, Home } from 'lucide-react'
 import { usePublishedArticles } from './article-browser'
@@ -209,6 +211,7 @@ function MenuEntry({
         )}
       >
         <a
+          data-root-menu={isRoot ? item.id : undefined}
           href={item.href}
           aria-expanded={isArticles ? Boolean(showChildren) : undefined}
           aria-current={active ? 'true' : undefined}
@@ -339,6 +342,8 @@ function MenuEntry({
 
 export function MainNav() {
   const pathname = usePathname()
+  const [cardHost, setCardHost] = useState<HTMLElement | null>(null)
+  useEffect(() => { setCardHost(document.getElementById('home-topic-cards')) }, [pathname])
   const { articles, status: articleStatus } = usePublishedArticles()
   const cms = useVisualCms()
   const [navItems, setNavItems] =
@@ -465,6 +470,16 @@ export function MainNav() {
         </ul>
       </div>
       {topic && <ManuscriptBook key={topic.id} topic={topic} topics={bookTopics} cards={cards} hash={activeHash} />}
+      {cardHost && !activeHash && createPortal(
+        <TopicCardGrid items={items} openMenu={id => {
+          const link = navRef.current?.querySelector<HTMLAnchorElement>(
+            '[data-root-menu="' + CSS.escape(id) + '"]'
+          )
+          link?.focus({ preventScroll: true })
+          link?.scrollIntoView({ block: 'center' })
+          link?.click()
+        }} />, cardHost
+      )}
     </nav>
   )
 }
