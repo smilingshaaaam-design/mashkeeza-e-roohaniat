@@ -12,69 +12,73 @@
 }
 
 .card {
-  --frame-inset: clamp(6px, .75vw, 11px);
-  --torn-edge: polygon(
-    1px 5px, 4% 2px, 7% 4px, 11% 1px, 15% 3px, 20% 0,
-    25% 3px, 29% 1px, 33% 5px, 37% 2px, 43% 0, 49% 3px,
-    55% 1px, 61% 4px, 68% 2px, 72% 5px, 76% 1px, 83% 3px,
-    88% 0, 94% 3px, 98% 1px, calc(100% - 1px) 7px,
-    calc(100% - 4px) 12%, 100% 20%, calc(100% - 3px) 28%,
-    calc(100% - 1px) 37%, calc(100% - 5px) 45%, 100% 53%,
-    calc(100% - 2px) 62%, calc(100% - 5px) 72%, 100% 81%,
-    calc(100% - 3px) 89%, 100% 94%, calc(100% - 5px) 100%,
-    95% calc(100% - 3px), 91% 100%, 87% calc(100% - 5px),
-    82% calc(100% - 2px), 77% 100%, 71% calc(100% - 3px),
-    67% calc(100% - 1px), 62% calc(100% - 5px), 56% 100%,
-    51% calc(100% - 2px), 45% 100%, 39% calc(100% - 4px),
-    34% calc(100% - 1px), 28% calc(100% - 5px), 22% 100%,
-    17% calc(100% - 2px), 12% 100%, 8% calc(100% - 4px),
-    4% calc(100% - 2px), 1px calc(100% - 7px), 4px 89%,
-    1px 81%, 5px 74%, 2px 66%, 0 57%, 4px 50%, 1px 42%,
-    5px 34%, 0 26%, 4px 17%, 2px 10%
+  --torn-page: polygon(
+    1px 24px, 7px 17px, 5px 13px, 14px 6px, 22px 2px, 24% 5px,
+    35% 2px, 49% 7px, 60% 3px, 70% 5px, 79% 0, 87% 3px,
+    calc(100% - 13px) 7px, calc(100% - 5px) 16px, 100% 26px,
+    calc(100% - 6px) 26%, calc(100% - 3px) 37%,
+    calc(100% - 12px) 44%, calc(100% - 7px) 48%,
+    calc(100% - 10px) 53%, 100% 59%, calc(100% - 4px) 74%,
+    calc(100% - 1px) 87%, calc(100% - 7px) calc(100% - 12px),
+    calc(100% - 18px) calc(100% - 7px), 86% 100%,
+    76% calc(100% - 5px), 65% calc(100% - 3px),
+    58% calc(100% - 9px), 49% calc(100% - 4px), 39% 100%,
+    28% calc(100% - 6px), 20% calc(100% - 4px),
+    13% 100%, 16px calc(100% - 7px), 8px calc(100% - 12px),
+    9px calc(100% - 17px), 1px calc(100% - 22px), 4px 75%,
+    0 64%, 7px 51%, 3px 39%, 7px 27%, 3px 19%
   );
   position: relative;
   isolation: isolate;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: var(--frame-inset);
-  border: 1px solid transparent;
-  background: transparent;
+  padding: clamp(16px, 1.45vw, 22px);
+  clip-path: var(--torn-page);
+  background: linear-gradient(150deg, #976038, #f8dda0 27%, #ae8050 57%, #83522c);
   color: #382417;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  filter: drop-shadow(0 5px 6px #0008);
   transition: transform .2s ease;
 }
 
-.card::before,
-.card::after {
+.card:nth-child(even) {
+  --torn-page: polygon(
+    4px 5px, 13% 2px, 23% 6px, 33% 4px, 42% 0,
+    53% 2px, 65% 6px, 72% 2px, 79% 5px,
+    calc(100% - 22px) 1px, calc(100% - 15px) 7px,
+    calc(100% - 9px) 6px, calc(100% - 7px) 14px, 100% 21px,
+    calc(100% - 4px) 30%, 100% 43%, calc(100% - 6px) 55%,
+    calc(100% - 3px) 67%, 100% 79%, calc(100% - 4px) 90%,
+    calc(100% - 10px) calc(100% - 5px), 88% 100%,
+    78% calc(100% - 4px), 68% calc(100% - 1px),
+    59% calc(100% - 6px), 48% calc(100% - 2px), 36% 100%,
+    25% calc(100% - 5px), 16% calc(100% - 3px),
+    9% calc(100% - 8px), 17px calc(100% - 10px),
+    11px calc(100% - 15px), 13px calc(100% - 20px),
+    5px calc(100% - 24px), 1px 78%, 6px 70%, 3px 62%,
+    13px 54%, 8px 50%, 10px 46%, 0 39%, 5px 30%, 2px 21%, 6px 13%
+  );
+}
+
+.card::before {
   position: absolute;
-  clip-path: var(--torn-edge);
+  z-index: -1;
+  inset: 3px;
+  clip-path: var(--torn-page);
+  background:
+    repeating-linear-gradient(105deg, #75503813 0 1px, transparent 1px 4px),
+    radial-gradient(ellipse at 2% 92%, #ad734c8f, transparent 32%),
+    radial-gradient(ellipse at 94% 7%, #b4774b76, transparent 39%),
+    radial-gradient(ellipse at 38% 30%, #fff0cf, #ead2a0 70%, #b9884e);
   pointer-events: none;
   content: '';
 }
 
-.card::before {
-  z-index: -2;
-  inset: -1px;
-  background: linear-gradient(153deg, #9e6d3e, #f8dfa7 28%, #ba8c57 52%, #8b5a32 92%);
-}
-
-.card::after {
-  z-index: -1;
-  inset: 1px;
-  background:
-    repeating-linear-gradient(104deg, #76503412 0 1px, transparent 1px 4px),
-    radial-gradient(ellipse at 2% 88%, #ac744d8c, transparent 38%),
-    radial-gradient(ellipse at 98% 3%, #a5674288, transparent 37%),
-    radial-gradient(ellipse at 42% 25%, #f8eaca, #e5ca93 70%, #b5834d);
-}
-
 .card:focus-visible {
-  outline: 2px solid #ffe6a3;
-  outline-offset: 3px;
+  outline: none;
+  box-shadow: inset 0 0 0 7px #fff3bd;
 }
 
 .title {
@@ -103,9 +107,7 @@
   aspect-ratio: 480 / 285;
   object-fit: cover;
   border: 1px solid #80603b;
-  outline: 1px solid #8a5f394d;
-  outline-offset: 2px;
-  border-radius: 3px 3px 9px 3px;
+  border-radius: 0;
   background: #482d24;
 }
 
