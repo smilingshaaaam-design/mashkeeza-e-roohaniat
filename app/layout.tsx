@@ -28,11 +28,11 @@ export const metadata: Metadata = {
     title: 'مشکیزہ روحانیت | علم و معرفت کا روحانی مرکز',
     description:
       'اسم اعظم، علم جفر، علم الاعداد، تعویذات، طلسمات اور روحانی رہنمائی کا مرکز۔',
-    url: 'https://mashkeeza.pages.dev/',
+    url: 'https://mashkeeza-e-roohaniat.com/',
     siteName: 'مشکیزہ روحانیت',
     images: [
       {
-        url: 'https://mashkeeza.pages.dev/mashkeeza-logo.png',
+        url: 'https://mashkeeza-e-roohaniat.com/mashkeeza-logo.png',
         width: 512,
         height: 512,
         alt: 'مشکیزہ روحانیت',
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'مشکیزہ روحانیت',
     description: 'علم و معرفت کا روحانی مرکز',
-    images: ['https://mashkeeza.pages.dev/mashkeeza-logo.png'],
+    images: ['https://mashkeeza-e-roohaniat.com/mashkeeza-logo.png'],
   },
 }
 
