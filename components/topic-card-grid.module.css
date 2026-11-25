@@ -59,18 +59,20 @@
 }
 
 .artwork {
-  display: flex;
+  position: relative;
+  display: block;
   width: 100%;
   aspect-ratio: 480 / 310;
-  padding: 2px;
+  flex: 0 0 auto;
   background: linear-gradient(145deg, #9d692f, #f8d68b 35%, #b28042 63%, #e5ba6b);
   clip-path: var(--arch);
 }
 
 .artwork img {
-  display: block;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
   object-fit: cover;
   clip-path: var(--arch);
   background: #172a35;
