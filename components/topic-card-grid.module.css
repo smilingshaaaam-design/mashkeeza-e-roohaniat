@@ -56,16 +56,13 @@
 }
 .grid > .card[style*="height"] img { flex: 1; min-height: 0; }
 .strip { max-width: 1560px; margin: 0 auto; padding: 0 2%; }
-.window { overflow: hidden; }
+.window { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; user-select: none; }
+.window::-webkit-scrollbar { display: none; }
 .track, .group, .batch { display: flex; width: max-content; }
-.track { animation: topic-drift var(--duration) linear infinite; }
 .batch { gap: 12px; padding-right: 12px; }
 .batch .card { width: clamp(140px, 15vw, 230px); direction: rtl; flex: none; }
 .batch .title { font-size: clamp(15px, 1.45vw, 23px); min-height: 3.6em; }
 .pause { color: #ffe199; padding: .4em .9em; border: 1px solid #bd934e; border-radius: .5em; margin-bottom: .5em; }
-.track[data-paused="true"], .window:focus-within .track { animation-play-state: paused; }
-@media (hover: hover) { .window:hover .track { animation-play-state: paused; } }
-@keyframes topic-drift { to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) {
   .track { animation: none; }
   .window { overflow-x: auto; }

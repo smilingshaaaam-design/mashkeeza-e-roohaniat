@@ -20,8 +20,8 @@ export const metadata: Metadata = {
   description:
     'مشکیزہ روحانیت — اسم اعظم، علم جفر، علم الاعداد، تعویذات، طلسمات اور ورد و وظائف کا روحانی مرکز۔',
   icons: {
-    icon: '/mashkeeza-logo.png',
-    shortcut: '/mashkeeza-logo.png',
+    icon: [{ url: '/favicon-48.png', sizes: '48x48', type: 'image/png' }, { url: '/favicon.ico', sizes: '16x16 32x32 48x48' }],
+    shortcut: '/favicon.ico',
     apple: '/mashkeeza-logo.png',
   },
   openGraph: {
