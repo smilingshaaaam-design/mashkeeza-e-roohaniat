@@ -7,7 +7,7 @@ import { TopicCardGrid } from './topic-card-grid'
 import { usePathname } from 'next/navigation'
 import { ChevronDown, ChevronLeft, Home } from 'lucide-react'
 import { usePublishedArticles } from './article-browser'
-import { ManuscriptBook } from '@/components/manuscript-book'
+import { ManuscriptBook, type BookNavigation } from '@/components/manuscript-book'
 import { cn } from '@/lib/utils'
 import { useVisualCms } from '@/components/visual-cms'
 
@@ -407,8 +407,17 @@ export function MainNav() {
   }
 
   const [activeHash, setActiveHash] = useState('')
+  const [bookSession, setBookSession] = useState(0)
+  const activeTopicHref = useRef('')
+  const bookNavigation = useRef<BookNavigation | null>(null)
   useEffect(() => {
-    const update = () => setActiveHash(window.location.hash)
+    const update = () => {
+      const hash = window.location.hash
+      const root = hash.split('/')[0]
+      if (root !== activeTopicHref.current) setBookSession(value => value + 1)
+      activeTopicHref.current = root
+      setActiveHash(hash)
+    }
     update()
     window.addEventListener('hashchange', update)
     return () => window.removeEventListener('hashchange', update)
@@ -469,9 +478,16 @@ export function MainNav() {
           ))}
         </ul>
       </div>
-      {topic && <ManuscriptBook key={topic.id} topic={topic} topics={bookTopics} cards={cards} hash={activeHash} />}
+      {topic && <ManuscriptBook key={bookSession} navigation={bookNavigation} topic={topic} topics={bookTopics} cards={cards} hash={activeHash} />}
       {cardHost && (!activeHash || topic) && createPortal(
-        <TopicCardGrid items={items} showGrid={!topic} openMenu={id => {
+        <TopicCardGrid items={items} showGrid={!topic} turnToCard={href => {
+          const target = bookNavigation.current?.turnTo(href)
+          if (!target) return false
+          activeTopicHref.current = target.split('/')[0]
+          window.location.hash = target
+          setActiveHash(target)
+          return true
+        }} openMenu={id => {
           const link = navRef.current?.querySelector<HTMLAnchorElement>(
             '[data-root-menu="' + CSS.escape(id) + '"]'
           )

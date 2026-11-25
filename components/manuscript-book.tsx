@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useImperativeHandle, type Ref, useRef, useState } from 'react'
 import { isMagicalScrollEnabled } from './magical-scroll'
 import { Starfield } from './magic/starfield'
 import { ArticleRichBody } from './article-rich-body'
@@ -141,7 +141,9 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   return release
 }
 
-export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem; cards: NavItem[]; topics: NavItem[]; hash: string }) {
+export type BookNavigation = { turnTo: (href: string) => string | null }
+
+export function ManuscriptBook({ topic, cards, topics, hash, navigation }: { navigation: Ref<BookNavigation>; topic: NavItem; cards: NavItem[]; topics: NavItem[]; hash: string }) {
   const articles = cards.filter(item => pageSlug(item.href))
   const current = articles.findIndex(item => hash === topic.href + '/read/' + encodeURIComponent(item.id))
   const card = articles[current]
@@ -293,6 +295,27 @@ export function ManuscriptBook({ topic, cards, topics, hash }: { topic: NavItem;
       stopTurn.current = animateLeaf(el, sheet)
     }
   }, [stage, hash, page])
+
+  useImperativeHandle(navigation, () => ({
+    turnTo(href) {
+      const root = href.split('/')[0]
+      const destination = topics.find(item => item.href === root)
+      if (!destination) return null
+      const target = href === root ? topicDestination(destination) : href
+      const offset = topics.indexOf(destination) - topics.findIndex(item => item.id === topic.id)
+      if (hash !== target || page !== 0 || intro) {
+        stopTurn.current?.()
+        rememberSheet(offset < 0 || (offset === 0 && page > 0), Math.max(1, Math.abs(offset)))
+        clearTimeout(earlyTap.current)
+        lastPage.current = null
+        measuredPage.current = 0
+        setPage(0)
+        setStage('contents')
+      }
+      leaf.current?.closest('.deewan-book')?.scrollIntoView({ block: 'center', behavior: 'instant' })
+      return target
+    },
+  }))
 
   function open(i: number, fromEnd = false) {
     const next = articles[i]

@@ -11,7 +11,7 @@ const artwork = new Set([
   'taweez', 'talismat', 'nawaz', 'peshgoiyan', 'jafri-hisabat', 'published-articles', 'contact',
 ])
 
-export function TopicCardGrid({ items, showGrid, openMenu }: { items: NavItem[], showGrid: boolean, openMenu: (id: string) => void }) {
+export function TopicCardGrid({ items, showGrid, openMenu, turnToCard }: { turnToCard: (href: string) => boolean; items: NavItem[], showGrid: boolean, openMenu: (id: string) => void }) {
   const cms = useVisualCms()
   const [published, setPublished] = useState(emptyGallery)
   const [paused, setPaused] = useState(false)
@@ -45,7 +45,11 @@ export function TopicCardGrid({ items, showGrid, openMenu }: { items: NavItem[],
     }
     return <a {...props} key={card.id} href={card.href} target={card.openInNewTab ? '_blank' : undefined}
       rel={card.openInNewTab ? 'noopener noreferrer' : undefined}
-      onClick={() => { if (card.href.startsWith('#topic-')) window.scrollTo(0, 0) }}>{content}</a>
+      onClick={event => {
+        if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || card.openInNewTab) return
+        if (strip && !showGrid && turnToCard(card.href)) event.preventDefault()
+        else if (card.href.startsWith('#topic-')) window.scrollTo(0, 0)
+      }}>{content}</a>
   }
   return <>
     {featured.length > 0 && <section className={styles.strip} aria-label="منتخب موضوعات">
