@@ -39,10 +39,10 @@
   .grid {
     --card-gap: clamp(6px, .75vw, 10px);
     gap: var(--card-gap);
-    grid-template-columns: repeat(var(--columns), minmax(calc((100% - 2 * var(--card-gap)) / 3), 1fr));
+    grid-template-columns: repeat(var(--columns), minmax(calc((100% - 3 * var(--card-gap)) / 4), 1fr));
   }
   .title {
-    padding-inline: 8%;
-    font-size: clamp(17px, 2.9vw, 39px);
+    padding-inline: 6%;
+    font-size: clamp(17px, 2.75vw, 36px);
   }
 }
