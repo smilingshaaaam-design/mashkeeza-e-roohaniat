@@ -43,17 +43,9 @@
   min-block-size: 3.2em;
   padding: .5em 5% .3em;
   border-bottom: 1px solid #7f512c66;
-  background:
-    linear-gradient(90deg, transparent, #8b5a2e66 50%, transparent)
-      center calc(100% - 3px) / 78% 1px no-repeat,
-    radial-gradient(ellipse at 2% 72%, #9c603653 0%, transparent 36%),
-    radial-gradient(ellipse at 98% 8%, #a5673e58 0%, transparent 34%),
-    radial-gradient(ellipse at 82% 98%, #bd8a4c55 0%, transparent 44%),
-    radial-gradient(ellipse at 32% 14%, #e6b76a46 0%, transparent 42%),
-    repeating-linear-gradient(104deg, #66411b0a 0 1px, transparent 1px 5px),
-    repeating-linear-gradient(7deg, #fff5db35 0 1px, transparent 1px 4px),
-    #ebd6a7;
-  box-shadow: inset 0 0 9px #88512625;
+  background: url('/images/topic-cards/plaque.webp') center / 100% 100% no-repeat;
+  color: #ffe199;
+  text-shadow: 0 2px 3px #250310;
   font-family: var(--font-nastaliq), serif;
   font-size: clamp(15px, 1.35vw, 22px);
   font-weight: 700;
