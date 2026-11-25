@@ -15,6 +15,8 @@ const gulzar = Gulzar({
   variable: '--font-gulzar',
 })
 
+const socialImageUrl = 'https://mashkeeza-e-roohaniat.com/mashkeeza-whatsapp-share.jpg'
+
 export const metadata: Metadata = {
   title: 'مشکیزہ روحانیت | علم و معرفت کا روحانی مرکز',
   description:
@@ -32,9 +34,9 @@ export const metadata: Metadata = {
     siteName: 'مشکیزہ روحانیت',
     images: [
       {
-        url: 'https://mashkeeza-e-roohaniat.com/mashkeeza-logo.png',
-        width: 512,
-        height: 512,
+        url: socialImageUrl,
+        width: 960,
+        height: 960,
         alt: 'مشکیزہ روحانیت',
       },
     ],
@@ -45,7 +47,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'مشکیزہ روحانیت',
     description: 'علم و معرفت کا روحانی مرکز',
-    images: ['https://mashkeeza-e-roohaniat.com/mashkeeza-logo.png'],
+    images: [socialImageUrl],
   },
 }
 
