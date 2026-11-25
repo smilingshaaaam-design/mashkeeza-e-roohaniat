@@ -16,26 +16,17 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 4px;
+  padding: 5px;
   overflow: hidden;
-  border: 1px solid #a4773e;
-  border-radius: 17px 17px 11px 11px;
-  background: linear-gradient(155deg, #674329 0%, #27181c 33%, #161221 75%, #50321e 100%);
-  color: #ffe9b7;
+  border: 1px solid #a68a51;
+  border-radius: 22px 22px 12px 12px;
+  background: linear-gradient(160deg, #25304a, #111b31 48%, #0c1426);
+  color: #f7e6bd;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  box-shadow: inset 0 0 0 1px #eac17830, 0 5px 14px #0007;
+  box-shadow: inset 0 0 0 1px #e0c17a21, 0 7px 18px #0007;
   transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
-}
-
-.card::after {
-  position: absolute;
-  inset: 3px;
-  border: 1px solid #f1cb8652;
-  border-radius: 13px 13px 7px 7px;
-  pointer-events: none;
-  content: '';
 }
 
 .card:focus-visible {
@@ -44,31 +35,48 @@
 }
 
 .title {
+  position: relative;
   display: grid;
   place-items: center;
   flex: 1;
   width: 100%;
-  min-block-size: 3.4em;
-  padding: .68em 9% .5em;
-  border-radius: 12px 12px 0 0;
-  background: #441419 url('/images/topic-cards/plaque.webp') center / 100% 100% no-repeat;
+  min-block-size: 3.1em;
+  padding: .6em 12% .5em;
+  border-top: 1px solid #e6bf6e;
+  border-radius: 0 0 7px 7px;
+  background: radial-gradient(ellipse at 50% 0%, #2a3551, #121a2d 80%);
   font-family: var(--font-nastaliq), serif;
   font-size: clamp(15px, 1.35vw, 22px);
   font-weight: 700;
-  line-height: 1.85;
+  line-height: 1.8;
   overflow-wrap: anywhere;
-  text-shadow: 0 2px 3px #1f070b;
+  text-shadow: 0 2px 3px #080c18;
 }
 
+.title::before,
+.title::after {
+  position: absolute;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border: 1px solid #bd9a57;
+  transform: translateY(-50%) rotate(45deg);
+  pointer-events: none;
+  content: '';
+}
+
+.title::before { inset-inline-start: 5%; }
+.title::after { inset-inline-end: 5%; }
+
 .card img {
+  order: -1;
   display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 480 / 285;
   object-fit: cover;
-  border-top: 1px solid #d6aa59;
-  border-radius: 0 0 7px 7px;
-  background: #221523;
+  border-radius: 16px 16px 0 0;
+  background: #151e32;
 }
 
 .grid > .card {
@@ -91,8 +99,8 @@
   overflow-x: auto;
   overscroll-behavior-x: contain;
   padding: 7px 0 14px;
-  border-block: 1px solid #d5aa5b38;
-  background: linear-gradient(90deg, transparent, #b6803614 25%, #b6803614 75%, transparent);
+  border-block: 1px solid #d9bd8033;
+  background: linear-gradient(90deg, transparent, #1d2b4d60 24%, #1d2b4d60 76%, transparent);
   scrollbar-width: none;
   user-select: none;
 }
@@ -114,12 +122,12 @@
   width: clamp(158px, 17vw, 245px);
   direction: rtl;
   flex: none;
-  border-color: #b68b4c;
+  border-color: #b79b61;
 }
 
 .batch .title {
   font-size: clamp(16px, 1.5vw, 23px);
-  min-block-size: 3.15em;
+  min-block-size: 2.85em;
 }
 
 .pause {
@@ -128,7 +136,7 @@
   padding: .28em .9em;
   border: 1px solid #a4773e;
   border-radius: 8px;
-  background: #2e1b21;
+  background: #17213a;
   color: #ffe9b7;
   font-family: var(--font-nastaliq), serif;
   font-size: 14px;
