@@ -6,9 +6,28 @@ import { SiteFooter } from '@/components/site-footer'
 import { EditAwareMagic } from '@/components/edit-aware-magic'
 import { ShootingStars } from '@/components/shooting-stars'
 
+const googleThumbnailSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  url: 'https://mashkeeza-e-roohaniat.com/',
+  name: 'مشکیزہ روحانیت | علم و معرفت کا روحانی مرکز',
+  primaryImageOfPage: {
+    '@type': 'ImageObject',
+    contentUrl: 'https://mashkeeza-e-roohaniat.com/google-thumbnail.png',
+    url: 'https://mashkeeza-e-roohaniat.com/google-thumbnail.png',
+  },
+}
+
 export default function HomePage() {
   return (
     <VisualCmsProvider>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(googleThumbnailSchema),
+        }}
+      />
+
       <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-night">
         {/* Keep header background below smoke; header text and navigation retain their own z-20 layers. */}
         <div className="relative">
