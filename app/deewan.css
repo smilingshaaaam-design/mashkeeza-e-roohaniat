@@ -317,3 +317,18 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 @media(prefers-reduced-motion:reduce) {
   .deewan-book:is([data-opening="opening"],[data-opening="closing"])::before {animation:none;visibility:hidden}
 }
+
+/* The manuscript keeps a desktop-width viewport even on phones. */
+@media (pointer:coarse) and (hover:none) and (max-device-width:960px) {
+  .printed-index a.deewan-plaque {
+    font-size:1.7em !important;
+    line-height:1.85;
+    overflow-wrap:anywhere;
+  }
+  .printed-index .topic-title-page {
+    height:auto;
+    break-inside:auto;
+  }
+  .printed-index .topic-title-page ol {display:block !important}
+  .printed-index .topic-title-page li {margin-block:.25em}
+}
