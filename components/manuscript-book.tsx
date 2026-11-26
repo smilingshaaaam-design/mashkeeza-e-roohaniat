@@ -4,9 +4,10 @@ import { useEffect, useLayoutEffect, useImperativeHandle, type Ref, useRef, useS
 import { isMagicalScrollEnabled } from './magical-scroll'
 import { Starfield } from './magic/starfield'
 import { ArticleRichBody } from './article-rich-body'
+import { RelatedTopics } from './related-topics'
 import type { NavItem } from './main-nav'
 
-type Entry = { id: string; slug: string; title: string; body?: string; excerpt?: string; content_type: string; use_magical_scroll?: number | boolean | null }
+type Entry = { id: string; slug: string; title: string; body?: string; excerpt?: string; content_type: string; use_magical_scroll?: number | boolean | null; include_in_book?: boolean | number | string | null }
 
 function pageSlug(href: string) {
   try {
@@ -270,7 +271,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     if (entries) return
     const controller = new AbortController()
     setFailed(false)
-    fetch('https://mashkeeza-cms-api.smilingshaaaam.workers.dev/public/content', { signal: controller.signal })
+    fetch('https://mashkeeza-cms-api.smilingshaaaam.workers.dev/public/content', { signal: controller.signal, cache: 'no-store' })
       .then(async response => {
         if (!response.ok) throw Error()
         const data = await response.json()
@@ -279,7 +280,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       }).catch(() => { if (!controller.signal.aborted) setFailed(true) })
     return () => controller.abort()
   }, [entries, attempt])
-  const entry = card && entries?.find(item => articleId(card.href) ? item.id === articleId(card.href) : item.slug === pageSlug(card.href))
+  const entry = card && entries?.find(item => item.include_in_book !== false && item.include_in_book !== 0 && item.include_in_book !== '0' && (articleId(card.href) ? item.id === articleId(card.href) : item.slug === pageSlug(card.href)))
 
   useLayoutEffect(() => {
     const node = paper.current
@@ -404,7 +405,8 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     if (mainIndex) setPage(0)
     else window.location.hash = topic.href + '/contents'
   }
-  return <section className="deewan-book" style={zoomed ? {touchAction:"manipulation"} : undefined} data-opening={intro ? stage : undefined} tabIndex={0} aria-label={topic.label}
+  return <>
+  <section className="deewan-book" style={zoomed ? {touchAction:"manipulation"} : undefined} data-opening={intro ? stage : undefined} tabIndex={0} aria-label={topic.label}
     onKeyDown={e => {
       if (e.altKey || e.metaKey || e.ctrlKey) return
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); turn(e.key === 'ArrowLeft' ? 1 : -1) }
@@ -470,4 +472,6 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       <button disabled={!intro && (mainIndex || current + 1 >= articles.length) && page + 2 >= count} onClick={() => turn(1)}>اگلا صفحہ</button>
     </div>}
   </section>
+  {!intro && entry && <div className="book-related-topics" key={entry.id}><RelatedTopics slug={entry.slug} /></div>}
+  </>
 }
