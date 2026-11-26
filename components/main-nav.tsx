@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom'
 import { TopicCardGrid } from './topic-card-grid'
 import { usePathname } from 'next/navigation'
 import { ChevronDown, ChevronLeft, Home } from 'lucide-react'
-import { usePublishedArticles } from './article-browser'
+import { usePublishedContent } from './article-browser'
 import { ManuscriptBook, type BookNavigation } from '@/components/manuscript-book'
 import { cn } from '@/lib/utils'
 import { useVisualCms } from '@/components/visual-cms'
@@ -21,6 +21,7 @@ export type NavItem = {
   children?: NavItem[]
   visible?: boolean
   openInNewTab?: boolean
+  outsideBookLinks?: NavItem[]
 }
 
 const gmailCompose = 'https://mail.google.com/mail/u/0/?view=cm&fs=1&to=mashkeezaeroohaniat%40gmail.com'
@@ -164,8 +165,8 @@ function MenuEntry({
   const isContact = depth === 0 && item.id === 'contact'
   const isArticles = depth === 0 && item.id === 'published-articles'
   // Older saved menus have an empty contact entry.
-  const children = isContact && !item.children?.length ? contactLinks : item.children || []
-  const hasChildren = (children.length > 0 || isArticles) && !item.href.startsWith('#topic-')
+  const children = item.href.startsWith('#topic-') ? (item.outsideBookLinks ?? []) : isContact && !item.children?.length ? contactLinks : item.children || []
+  const hasChildren = children.length > 0 || isArticles
   const isExpanded = expanded.has(item.id)
   const isRoot = depth === 0
   const [hoverSession, setHoverSession] = useState<number | null>(null)
@@ -344,7 +345,8 @@ export function MainNav() {
   const pathname = usePathname()
   const [cardHost, setCardHost] = useState<HTMLElement | null>(null)
   useEffect(() => { setCardHost(document.getElementById('home-topic-cards')) }, [pathname])
-  const { articles, status: articleStatus } = usePublishedArticles()
+  const { items: published, status: articleStatus } = usePublishedContent()
+  const articles = published.filter(item => item.content_type !== 'page')
   const cms = useVisualCms()
   const [navItems, setNavItems] =
     useState<NavItem[]>(defaultNavItems)
@@ -422,7 +424,25 @@ export function MainNav() {
     window.addEventListener('hashchange', update)
     return () => window.removeEventListener('hashchange', update)
   }, [])
-  const items = topicNavigation(cms?.menus ?? navItems).filter(item => item.visible !== false)
+  function outsideBook(href: string) {
+    try {
+      const url = new URL(href, 'https://mashkeeza-e-roohaniat.com')
+      if (!['mashkeeza-e-roohaniat.com','www.mashkeeza-e-roohaniat.com','mashkeeza-e-roohaniat.pages.dev'].includes(url.hostname)) return false
+      const id = url.pathname === '/' && url.hash.startsWith('#article-') ? decodeURIComponent(url.hash.slice(9)) : null
+      const slug = /^\/pages\/?$/.test(url.pathname) ? url.searchParams.get('slug') : url.pathname.match(/^\/read\/([a-z0-9-]+)\/?$/i)?.[1]
+      const match = published.find(item => id ? item.id === id : slug ? item.slug === slug : false)
+      return match?.include_in_book === false || match?.include_in_book === 0 || match?.include_in_book === '0'
+    } catch { return false }
+  }
+  function bookEntries(children: NavItem[]): NavItem[] {
+    return children.filter(item => item.visible !== false).flatMap(item => [
+      ...(isSafeHref(item.href) && !item.href.startsWith('#') ? [item] : []),
+      ...bookEntries(item.children ?? []),
+    ])
+  }
+  const items = topicNavigation(cms?.menus ?? navItems).filter(item => item.visible !== false).map(item => ({
+    ...item, outsideBookLinks: item.href.startsWith('#topic-') ? bookEntries(item.children ?? []).filter(child => outsideBook(child.href)) : undefined,
+  }))
   const articleMenu: NavItem = {
     id: 'published-articles', label: 'مضامین', href: '#published-articles',
     children: articles.map(article => ({ id: 'article-' + article.id, label: article.title, href: '/#article-' + encodeURIComponent(article.id) }))
@@ -439,13 +459,7 @@ export function MainNav() {
     return { ...item, href: '#topic-book-' + encodeURIComponent(item.id), children: [...ownLink, ...children] }
   })
   const topic = bookTopics.find(item => item.href === activeHash.split('/')[0])
-  function bookEntries(children: NavItem[]): NavItem[] {
-    return children.filter(item => item.visible !== false).flatMap(item => [
-      ...(isSafeHref(item.href) && !item.href.startsWith('#') ? [item] : []),
-      ...bookEntries(item.children ?? []),
-    ])
-  }
-  const cards = [...new Map(bookEntries(topic?.children ?? []).map(item => [item.href, item])).values()]
+  const cards = [...new Map(bookEntries(topic?.children ?? []).filter(item => !outsideBook(item.href)).map(item => [item.href, item])).values()]
 
   const navRef = useRef<HTMLElement>(null)
   const [dismissal, setDismissal] = useState(0)
