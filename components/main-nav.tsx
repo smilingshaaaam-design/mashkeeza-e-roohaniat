@@ -478,7 +478,7 @@ export function MainNav() {
           ))}
         </ul>
       </div>
-      {topic && <ManuscriptBook key={bookSession} navigation={bookNavigation} topic={topic} topics={bookTopics} cards={cards} hash={activeHash} />}
+      {topic && <ManuscriptBook key={bookSession} navigation={bookNavigation} topic={topic} topics={bookTopics} menuItems={items.map(item => item.id === 'contact' && !item.children?.length ? { ...item, children: contactLinks } : item)} cards={cards} hash={activeHash} />}
       {cardHost && (!activeHash || topic) && createPortal(
         <TopicCardGrid items={items} showGrid={!topic} turnToCard={href => {
           const target = bookNavigation.current?.turnTo(href)
