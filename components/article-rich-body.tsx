@@ -50,8 +50,8 @@ function safeNodes(root: ParentNode, floatingObjects = false): React.ReactNode[]
         verticalAlign: "middle",
         breakInside: "avoid",
         opacity,
-        mixBlendMode: effect === "ink" || effect === "antique" || effect === "faded" ? "multiply" : undefined,
-        filter: effect === "ink" ? "grayscale(1) contrast(1.25) sepia(.55)" : effect === "antique" ? "sepia(.72) saturate(.72) contrast(1.04)" : effect === "faded" ? "sepia(.8) saturate(.55) contrast(.85)" : undefined
+        mixBlendMode: effect === "impose" || effect === "ink" || effect === "antique" || effect === "faded" ? "multiply" : undefined,
+        filter: effect === "impose" ? "grayscale(1) sepia(.85) contrast(1.25) brightness(1.14)" : effect === "ink" ? "grayscale(1) contrast(1.25) sepia(.55)" : effect === "antique" ? "sepia(.72) saturate(.72) contrast(1.04)" : effect === "faded" ? "sepia(.8) saturate(.55) contrast(.85)" : undefined
       };
       return <img key={i} src={src} alt={el.getAttribute("alt") || ""} width={validWidth} height={validHeight} loading="lazy" decoding="async" data-manuscript-effect={effect} style={style} />;
     }
