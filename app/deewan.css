@@ -526,3 +526,8 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 [data-opening="closing"] .dedication{animation:none;visibility:hidden}
 .deewan-book[data-opening="closed"]::before{visibility:hidden!important;opacity:0!important;animation:none!important}
 @media(prefers-reduced-motion:reduce){.deewan-book[data-opening="closing"]::before{animation:none;visibility:hidden}}
+
+/* Never crop a stationary leaf halfway across its artwork. The rotating cover supplies the motion. */
+.deewan-book:is([data-opening="opening"],[data-opening="closing"])::before{mask:none!important;-webkit-mask:none!important;animation:none!important;visibility:visible!important;opacity:1!important}
+.deewan-book[data-opening="closing"]::before{animation:binding-close-whole 1.8s step-end both!important}
+@keyframes binding-close-whole{from{opacity:1}to{opacity:0}}
