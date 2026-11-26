@@ -506,7 +506,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 /* External navigation remains in normal document flow. */
 .deewan-book + .deewan-controls{position:relative;inset:auto;width:100%;margin:12px auto 20px;justify-content:center;flex-wrap:wrap;direction:rtl;gap:12px;z-index:3}
 /* Replace the fixed photographed page block with a progressively sized edge. */
-.deewan-book::before{background-image:url('/images/deewan/paper-surface.webp');}
+.deewan-book::before{background-image:url('/images/deewan/book.webp');}
 .book-variable-stacks{position:absolute;inset:0;pointer-events:none;z-index:-2;}
 .book-variable-stacks i{position:absolute;top:3%;bottom:6%;width:46%;border-radius:2% 2% 3% 3%;background:repeating-linear-gradient(0deg,#a88a58 0px,#e6ce9c 1px,#c3a16b 2px);border:2px solid #63432a;transition:transform 1.35s cubic-bezier(.42,0,.58,1);}
 .book-stack-left{left:4%;transform:translate(calc(var(--left-stack) * -.38),var(--left-stack));}
