@@ -11,38 +11,6 @@ const artwork = new Set([
   'taweez', 'talismat', 'nawaz', 'peshgoiyan', 'jafri-hisabat', 'published-articles', 'contact',
 ])
 
-// Extend the actual edge pixels, leaving the original central artwork undistorted.
-function extendArtwork(image: HTMLImageElement) {
-  const canvas = image.previousElementSibling
-  if (!(canvas instanceof HTMLCanvasElement)) return
-  const sw = image.naturalWidth, sh = image.naturalHeight
-  if (!sw || !sh || sw / sh >= 1.45) return
-  const w = 960, h = 570
-  const center = h * sw / sh
-  const side = (w - center) / 2
-  if (side <= 0) return
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
-  canvas.width = w
-  canvas.height = h
-  ctx.imageSmoothingEnabled = true
-  ctx.imageSmoothingQuality = 'high'
-  // Reflect a strip from each edge into the extra landscape area.
-  const slice = Math.min(sw, side / center * sw)
-  ctx.save()
-  ctx.translate(side, 0)
-  ctx.scale(-1, 1)
-  ctx.drawImage(image, 0, 0, slice, sh, 0, 0, side, h)
-  ctx.restore()
-  ctx.save()
-  ctx.translate(w, 0)
-  ctx.scale(-1, 1)
-  ctx.drawImage(image, sw - slice, 0, slice, sh, 0, 0, side, h)
-  ctx.restore()
-  ctx.drawImage(image, 0, 0, sw, sh, side, 0, center, h)
-  canvas.dataset.extended = 'true'
-}
-
 export function TopicCardGrid({ items, showGrid, openMenu, turnToCard }: { turnToCard: (href: string) => boolean; items: NavItem[], showGrid: boolean, openMenu: (id: string) => void }) {
   const cms = useVisualCms()
   const [published, setPublished] = useState(emptyGallery)
@@ -106,11 +74,7 @@ export function TopicCardGrid({ items, showGrid, openMenu, turnToCard }: { turnT
   }
   function renderCard(card: TopicCard, strip = false, duplicate = false) {
     const content = <><span className={styles.title}>{card.label}</span>
-      <span className={styles.artwork} key={card.image}>
-        <img className={styles.artworkBackdrop} loading="lazy" decoding="async" width="480" height="285" alt="" aria-hidden="true" src={card.image}/>
-        <canvas className={styles.artworkExtension} width={1} height={1} aria-hidden="true"/>
-        <img className={styles.artworkImage} loading="lazy" decoding="async" width="480" height="285" alt="" src={card.image} onLoad={event => extendArtwork(event.currentTarget)}/>
-      </span></>
+      <img loading="lazy" decoding="async" width="480" height="285" alt="" src={card.image}/></>
     const style = { '--card-scale': Math.max(.5, Math.min(2, (card.width || 100) / 100)),
       ...(card.height && !strip ? { height: Math.min(900, Math.max(1, card.height)) } : {}) } as CSSProperties
     const props = { className: styles.card, style, tabIndex: duplicate ? -1 : undefined, 'aria-hidden': duplicate || undefined }
