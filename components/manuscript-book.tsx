@@ -232,6 +232,11 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   const leftPaper = useRef<HTMLDivElement>(null)
   const leaf = useRef<HTMLDivElement>(null)
   const pendingSheet = useRef<PageTurn | null>(null)
+  // A shared/deep book link mounts the full interactive manuscript directly
+  // in reading mode, not an isolated article or cover animation.
+  useEffect(() => {
+    if (hash.includes('/read/')) leaf.current?.closest('.deewan-book')?.scrollIntoView({ block: 'center', behavior: 'instant' })
+  }, [])
   function rememberSheet(fromRight: boolean, distance = 1) {
     if (leaf.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       pendingSheet.current = { duration:turnDuration(distance), outgoing:captureSheet(leaf.current, fromRight), landing:captureSheet(leaf.current, !fromRight) }
