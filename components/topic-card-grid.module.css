@@ -67,50 +67,15 @@
 .title::before { inset-inline-start: 5%; }
 .title::after { inset-inline-end: 5%; }
 
-.artwork {
+.card img {
   order: -1;
-  position: relative;
   display: block;
   width: 100%;
+  height: auto;
   aspect-ratio: 480 / 285;
-  flex: 0 0 auto;
-  overflow: hidden;
+  object-fit: contain;
   border-radius: 16px 16px 0 0;
   background: #151e32;
-  isolation: isolate;
-}
-
-.artworkBackdrop, .artworkImage {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.artworkBackdrop {
-  object-fit: cover;
-  filter: blur(14px) saturate(1.05) brightness(.78);
-  transform: scale(1.12);
-}
-
-.artworkExtension {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-  pointer-events: none;
-  z-index: 1;
-  visibility: hidden;
-}
-
-.artworkExtension[data-extended="true"] { visibility: visible; }
-
-.artworkImage {
-  object-fit: contain;
-  z-index: 2;
 }
 
 .grid > .card {
@@ -125,7 +90,7 @@
 .grid > .card:where(:nth-child(4n + 1):nth-last-child(2)) { grid-column-start: 3; }
 .grid > .card:where(:nth-child(4n + 1):nth-last-child(3)) { grid-column-start: 2; }
 
-.grid > .card[style*="height"] .artwork {
+.grid > .card[style*="height"] img {
   flex: 1;
   min-height: 0;
 }
