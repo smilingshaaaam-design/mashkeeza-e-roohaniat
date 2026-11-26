@@ -120,10 +120,17 @@
 .deewan-leaf>.deewan-band {right:50%;width:calc(50% / 12);}
 .deewan-paper {position:absolute;inset:0 -.35px 0 0;opacity:0;background-image:url('/images/deewan/book.webp');background-repeat:no-repeat;}
 
-.deewan-controls{position:absolute;bottom:16%;left:12%;width:30%;display:flex;align-items:center;justify-content:center;gap:.8em;font-size:clamp(12px,1.2vw,19px)}
+.deewan-controls{
+  position:relative;z-index:3;display:grid;grid-template-columns:minmax(0,1fr) 7em minmax(0,1fr);
+  align-items:center;width:min(94%,25rem);margin:.5rem auto .75rem;gap:.45em;
+  text-align:center;font-size:clamp(13px,1.2vw,19px);
+}
+.deewan-controls button:first-child{grid-column:1;grid-row:1}
+.deewan-controls button:last-child{grid-column:3;grid-row:1}
+.deewan-controls span{grid-column:2;grid-row:1;direction:ltr;color:#ffe9b7;white-space:nowrap;font-variant-numeric:tabular-nums}
 .deewan-controls button{cursor:pointer;border:1px solid #a7824c;background:#f8e7c4;border-radius:5px;padding:.1em .65em;line-height:2;color:#501b22}
 .deewan-controls button:disabled{opacity:.45;cursor:default}
-@media(max-width:650px){.deewan-menu-list>li>div>a{font-size:13px}.deewan-book{min-height:calc(622px + var(--book-extension))}.deewan-reading,.deewan-index{width:38%;font-size:15px}.deewan-index{right:6%}.deewan-reading{left:6%}.deewan-controls{left:5%;width:40%;gap:3px}.deewan-plaque{width:100%;padding:.45em .7em}}
+@media(max-width:650px){.deewan-menu-list>li>div>a{font-size:13px}.deewan-book{min-height:calc(622px + var(--book-extension))}.deewan-reading,.deewan-index{width:38%;font-size:15px}.deewan-index{right:6%}.deewan-reading{left:6%}.deewan-plaque{width:100%;padding:.45em .7em}}
 @media(prefers-reduced-motion:reduce){.deewan-book{animation:none}}
 
 /* Blend only the desert artwork over the opaque sky behind it. */
@@ -413,7 +420,6 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book .book-panel[data-side="right"]:has(.printed-text){right:16.5%;bottom:8%}
 .deewan-book .book-panel[data-side="left"]:has(.printed-text){left:16.5%}
 .deewan-book .book-panel[data-side="right"]:has(.printed-text)>.deewan-viewport{height:78.3783783784%}
-.deewan-book:has(.printed-text) .deewan-controls{bottom:7%;left:16.5%;width:29%}
 .deewan-book .ms-text-layer-book{position:absolute;top:-8.219178%;left:-11.111111%;width:122.222222%;height:123.287671%;pointer-events:none;z-index:4}
 .deewan-book .ms-text-layer-right{top:-7.317073%;height:109.756098%}
 
@@ -497,7 +503,6 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book .deewan-viewport{scroll-behavior:auto!important;overflow-anchor:none}
 /* Keep the live ink and independent images below the frozen turning leaves. */
 .deewan-book > .book-panel{z-index:0;isolation:isolate}
-.deewan-book > .deewan-controls{z-index:3}
 
 /* Clip the explicitly projected column rather than relying on clamped RTL scroll. */
 .deewan-book .deewan-viewport{overflow:clip!important;overflow-clip-margin:0;scroll-behavior:auto!important;overflow-anchor:none}

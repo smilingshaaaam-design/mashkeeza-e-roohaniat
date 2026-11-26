@@ -135,9 +135,11 @@ function countReadingColumns(flow: HTMLElement) {
 function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
   const book = leaf.parentElement!
   const panel = book.querySelector<HTMLElement>(right ? ':scope > .deewan-index' : ':scope > .deewan-reading')
-  const width = leaf.clientWidth / 2
-  const left = leaf.offsetLeft + (right ? width : 0)
-  const top = leaf.offsetTop
+  const bounds = leaf.getBoundingClientRect()
+  const bookBounds = book.getBoundingClientRect()
+  const faceX = bounds.left + (right ? bounds.width / 2 : 0)
+  const left = faceX - bookBounds.left
+  const top = bounds.top - bookBounds.top
   const face = document.createElement('div')
   face.inert = true
   Object.assign(face.style, {
@@ -167,9 +169,10 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
       copy.append(frame)
     }
     const panelStyle = getComputedStyle(panel)
+    const panelBounds = panel.getBoundingClientRect()
     Object.assign(copy.style, {
       fontSize:panelStyle.fontSize,lineHeight:panelStyle.lineHeight,fontFamily:panelStyle.fontFamily,mixBlendMode:panelStyle.mixBlendMode,
-      left:(panel.offsetLeft-left)+'px', right:'auto', top:(panel.offsetTop-top)+'px',
+      left:(panelBounds.left-faceX)+'px', right:'auto', top:(panelBounds.top-bounds.top)+'px',
       bottom:'auto', width:panelStyle.width, height:panelStyle.height,boxSizing:panelStyle.boxSizing,
       animation:'none',transition:'none',visibility:panelStyle.visibility,
       overflow:panel.querySelector('.ms-text-layer')?'visible':'hidden', pointerEvents:'none'
@@ -200,6 +203,11 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
         const clone=copies[i];if(!clone)return
         const style=getComputedStyle(element)
         clone.style.setProperty('display',style.display,'important')
+        if (element.matches('h2,h3,h4')) {
+          for (const property of ['width','font-size','font-family','line-height','margin','padding','text-align','direction']) {
+            clone.style.setProperty(property, style.getPropertyValue(property))
+          }
+        }
         if(element.tagName==='IMG') {
           clone.style.setProperty('clear',style.clear,'important')
           clone.style.width=style.width;clone.style.height=style.height
@@ -233,8 +241,12 @@ function rifflePlan(distance: number) {
 }
 
 function animateLeaf(leaf: HTMLElement, turn: PageTurn, onRelease: () => void) {
-  const width = leaf.clientWidth / 2
-  const height = leaf.clientHeight
+  const bounds = leaf.getBoundingClientRect()
+  const bookBounds = leaf.parentElement!.getBoundingClientRect()
+  const width = bounds.width / 2
+  const height = bounds.height
+  const leafLeft = bounds.left - bookBounds.left
+  const leafTop = bounds.top - bookBounds.top
   if (!width || !height) {onRelease();return}
 
   const fromRight = turn.outgoing.right
@@ -257,16 +269,16 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn, onRelease: () => void) {
     face.style.backfaceVisibility = 'hidden'
     face.style.setProperty('-webkit-backface-visibility', 'hidden')
   }
-  front.style.transform = 'translateZ(.15px)'
-  back.style.transform = 'rotateY(180deg) translateZ(.15px)'
+  front.style.transform = 'translateZ(0px)'
+  back.style.transform = 'rotateY(180deg) translateZ(0px)'
   sheet.append(front, back)
   leaf.append(sheet)
   restoreSheetScroll(sheet)
 
   const still = turn.landing.face
   Object.assign(still.style, {
-    inset:'auto', left:(leaf.offsetLeft + (turn.landing.right ? width : 0))+'px',
-    top:leaf.offsetTop+'px', width:width+'px', height:height+'px', pointerEvents:'none',
+    inset:'auto', left:(leafLeft + (turn.landing.right ? width : 0))+'px',
+    top:leafTop+'px', width:width+'px', height:height+'px', pointerEvents:'none',
     backgroundRepeat:'no-repeat'
   })
   still.style.zIndex = '1'
@@ -295,12 +307,12 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn, onRelease: () => void) {
   const makePaper = (right: boolean) => {
     const face = document.createElement('div')
     const book = leaf.parentElement!
-    const left = leaf.offsetLeft + (right ? width : 0)
+    const left = leafLeft + (right ? width : 0)
     Object.assign(face.style, {
       position:'absolute', inset:'0', pointerEvents:'none',
       backgroundImage:"url('/images/deewan/paper-surface.webp')",
       backgroundSize:book.clientWidth + 'px ' + book.clientHeight + 'px',
-      backgroundPosition:-left + 'px ' + (-leaf.offsetTop) + 'px',
+      backgroundPosition:-left + 'px ' + (-leafTop) + 'px',
       backfaceVisibility:'hidden', overflow:'hidden',
     })
     face.style.setProperty('-webkit-backface-visibility','hidden')
@@ -318,8 +330,8 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn, onRelease: () => void) {
     const b = makePaper(!fromRight)
     a.style.backfaceVisibility = 'hidden'
     a.style.setProperty('-webkit-backface-visibility','hidden')
-    a.style.transform = 'translateZ(.15px)'
-    b.style.transform = 'rotateY(180deg) translateZ(.15px)'
+    a.style.transform = 'translateZ(0px)'
+    b.style.transform = 'rotateY(180deg) translateZ(0px)'
     flick.append(a,b)
     leaf.append(flick)
     restoreSheetScroll(flick)
@@ -742,12 +754,13 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       action: () => returnToLocation(topic.href + '/read/' + encodeURIComponent(card.id), 1),
     }] : []),
   ]
-  return <>
-  <section className="deewan-book" style={zoomed ? {touchAction:"manipulation"} : undefined} data-opening={intro ? stage : undefined} tabIndex={0} aria-label={topic.label}
-    onKeyDown={e => {
+  function handlePageKey(e: React.KeyboardEvent<HTMLElement>) {
       if (e.altKey || e.metaKey || e.ctrlKey || e.repeat) return
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); turn(e.key === 'ArrowLeft' ? 1 : -1) }
-    }}
+    }
+  return <>
+  <section className="deewan-book" style={zoomed ? {touchAction:"manipulation"} : undefined} data-opening={intro ? stage : undefined} tabIndex={0} aria-label={topic.label}
+    onKeyDown={handlePageKey}
     onTouchStart={e => { touch.current = !isMagnified() && e.touches.length === 1 ? [e.touches[0].clientX, e.touches[0].clientY] : null }}
     onTouchCancel={() => { touch.current = null }}
     onTouchEnd={e => {
@@ -816,12 +829,12 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     </nav>}
     </div>)}
     <div aria-hidden="true" className="deewan-leaf" style={{inset:"0 4%"}} ref={leaf} />
-    {(!intro || stage === 'returning' || stage === 'dedication') && <div className="deewan-controls">
+  </section>
+    {(!intro || stage === 'returning' || stage === 'dedication') && <div role="group" aria-label="صفحات کی رہنمائی" dir="rtl" className="deewan-controls" onKeyDown={handlePageKey}>
       <button onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1}–{Math.min(page + 2, count)} / {count}</span>}
       <button disabled={!intro && !nextLocation && page + 2 >= count} onClick={() => turn(1)}>اگلا صفحہ</button>
     </div>}
-  </section>
   {!intro && entry && <div className="book-related-topics" key={entry.id}><RelatedTopics slug={entry.slug} /></div>}
   </>
 }
