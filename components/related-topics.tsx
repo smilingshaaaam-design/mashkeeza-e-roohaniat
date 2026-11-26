@@ -68,7 +68,7 @@ export function RelatedTopics({ slug, visible = true }: { slug?: string; visible
         <image href="/magical-scroll/top-roller.png" width="100" height="100" preserveAspectRatio="none" transform="rotate(90 50 50)" />
       </svg>
       <div className="topics-scroll-paper">
-        <div className="topics-scroll-art" aria-hidden="true"><span className="topics-scroll-art-left" /><span className="topics-scroll-art-right" /></div>
+        <div className="topics-scroll-art" aria-hidden="true" />
         <div className="ancient-related-heading"><span aria-hidden="true">❦</span><h2>{topics.heading}</h2><span aria-hidden="true">❦</span></div>
         <div className="ancient-related-list" style={{ color: ink, fontSize: topics.size }}>
           {topics.tags.map(tag => tag.slug ? (
@@ -86,26 +86,21 @@ export function RelatedTopics({ slug, visible = true }: { slug?: string; visible
         .horizontal-topics-scroll{--roller-width:clamp(26px,7vw,76px);position:relative;z-index:10;isolation:isolate;width:min(100%,52rem);margin:1.2rem auto 1.8rem;padding:12px calc(var(--roller-width)*.72);font-family:var(--font-nastaliq),'Noto Nastaliq Urdu',serif;filter:drop-shadow(0 5px 6px #150b0670);animation:relatedScrollAppear .5s ease-out both}
         .topics-scroll-paper{position:relative;isolation:isolate;min-height:108px;padding:clamp(1.35rem,3.3vw,2rem) clamp(.8rem,3vw,2.1rem) clamp(1.5rem,3.5vw,2.1rem);text-align:center}
         .topics-scroll-paper::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:url('/images/deewan/related-scroll-edge-patina.svg') center/100% 100% no-repeat,linear-gradient(90deg,#58301265 0%,#ab7c4130 4%,transparent 12%,transparent 88%,#ab7c4130 96%,#58301265 100%),radial-gradient(ellipse at 30% 0%,#8b5c3220,transparent 35%);-webkit-mask:url('/images/deewan/related-scroll-edge-mask.svg') center/100% 100% no-repeat;mask:url('/images/deewan/related-scroll-edge-mask.svg') center/100% 100% no-repeat;filter:drop-shadow(0 1px 1px #40210e35)}
-        /* Recompose only the decorated outer areas of the original book texture.
-           Exclude its central spine, ribbon and crease; blend the overlapping
-           unprinted paper, preserving the original four ornamental corners. */
-        .topics-scroll-art{position:absolute;inset:0;z-index:-2;overflow:hidden;pointer-events:none;background:#e3c99a;-webkit-mask:url('/images/deewan/related-scroll-edge-mask.svg') center/100% 100% no-repeat;mask:url('/images/deewan/related-scroll-edge-mask.svg') center/100% 100% no-repeat}
-        .topics-scroll-art span{position:absolute;top:0;bottom:0;width:54%;background-image:url('/images/deewan/paper-surface.webp');background-repeat:no-repeat}
-        .topics-scroll-art-left{left:0;background-size:279.2727% 111.8263%;background-position:10.14199% 15.18987%}
-        .topics-scroll-art-right{right:0;background-size:256% 111.8263%;background-position:90.81197% 15.18987%;-webkit-mask-image:linear-gradient(to right,transparent 0%,#000 14.8148%);mask-image:linear-gradient(to right,transparent 0%,#000 14.8148%)}
+        /* A single precomposed texture: no two book pages or central blend. */
+        .topics-scroll-art{position:absolute;inset:0;z-index:-2;overflow:hidden;pointer-events:none;background:#e3c99a url('/images/deewan/related-scroll-single-parchment.svg') center/100% 100% no-repeat;-webkit-mask:url('/images/deewan/related-scroll-edge-mask.svg') center/100% 100% no-repeat;mask:url('/images/deewan/related-scroll-edge-mask.svg') center/100% 100% no-repeat}
         .topics-scroll-paper::after{content:none}
         .topics-scroll-roller{position:absolute;top:0;bottom:0;height:100%;width:var(--roller-width);z-index:2;pointer-events:none;filter:drop-shadow(1px 2px 2px #30150570);overflow:visible}
         .topics-scroll-roller-right{right:0}
         .topics-scroll-roller-left{left:0}
         .ancient-related-heading{display:flex;justify-content:center;align-items:center;gap:.7em;color:#68252b;margin:0 auto .65rem;text-align:center}
-        .ancient-related-heading h2{font-size:clamp(18px,2.7vw,26px);line-height:2.15;font-weight:700;color:#68252b;margin:0}
+        .ancient-related-heading h2{font-size:clamp(18px,2.7vw,26px);line-height:2.15;font-weight:700;color:#68252b;margin:0;mix-blend-mode:multiply;text-shadow:.15px .25px .4px #63391e35}
         .ancient-related-heading span{font-size:1rem;color:#8e622d;display:flex;align-items:center;gap:.25em;flex:1;max-width:3.5em}
         .ancient-related-heading span:first-child::before,.ancient-related-heading span:last-child::after{content:"";height:1px;background:linear-gradient(90deg,transparent,#9b6c36,transparent);flex:1}
-        .ancient-related-list{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:.38em .9em;line-height:2.3}
-        .ancient-related-inscription{display:inline-block;position:relative;max-width:100%;overflow-wrap:anywhere;padding:.08em .45em .25em;color:inherit;font-weight:500;text-shadow:0 .3px .3px #4c280b33;background:transparent}
-        .ancient-related-inscription::after{content:"";position:absolute;left:9%;right:9%;bottom:0;height:1px;background:linear-gradient(90deg,transparent,#855c3445,transparent)}
-        a.ancient-related-inscription{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
-        a.ancient-related-inscription:hover{color:#68252b;text-decoration:underline;text-underline-offset:.24em}
+        .ancient-related-list{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:.24em .75em;line-height:2.65;mix-blend-mode:multiply}
+        .ancient-related-inscription{display:inline-block;position:relative;max-width:100%;overflow-wrap:anywhere;padding:0 .3em;color:inherit;font-weight:500;opacity:.94;background:none;border:0;box-shadow:none;text-shadow:.12px .24px .35px #51331b30;font-family:inherit}
+        .ancient-related-inscription::after{content:none}
+        a.ancient-related-inscription{color:inherit;text-decoration:none;border:0;cursor:pointer}
+        a.ancient-related-inscription:hover{color:#68252b;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.24em}
         a.ancient-related-inscription:focus-visible{outline:2px solid #793b20;outline-offset:2px}
         @keyframes relatedScrollAppear{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
         @media(max-width:480px){.horizontal-topics-scroll{--roller-width:clamp(20px,7vw,33px);padding-block:8px}.topics-scroll-paper{padding-inline:.55rem}.ancient-related-list{gap:.24em .48em}.ancient-related-heading{gap:.35em}}
