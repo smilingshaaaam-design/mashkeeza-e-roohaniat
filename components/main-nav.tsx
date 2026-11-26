@@ -7,6 +7,7 @@ import { TopicCardGrid } from './topic-card-grid'
 import { usePathname } from 'next/navigation'
 import { ChevronDown, ChevronLeft, Home } from 'lucide-react'
 import { usePublishedContent } from './article-browser'
+import { BOOK_LINK_EVENT, publishBookLocations, type BookLocation } from './book-links'
 import { ManuscriptBook, type BookNavigation } from '@/components/manuscript-book'
 import { cn } from '@/lib/utils'
 import { useVisualCms } from '@/components/visual-cms'
@@ -424,15 +425,18 @@ export function MainNav() {
     window.addEventListener('hashchange', update)
     return () => window.removeEventListener('hashchange', update)
   }, [])
-  function outsideBook(href: string) {
+  function publishedForHref(href: string) {
     try {
       const url = new URL(href, 'https://mashkeeza-e-roohaniat.com')
-      if (!['mashkeeza-e-roohaniat.com','www.mashkeeza-e-roohaniat.com','mashkeeza-e-roohaniat.pages.dev'].includes(url.hostname)) return false
+      if (!['mashkeeza-e-roohaniat.com','www.mashkeeza-e-roohaniat.com','mashkeeza-e-roohaniat.pages.dev'].includes(url.hostname)) return undefined
       const id = url.pathname === '/' && url.hash.startsWith('#article-') ? decodeURIComponent(url.hash.slice(9)) : null
       const slug = /^\/pages\/?$/.test(url.pathname) ? url.searchParams.get('slug') : url.pathname.match(/^\/read\/([a-z0-9-]+)\/?$/i)?.[1]
-      const match = published.find(item => id ? item.id === id : slug ? item.slug === slug : false)
-      return match?.include_in_book === false || match?.include_in_book === 0 || match?.include_in_book === '0'
-    } catch { return false }
+      return published.find(item => id ? item.id === id : slug ? item.slug === slug : false)
+    } catch { return undefined }
+  }
+  function outsideBook(href: string) {
+    const match = publishedForHref(href)
+    return match?.include_in_book === false || match?.include_in_book === 0 || match?.include_in_book === '0'
   }
   function bookEntries(children: NavItem[]): NavItem[] {
     return children.filter(item => item.visible !== false).flatMap(item => [
@@ -461,6 +465,33 @@ export function MainNav() {
   })
   const topic = bookTopics.find(item => item.href === activeHash.split('/')[0])
   const cards = [...new Map(bookEntries(topic?.children ?? []).filter(item => !outsideBook(item.href)).map(item => [item.href, item])).values()]
+
+  // Only published writings actually assigned to visible book sections get
+  // a book deep link. Off-book content keeps its standard /read/ destination.
+  const bookLocations: BookLocation[] = bookTopics.flatMap(section =>
+    [...new Map(bookEntries(section.children ?? []).map(item => [item.href, item])).values()].flatMap(item => {
+      const match = publishedForHref(item.href)
+      if (!match?.slug || outsideBook(item.href)) return []
+      return [{ slug: match.slug, title: match.title, href: '/' + section.href + '/read/' + encodeURIComponent(item.id) }]
+    })
+  )
+  const locationSignature = JSON.stringify(bookLocations)
+  useEffect(() => {
+    publishBookLocations(JSON.parse(locationSignature) as BookLocation[])
+  }, [locationSignature])
+
+  useEffect(() => {
+    const onBookLink = (event: Event) => {
+      const href = (event as CustomEvent<string>).detail
+      if (window.location.pathname !== '/' || typeof href !== 'string' || !href.startsWith('/#topic-')) return
+      event.preventDefault()
+      const hash = href.slice(1)
+      const target = bookNavigation.current?.turnTo(hash) ?? hash
+      window.location.hash = target
+    }
+    window.addEventListener(BOOK_LINK_EVENT, onBookLink)
+    return () => window.removeEventListener(BOOK_LINK_EVENT, onBookLink)
+  }, [])
 
   const navRef = useRef<HTMLElement>(null)
   const [dismissal, setDismissal] = useState(0)
