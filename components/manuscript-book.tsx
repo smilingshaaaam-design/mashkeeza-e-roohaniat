@@ -332,7 +332,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     }
   }, [stage, hash, page])
 
-  function turnTo(href: string) {
+  function turnTo(href: string, fromIndex = false) {
       const root = href.split('/')[0]
       const destination = topics.find(item => item.href === root)
       if (!destination) return null
@@ -340,7 +340,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       const offset = topics.indexOf(destination) - topics.findIndex(item => item.id === topic.id)
       if (hash !== target || page !== 0 || intro) {
         stopTurn.current?.()
-        rememberSheet(offset < 0 || (offset === 0 && page > 0), Math.max(1, Math.abs(offset)))
+        rememberSheet(fromIndex || mainIndex ? false : offset < 0 || (offset === 0 && page > 0), Math.max(1, Math.abs(offset)))
         clearTimeout(earlyTap.current)
         lastPage.current = null
         measuredPage.current = 0
@@ -352,7 +352,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   }
   useImperativeHandle(navigation, () => ({ turnTo }))
   function selectHeading(href: string) {
-    const target = turnTo(href)
+    const target = turnTo(href, true)
     if (target) window.location.hash = target
   }
 
@@ -444,10 +444,10 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         {entry && isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
         {entry ? <>{entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} /></> :
           failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> :
-          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{mainIndex ? <h2>مرکزی فہرست</h2> : <h2>{topic.label}</h2>}
+          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{mainIndex ? <h2 className="book-main-index-title">مرکزی فہرست</h2> : <h2>{topic.label}</h2>}
       {!mainIndex && topic.id === 'contact' && <p>سوال یا معلومات کے لیے درج ذیل ذرائع سے رابطہ کریں۔</p>}
       {!mainIndex && <h3>فہرست</h3>}
-      {mainIndex ? <CompleteBookIndex items={completeIndex} compact onSelect={selectHeading} /> : indexItems.length ? <ol>{indexItems.map(item => {
+      {mainIndex ? <CompleteBookIndex items={completeIndex} onSelect={selectHeading} /> : indexItems.length ? <ol>{indexItems.map(item => {
         const internal = isBookWriting(item)
         return <li key={item.id}><a className="deewan-plaque" href={internal ? topic.href + '/read/' + encodeURIComponent(item.id) : item.href}
           target={!internal && item.openInNewTab ? '_blank' : undefined} rel={!internal && item.openInNewTab ? 'noopener noreferrer' : undefined}
