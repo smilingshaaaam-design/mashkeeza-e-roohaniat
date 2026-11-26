@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useImperativeHandle, type Ref, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useImperativeHandle, type Ref, type CSSProperties, useRef, useState } from 'react'
 import { isMagicalScrollEnabled } from './magical-scroll'
 import { Starfield } from './magic/starfield'
 import { ArticleRichBody } from './article-rich-body'
@@ -668,8 +668,12 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       action: () => returnToLocation(topic.href + '/read/' + encodeURIComponent(card.id), 1),
     }] : []),
   ]
+  const lastLocation = readingOrder[readingOrder.length - 1]
+  const totalSpreads = Math.max(2, (bookPosition(lastLocation || readingLocation) ?? readingOrder.length) + 2)
+  const openedSpreads = intro ? 0 : (bookPosition(readingLocation, Math.floor(page / 2)) ?? 0) + 1
+  const stackProgress = Math.min(1, Math.max(0, openedSpreads / totalSpreads))
   return <>
-  <section className="deewan-book" style={zoomed ? {touchAction:"manipulation"} : undefined} data-opening={intro ? stage : undefined} tabIndex={0} aria-label={topic.label}
+  <section className="deewan-book" style={{...(zoomed ? {touchAction:"manipulation"} : {}), '--right-stack': `${2 + 19 * stackProgress}px`, '--left-stack': `${2 + 19 * (1-stackProgress)}px`} as CSSProperties} data-opening={intro ? stage : undefined} tabIndex={0} aria-label={topic.label}
     onKeyDown={e => {
       if (e.altKey || e.metaKey || e.ctrlKey) return
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); turn(e.key === 'ArrowLeft' ? 1 : -1) }
@@ -683,6 +687,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       const dx = e.changedTouches[0].clientX - start[0]
       if (Math.abs(dx) > 45 && Math.abs(dx) > 1.6 * Math.abs(e.changedTouches[0].clientY - start[1])) turn(dx > 0 ? 1 : -1)
     }}>
+    <div className="book-variable-stacks" aria-hidden="true"><i className="book-stack-left"/><i className="book-stack-right"/></div>
     <div aria-hidden="true" className="deewan-sky-backdrop"><Starfield count={125} seed={41} className="inset-0" /></div>
     {intro && stage === 'cover' && <div className="cover-sand" aria-hidden="true">{Array.from({length:32}, (_, i) =>
       <i key={i} style={{left:(i * 37 % 100) + '%',animationDelay:(i * 83 % 1050) + 'ms'}} />)}</div>}
@@ -740,12 +745,12 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     </nav>}
     </div>)}
     <div aria-hidden="true" className="deewan-leaf" style={{inset:"0 4%"}} ref={leaf} />
+  </section>
     {(!intro || stage === 'returning' || stage === 'dedication') && <div className="deewan-controls">
       <button onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1}–{Math.min(page + 2, count)} / {count}</span>}
       <button disabled={!intro && !nextLocation && page + 2 >= count} onClick={() => turn(1)}>اگلا صفحہ</button>
     </div>}
-  </section>
   {!intro && entry && <div className="book-related-topics" key={entry.id}><RelatedTopics slug={entry.slug} /></div>}
   </>
 }
