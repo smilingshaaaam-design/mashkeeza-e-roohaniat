@@ -6,13 +6,19 @@ import { RICH_MARKER } from "./article-rich-editor";
 
 const TAGS = new Set(["DIV", "P", "BR", "STRONG", "B", "EM", "I", "U", "H2", "H3", "UL", "OL", "LI", "BLOCKQUOTE", "A", "IMG", "SPAN", "H4", "HR"]);
 
-function safeNodes(root: ParentNode, floatingObjects = false): React.ReactNode[] {
+function safeNodes(root: ParentNode, floatingObjects = false, bookMode = false): React.ReactNode[] {
   return Array.from(root.childNodes).map((node, i): React.ReactNode => {
     if (node.nodeType === 3) return node.textContent;
     if (node.nodeType !== 1) return null;
     const el = node as Element;
     if (floatingObjects && el.getAttribute("data-ms-object") === "text") return null;
-    const children = safeNodes(el, floatingObjects);
+    if (bookMode && el.getAttribute("data-ms-object") === "image") return null;
+    if (el.tagName === "SPAN" && el.hasAttribute("data-ms-gap")) {
+      const width=Number(el.getAttribute("data-ms-gap"));
+      if (!Number.isFinite(width) || width<0.02 || width>200) return null;
+      return <span key={i} data-ms-gap={width} aria-hidden="true" style={{display:"inline-block",width:width+"em",verticalAlign:"baseline",whiteSpace:"pre",userSelect:"none"}}>{"\u00a0"}</span>;
+    }
+    const children = safeNodes(el, floatingObjects, bookMode);
     if (!TAGS.has(el.tagName)) return <React.Fragment key={i}>{children}</React.Fragment>;
     const tag = el.tagName.toLowerCase();
     const props: Record<string, unknown> = { key: i };
@@ -108,13 +114,13 @@ function safeNodes(root: ParentNode, floatingObjects = false): React.ReactNode[]
   });
 }
 
-export function ArticleRichBody({ body, floatingObjects = false }: { body?: string | null; floatingObjects?: boolean }) {
+export function ArticleRichBody({ body, floatingObjects = false, bookMode = false }: { body?: string | null; floatingObjects?: boolean; bookMode?: boolean }) {
   const fontLinks = useMemo(() => manuscriptFontLinks(body || ""), [body]);
   const nodes = useMemo(() => {
     if (!body?.startsWith(RICH_MARKER) || typeof window === "undefined") return null;
     const doc = new DOMParser().parseFromString(body.slice(RICH_MARKER.length), "text/html");
-    return safeNodes(doc.body, floatingObjects);
-  }, [body, floatingObjects]);
+    return safeNodes(doc.body, floatingObjects, bookMode);
+  }, [body, floatingObjects, bookMode]);
   if (!body?.startsWith(RICH_MARKER)) return <div className="whitespace-pre-wrap">{body || ""}</div>;
   return <>{fontLinks.map(href => <link key={href} rel="stylesheet" href={href} precedence="manuscript-fonts" />)}<div dir="rtl" className="break-words [&_h2]:my-3 [&_h2]:text-[1.4em] [&_h2]:font-bold [&_h3]:my-2 [&_h3]:text-[1.2em] [&_h3]:font-bold [&_p]:my-2 [&_a]:text-amber-300 [&_a]:underline [&_ul]:my-2 [&_ul]:list-disc [&_ol]:my-2 [&_ol]:list-decimal [&_ul]:pr-6 [&_ol]:pr-6">{nodes}</div></>;
 }

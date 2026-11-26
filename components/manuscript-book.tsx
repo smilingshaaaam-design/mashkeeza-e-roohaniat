@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useImperativeHandle, type Ref, useRef, useS
 import { isMagicalScrollEnabled } from './magical-scroll'
 import { Starfield } from './magic/starfield'
 import { ArticleRichBody } from './article-rich-body'
-import { ManuscriptTextLayer, readManuscriptText } from './manuscript-text-objects'
+import { ManuscriptTextLayer, readManuscriptText, readManuscriptImages } from './manuscript-text-objects'
 import { RelatedTopics } from './related-topics'
 import { applyBookContours, clearBookContours } from './book-contours'
 import type { NavItem } from './main-nav'
@@ -415,7 +415,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
           } else book.dataset.bookContours='false'
         }
       } else if (book) book.dataset.bookContours='false'
-      const objectPages = readManuscriptText(entry?.body).reduce((n,o)=>Math.max(n,o.page+1),0)
+      const objectPages = [...readManuscriptText(entry?.body), ...readManuscriptImages(entry?.body)].reduce((n,o)=>Math.max(n,o.page+1),0)
       const flowPages = Math.max(1, Math.round(node.scrollWidth / node.clientWidth))
       setFlowCount(flowPages)
       const pages = Math.max(flowPages, objectPages)
@@ -641,7 +641,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
           {card ? entry ? <>
             <div data-book-source hidden aria-hidden="true"><h3>{entry.title || card.label}</h3>
               {isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
-              {entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} floatingObjects />
+              {entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} floatingObjects bookMode />
             </div><div data-book-target style={{display:'contents'}}/>
           </> : <><h3>{card.label}</h3>{failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> : <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{mainIndex ? <h2 className="book-main-index-title">مرکزی فہرست</h2> : <h2>{topic.label}</h2>}
       {!mainIndex && topic.id === 'contact' && <p>سوال یا معلومات کے لیے درج ذیل ذرائع سے رابطہ کریں۔</p>}

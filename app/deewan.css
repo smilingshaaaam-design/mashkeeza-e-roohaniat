@@ -460,15 +460,20 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 /* Native Urdu text wraps the actual floral silhouette instead of leaving a rectangular gutter.
    Explicit author alignment remains available; normal paragraphs fill each available line. */
 .deewan-book .printed-text{direction:rtl;text-align:justify}
-.deewan-book[data-book-contours="true"] .book-panel:has(.printed-text){width:36.8%;top:10%;bottom:24%}
+.deewan-book[data-book-contours="true"] .book-panel:has(.printed-text){width:36.8%;top:7.5%;bottom:15.5%}
 .deewan-book[data-book-contours="true"] .book-panel[data-side="right"]:has(.printed-text){right:8.7%;bottom:8%}
 .deewan-book[data-book-contours="true"] .book-panel[data-side="left"]:has(.printed-text){left:8.7%}
 .deewan-book[data-book-contours="true"] .printed-text img{clear:none!important}
-.deewan-book[data-book-contours="true"] .book-panel[data-side="right"]:has(.printed-text)>.deewan-viewport{height:80.487804878%}
+.deewan-book[data-book-contours="true"] .book-panel[data-side="right"]:has(.printed-text)>.deewan-viewport{height:91.124260355%}
 .deewan-book[data-book-contours="true"] .printed-text :is(h2,h3,h4){display:flow-root;max-width:100%;overflow-wrap:anywhere}
-.deewan-book[data-book-contours="true"] .ms-text-layer-book{top:-15.1515151515%;left:-23.6413043478%;width:135.8695652174%;height:151.5151515152%}
-.deewan-book[data-book-contours="true"] .ms-text-layer-right{top:-12.1951219512%;left:-12.2282608696%;height:121.9512195122%}
+.deewan-book[data-book-contours="true"] .ms-text-layer-book{top:-9.7402597403%;left:-23.6413043478%;width:135.8695652174%;height:129.8701298701%}
+.deewan-book[data-book-contours="true"] .ms-text-layer-right{top:-8.875739645%;left:-12.2282608696%;height:118.3431952663%}
 .deewan-book [data-book-source]{display:none!important}
 .deewan-book [data-book-target]{display:contents}
 .deewan-book [data-book-contour]{pointer-events:none!important;user-select:none!important;-webkit-user-select:none!important;font-size:0!important;line-height:0!important}
 .deewan-book .printed-text [data-book-target]>h3:first-child{margin-block:0 .22em}
+
+/* Saved blank spans reserve the removed Unicode text's advance, without retaining its words. */
+.deewan-book .printed-text [data-ms-gap]{display:inline-block;vertical-align:baseline;white-space:pre;pointer-events:none;user-select:none;}
+.deewan-book .ms-book-image-mask{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.deewan-book .ms-book-image-mask img{position:absolute;max-width:none;max-height:none;object-fit:contain;transform:translate(-50%,-50%);pointer-events:auto;user-select:none}
