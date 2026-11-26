@@ -536,7 +536,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         turnInProgress.current=false
         const update=deferredLayout.current
         deferredLayout.current=null
-        if(update)requestAnimationFrame(update)
+        if(update)update()
       })
     }
   }, [stage, hash, page])
