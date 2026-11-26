@@ -416,3 +416,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book:has(.printed-text) .deewan-controls{bottom:7%;left:8%;width:36%}
 .deewan-book .ms-text-layer-book{position:absolute;top:-8.219178%;left:-11.111111%;width:122.222222%;height:123.287671%;pointer-events:none;z-index:4}
 .deewan-book .ms-text-layer-right{top:-7.317073%;height:109.756098%}
+
+/* Page-relative free text uses the whole leaf, including decorative margins. */
+.deewan-book .ms-text-layer-book{inset:auto;position:absolute;top:-13.698630%;left:-22.222222%;width:138.888889%;height:136.986301%;overflow:visible}
+.deewan-book .ms-text-layer-right{top:-12.195122%;left:-16.666667%;height:121.951220%}

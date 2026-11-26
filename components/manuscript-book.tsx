@@ -313,6 +313,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   const [attempt, setAttempt] = useState(0)
   const [page, setPage] = useState(0)
   const [count, setCount] = useState(1)
+  const [flowCount, setFlowCount] = useState(1)
   const paper = useRef<HTMLDivElement>(null)
   const measuredPage = useRef(0)
   const measuredSpreads = useRef(new Map<string, number>())
@@ -380,12 +381,14 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
 
   useLayoutEffect(() => {
     const node = paper.current
-    if (!node) { setPage(0); setCount(1); return }
+    if (!node) { setPage(0); setCount(1); setFlowCount(1); return }
     let active = true
     const measure = () => {
       if (!active || !node.clientWidth) return
       const objectPages = readManuscriptText(entry?.body).reduce((n,o)=>Math.max(n,o.page+1),0)
-      const pages = Math.max(1, objectPages, Math.round(node.scrollWidth / node.clientWidth))
+      const flowPages = Math.max(1, Math.round(node.scrollWidth / node.clientWidth))
+      setFlowCount(flowPages)
+      const pages = Math.max(flowPages, objectPages)
       measuredPage.current = Math.min(measuredPage.current, 2 * Math.floor((pages - 1) / 2))
       setCount(pages)
       if (entry || !card) measuredSpreads.current.set(mainIndex ? 'contents' : hash, Math.max(1, Math.ceil(pages / 2)))
@@ -593,7 +596,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     {!intro && (['right', 'left'] as const).map(side => <div key={side} data-side={side} inert={intro}
       className={side === 'right' ? 'deewan-index book-panel' : 'deewan-reading book-panel'}>
       <div ref={side === 'right' ? paper : leftPaper} className="deewan-viewport"
-        style={{visibility: side === 'left' && page + 1 >= count ? 'hidden' : 'visible'}}>
+        style={{visibility: page + (side === 'left' ? 1 : 0) >= flowCount ? 'hidden' : 'visible'}}>
         <div className={'deewan-columns ' + (card ? 'printed-text' : 'printed-index')}>
           {card ? <><h3>{entry?.title || card.label}</h3>
         {entry && isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
