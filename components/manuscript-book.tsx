@@ -54,10 +54,13 @@ function CompleteBookIndex({ items, compact = false, onSelect }: { items: BookIn
   </ol>
 }
 
-// Contents navigation always uses the requested left-to-right turn,
-// regardless of relative page distance. true means the right leaf moves left.
+// Physical leaf direction for the Urdu manuscript:
+// true = right leaf turns to the left (forward).
+// false = left leaf turns to the right (backward).
 function contentsDirection(toContents: boolean, fromContents: boolean, backwards: boolean) {
-  return toContents || fromContents ? false : backwards
+  if (toContents) return false
+  if (fromContents) return true
+  return !backwards
 }
 
 function turnDuration(distance: number) {
@@ -309,7 +312,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   useEffect(() => {
     if (stage !== 'dedication' || !intro) return
     const timer = window.setTimeout(() => {
-      rememberSheet(false)
+      rememberSheet(true)
       setStage('title')
     }, 4000)
     return () => window.clearTimeout(timer)
@@ -468,7 +471,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   function open(i: number, fromEnd = false) {
     const next = articles[i]
     const target = next ? topic.href + '/read/' + encodeURIComponent(next.id) : topic.href + '/section'
-    rememberSheet(fromEnd)
+    rememberSheet(!fromEnd)
     lastPage.current = fromEnd ? target : null
     window.location.hash = target
   }
@@ -483,7 +486,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       if (stage === 'returning' || stage === 'dedication') {
         stopTurn.current?.()
         if (delta < 0) setStage('closing')
-        else { rememberSheet(false); setStage('title') }
+        else { rememberSheet(true); setStage('title') }
       }
       return
     }
@@ -499,7 +502,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     }
     const next = page + 2 * delta
     if (next >= 0 && next < count) {
-      rememberSheet(delta < 0)
+      rememberSheet(delta > 0)
       measuredPage.current = next
       setPage(next)
     } else if (!mainIndex && current + delta >= -1 && current + delta < articles.length) {
@@ -507,12 +510,12 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     }
   }
   // The breadcrumb is the reader's current location, not a history log.
-  // Returning to the main contents is always left-to-right. Other ancestor
-  // navigation retains its existing backwards page turn.
+  // Returning to the main contents or an ancestor turns the left leaf
+  // toward the right. Forward navigation turns the right leaf toward the left.
   function returnToLocation(target: string, distance: number) {
     if (hash === target && page === 0) return
     stopTurn.current?.()
-    rememberSheet(contentsDirection(target.endsWith('/contents') || mainIndex, mainIndex, true), jumpDistance(target, Math.max(1, distance) + page / 2))
+    rememberSheet(contentsDirection(target.endsWith('/contents') || mainIndex, false, true), jumpDistance(target, Math.max(1, distance) + page / 2))
     lastPage.current = null
     measuredPage.current = 0
     if (hash === target) setPage(0)
@@ -585,7 +588,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
             if (!internal || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
             event.preventDefault()
             lastPage.current = null
-            rememberSheet(false, jumpDistance(topic.href + '/read/' + encodeURIComponent(item.id), Math.max(1, Math.ceil((count - page) / 2)) + articles.indexOf(item)))
+            rememberSheet(true, jumpDistance(topic.href + '/read/' + encodeURIComponent(item.id), Math.max(1, Math.ceil((count - page) / 2)) + articles.indexOf(item)))
             window.location.hash = topic.href + '/read/' + encodeURIComponent(item.id)
           }}>{item.label}</a></li>
       })}</ol> : <p>اس موضوع سے ابھی کوئی تحریر منسلک نہیں ہے۔</p>}</>}
