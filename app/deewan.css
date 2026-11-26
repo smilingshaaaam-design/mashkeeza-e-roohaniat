@@ -498,3 +498,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 /* Keep the live ink and independent images below the frozen turning leaves. */
 .deewan-book > .book-panel{z-index:0;isolation:isolate}
 .deewan-book > .deewan-controls{z-index:3}
+
+/* Clip the explicitly projected column rather than relying on clamped RTL scroll. */
+.deewan-book .deewan-viewport{overflow:clip!important;overflow-clip-margin:0;scroll-behavior:auto!important;overflow-anchor:none}
+.deewan-book .deewan-columns{transition:none!important;animation:none!important;transform-origin:0 0}

@@ -97,8 +97,38 @@ function restoreSheetScroll(root: HTMLElement) {
     viewport.scrollTo({left:Number(viewport.dataset.frozenScrollX || 0),top:Number(viewport.dataset.frozenScrollY || 0),behavior:'instant'})
   }
 }
-function setReadingColumn(viewport: HTMLElement, column: number) {
-  viewport.scrollTo({left:-column * viewport.clientWidth,top:0,behavior:'instant'})
+// Explicit clipped projection of a single paginated flow. Unlike scrollLeft,
+// this cannot clamp an out-of-range left page back onto the first page.
+function setReadingColumn(viewport: HTMLElement, column: number, total: number) {
+  const flow = viewport.querySelector<HTMLElement>(':scope > .deewan-columns')
+  if (!flow) return
+  const width = Number.parseFloat(getComputedStyle(flow).width) || viewport.clientWidth
+  viewport.style.visibility = column < total ? 'visible' : 'hidden'
+  viewport.scrollLeft = 0
+  flow.style.transform = column ? 'translateX(' + column * width + 'px)' : 'none'
+}
+function countReadingColumns(flow: HTMLElement) {
+  const width = Number.parseFloat(getComputedStyle(flow).width) || flow.clientWidth
+  if (!width) return 1
+  const origin = flow.getBoundingClientRect().right
+  let last = 0
+  const walker = document.createTreeWalker(flow,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT,{
+    acceptNode(node) {
+      if(node instanceof Element) {
+        if(node.matches('[hidden],[data-book-source],[data-book-contour],script,style,link'))return NodeFilter.FILTER_REJECT
+        return node.matches('img,hr,[data-ms-gap]')?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_SKIP
+      }
+      return node.textContent?.trim()?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT
+    }
+  })
+  for(let n=walker.nextNode();n;n=walker.nextNode()) {
+    const range=document.createRange()
+    if(n instanceof Element)range.selectNode(n);else range.selectNodeContents(n)
+    for(const rect of Array.from(range.getClientRects())) {
+      if(rect.width>0&&rect.height>0)last=Math.max(last,Math.floor((origin-(rect.left+rect.right)/2)/width+.0001))
+    }
+  }
+  return last+1
 }
 
 // Freeze the currently visible column and artwork before navigation changes the DOM.
@@ -141,7 +171,7 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
         const original = viewport.querySelector<HTMLElement>('.deewan-columns')
         if (original) {
           const style=getComputedStyle(original)
-          Object.assign(columns.style,{width:style.width,height:style.height,columnCount:style.columnCount,columnWidth:style.columnWidth,columnGap:style.columnGap,columnFill:style.columnFill,fontFamily:style.fontFamily,fontSize:style.fontSize,lineHeight:style.lineHeight,transform:'none'})
+          Object.assign(columns.style,{width:style.width,height:style.height,columnCount:style.columnCount,columnWidth:style.columnWidth,columnGap:style.columnGap,columnFill:style.columnFill,fontFamily:style.fontFamily,fontSize:style.fontSize,lineHeight:style.lineHeight,transform:style.transform})
         }
       }
       // Freeze values that otherwise change with the destination contour mode.
@@ -374,6 +404,8 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   const pendingSheet = useRef<PageTurn | null>(null)
   const turnInProgress = useRef(false)
   const deferredLayout = useRef<(() => void) | null>(null)
+  const flowPagesRef = useRef(1)
+  const layoutLocation = useRef('')
   // A shared/deep book link mounts the full interactive manuscript directly
   // in reading mode, not an isolated article or cover animation.
   useEffect(() => {
@@ -443,6 +475,15 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       if (!active || !node.clientWidth) return
       if(turnInProgress.current){deferredLayout.current=measure;return}
       const book = node.closest<HTMLElement>('.deewan-book')
+      const rightFlow=node.querySelector<HTMLElement>(':scope > .deewan-columns')
+      const leftViewport=leftPaper.current
+      const leftFlow=leftViewport?.querySelector<HTMLElement>(':scope > .deewan-columns')
+      if (!rightFlow || !leftViewport || !leftFlow) return
+      // Only the canonical right flow is measured; both leaves share its exact
+      // column geometry and content, not two independently paginated articles.
+      rightFlow.style.transform='none'
+      leftFlow.style.transform='none'
+      node.scrollLeft=0;leftViewport.scrollLeft=0
       if (card && book) {
         const fontSize = Math.max(13, Math.min(19, book.clientWidth * .016))
         book.style.setProperty('--book-writing-font', fontSize + 'px')
@@ -455,22 +496,29 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
           const targets = panels.map(panel => ({source:panel.querySelector<HTMLElement>('[data-book-source]'),target:panel.querySelector<HTMLElement>('[data-book-target]'),columns:panel.querySelector<HTMLElement>('.deewan-columns')}))
           if (entry && targets.length === 2 && targets.every(item => item.source && item.target && item.columns)) {
             book.dataset.bookContours = 'true'
-            let ok = true
-            for (const item of targets) {
-              const target=item.target!, columns=item.columns!
-              if (sourceSignature !== clonedSourceSignature || !target.hasChildNodes()) {
-                target.replaceChildren(...Array.from(item.source!.childNodes,n=>n.cloneNode(true)))
-                target.querySelectorAll('link').forEach(n=>n.remove())
-              }
-              if(!applyBookContours(target,{width:columns.clientWidth,pitch:columns.clientWidth,height:columns.clientHeight,geometryRoot:columns})) ok=false
+            const primary=targets[0],secondary=targets[1]
+            const target=primary.target!, columns=primary.columns!
+            if(sourceSignature!==clonedSourceSignature||!target.hasChildNodes()){
+              target.replaceChildren(...Array.from(primary.source!.childNodes,n=>n.cloneNode(true)))
+              target.querySelectorAll('link').forEach(n=>n.remove())
             }
+            const ok=applyBookContours(target,{width:columns.clientWidth,pitch:columns.clientWidth,height:columns.clientHeight,geometryRoot:columns})
+            if(!ok){book.dataset.bookContours='false';clearBookContours(target)}
+            // Exact copy of the canonical contour breaks, never compute them twice.
+            secondary.target!.replaceChildren(...Array.from(target.childNodes,n=>n.cloneNode(true)))
             clonedSourceSignature=sourceSignature
-            if(!ok){book.dataset.bookContours='false';for(const item of targets)clearBookContours(item.target!)}
           } else book.dataset.bookContours='false'
         }
       } else if (book) book.dataset.bookContours='false'
       const objectPages = [...readManuscriptText(entry?.body), ...readManuscriptImages(entry?.body)].reduce((n,o)=>Math.max(n,o.page+1),0)
-      const flowPages = Math.max(1, Math.round(node.scrollWidth / node.clientWidth))
+      // Match the exact subpixel geometry, including the fallback layout.
+      const geometry=getComputedStyle(rightFlow)
+      leftViewport.style.width=getComputedStyle(node).width
+      leftViewport.style.height=getComputedStyle(node).height
+      leftFlow.style.width=geometry.width
+      leftFlow.style.height=geometry.height
+      const flowPages=countReadingColumns(rightFlow)
+      flowPagesRef.current=flowPages
       setFlowCount(flowPages)
       const pages = Math.max(flowPages, objectPages)
       measuredPage.current = Math.min(measuredPage.current, 2 * Math.floor((pages - 1) / 2))
@@ -481,9 +529,14 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         // Keep the final spread selected through late font/image pagination.
         setPage(measuredPage.current)
       } else setPage(old => Math.min(old, 2 * Math.floor((pages - 1) / 2)))
+      setReadingColumn(node,measuredPage.current,flowPages)
+      setReadingColumn(leftViewport,measuredPage.current+1,flowPages)
     }
-    measuredPage.current = 0
-    setPage(0)
+    if(layoutLocation.current!==hash+'|'+stage){
+      layoutLocation.current=hash+'|'+stage
+      measuredPage.current=0
+      setPage(0)
+    }
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(node)
@@ -503,9 +556,9 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   }, [stage, hash, entry, indexSignature, cards.map(item => item.id + item.label).join('|')])
   useLayoutEffect(() => {
     const node = paper.current
-    if (node) setReadingColumn(node,page)
-    if (leftPaper.current) setReadingColumn(leftPaper.current,page+1)
-  }, [hash, page, count])
+    if (node) setReadingColumn(node,page,flowPagesRef.current)
+    if (leftPaper.current) setReadingColumn(leftPaper.current,page+1,flowPagesRef.current)
+  }, [hash, page, count, flowCount])
   const stopTurn = useRef<(() => void) | undefined>(undefined)
   useLayoutEffect(() => () => stopTurn.current?.(), [])
   useLayoutEffect(() => {
@@ -518,11 +571,10 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       const right = paper.current
       const left = leftPaper.current
       if (right && left && right.clientWidth) {
-        const total = Math.max(1, Math.round(right.scrollWidth / right.clientWidth))
-        const destination = Math.min(2 * Math.floor((total - 1) / 2), measuredPage.current)
-        setReadingColumn(right,destination)
-        left.style.visibility = destination + 1 < total ? 'visible' : 'hidden'
-        setReadingColumn(left,destination+1)
+        const total = flowPagesRef.current
+        const destination = measuredPage.current
+        setReadingColumn(right,destination,total)
+        setReadingColumn(left,destination+1,total)
       }
       turnInProgress.current=true
       stopTurn.current = animateLeaf(el, sheet, () => {
@@ -696,7 +748,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     {!intro && (['right', 'left'] as const).map(side => <div key={side} data-side={side} inert={intro}
       className={side === 'right' ? 'deewan-index book-panel' : 'deewan-reading book-panel'}>
       <div ref={side === 'right' ? paper : leftPaper} className="deewan-viewport"
-        style={{visibility: page + (side === 'left' ? 1 : 0) >= flowCount ? 'hidden' : 'visible'}}>
+        data-reading-viewport={side}>
         <div className={'deewan-columns ' + (card ? 'printed-text' : 'printed-index')}>
           {card ? entry ? <>
             <div data-book-source hidden aria-hidden="true">{!isBismillahBookTitle(entry.title || card.label) && <h3 className="book-article-heading">{entry.title || card.label}</h3>}
