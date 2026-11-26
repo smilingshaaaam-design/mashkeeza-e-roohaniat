@@ -477,3 +477,11 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book .printed-text [data-ms-gap]{display:inline-block;vertical-align:baseline;white-space:pre;pointer-events:none;user-select:none;}
 .deewan-book .ms-book-image-mask{position:absolute;inset:0;pointer-events:none;overflow:visible}
 .deewan-book .ms-book-image-mask img{position:absolute;max-width:none;max-height:none;object-fit:contain;transform:translate(-50%,-50%);pointer-events:auto;user-select:none}
+
+/* Match the admin manuscript heading typography, including the original gilded plaque. */
+.deewan-book .printed-text :is(h2,h3,h4){font-weight:700;line-height:2.05;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;break-inside:avoid;text-align:center}
+.deewan-book .printed-text h2{font-size:1.5em}
+.deewan-book .printed-text h3{font-size:1.35em}
+.deewan-book .printed-text h4{font-size:1.15em}
+.deewan-book .printed-text :is(h2,h3,h4):not([data-ms-heading]):not([data-ms-color]):not([data-ms-ink]){color:#ffe0a0;font-weight:700;text-align:center;line-height:2.05;background:radial-gradient(ellipse at 48% 35%,#9a4226 0%,#6b201b 48%,#380c10 100%);border:3px double #b98936;border-radius:.9em .28em;box-shadow:inset 0 0 0 1px #eac578,0 1px 2px #4e291d44;text-shadow:0 1px 1px #30120b,0 -1px 0 #f7cc7655;padding:.04em .42em;margin-block:.16em .22em;break-inside:avoid;mix-blend-mode:normal}
+.deewan-book .printed-text .book-article-heading{color:#ffe0a0;text-align:center;line-height:2.05;margin-block:0 .22em}

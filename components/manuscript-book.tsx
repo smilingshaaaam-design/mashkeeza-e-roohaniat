@@ -639,7 +639,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         style={{visibility: page + (side === 'left' ? 1 : 0) >= flowCount ? 'hidden' : 'visible'}}>
         <div className={'deewan-columns ' + (card ? 'printed-text' : 'printed-index')}>
           {card ? entry ? <>
-            <div data-book-source hidden aria-hidden="true"><h3>{entry.title || card.label}</h3>
+            <div data-book-source hidden aria-hidden="true"><h3 className="book-article-heading">{entry.title || card.label}</h3>
               {isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
               {entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} floatingObjects bookMode />
             </div><div data-book-target style={{display:'contents'}}/>

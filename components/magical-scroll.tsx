@@ -290,6 +290,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     let lastProgress = performance.now()
     let activeFrame = 0
     let activeTimeout = 0
+    let assetTimeout = 0
     let finishPending: (() => void) | null = null
     let dustFrame = 0
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -680,10 +681,11 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       if (!cancelled) setPose(destination.x, destination.y, 0)
     }
     const unfold = async () => {
-      const height = Math.max(paper.scrollHeight, 330)
+      const surface = paper.querySelector<HTMLElement>('.original-scroll-paper-surface')
+      const fullHeight = () => Math.max(1, surface?.scrollHeight || 0, surface?.offsetHeight || 0)
       paper.style.height = '0px'
       paper.style.overflow = 'hidden'
-      await tween(1850, t => { paper.style.height = `${height * (1 - Math.pow(1 - t, 3))}px` })
+      await tween(1850, t => { paper.style.height = `${fullHeight() * (1 - Math.pow(1 - t, 3))}px` })
       if (cancelled) return
       paper.style.height = 'auto'
       paper.style.overflow = 'visible'
@@ -1037,12 +1039,28 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       // push later lines down after the feather has already started writing.
       const contentImages = Array.from(text.querySelectorAll('img'))
       for (const img of contentImages) img.loading = 'eager'
-      await Promise.all([pot, quill, ...contentImages].map(img => img.decode().catch(() => undefined)))
+      const prepareAssets = async () => {
+        await Promise.all([pot, quill, ...contentImages].map(img => img.decode().catch(() => undefined)))
+        if (cancelled) return
+        const styledFonts = new Set([window.getComputedStyle(text).font, ...Array.from(text.querySelectorAll<HTMLElement>('[data-ms-font]'), el => window.getComputedStyle(el).font)])
+        await Promise.all([...styledFonts].filter(Boolean).map(font => document.fonts.load(font).catch(() => [])))
+        await document.fonts.ready
+      }
+      // A stalled remote image or font must never keep the scroll closed.
+      const assetsReady = await Promise.race([
+        prepareAssets().then(() => true),
+        new Promise<boolean>(resolve => {assetTimeout = window.setTimeout(() => resolve(false), 3500)})
+      ])
+      window.clearTimeout(assetTimeout)
+      assetTimeout = 0
       if (cancelled) return
-      const styledFonts = new Set([window.getComputedStyle(text).font, ...Array.from(text.querySelectorAll<HTMLElement>('[data-ms-font]'), el => window.getComputedStyle(el).font)])
-      await Promise.all([...styledFonts].map(font => document.fonts.load(font).catch(() => [])))
-      await document.fonts.ready
-      if (cancelled) return
+      if (!assetsReady) {
+        waitingForAssets = false
+        lastProgress = performance.now()
+        await unfold()
+        if (!cancelled) {showAll();completed = true;openedScrollKeys.add(visitKey)}
+        return
+      }
       // Let the browser apply the final font and image dimensions before the
       // first geometry measurements used by the feather and writing reveal.
       await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
@@ -1120,6 +1138,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       cancelled = true
       sizeObserver.disconnect()
       window.clearInterval(watchdog)
+      window.clearTimeout(assetTimeout)
       window.clearTimeout(activeTimeout)
       cancelAnimationFrame(activeFrame)
       cancelAnimationFrame(dustFrame)
@@ -1166,16 +1185,16 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-stage{position:relative;z-index:101;width:100%;min-height:max-content;padding:8px 0 145px;overflow:visible;isolation:auto}
         .original-scroll-assembly{width:100%;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1}
         .original-scroll-roller{width:100%;height:auto;position:relative;z-index:3;flex-shrink:0;display:block;pointer-events:none;user-select:none}
-        .original-scroll-paper{height:0;width:63.6%;margin:-1px 0 0;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
+        .original-scroll-paper{height:0;flex-shrink:0;max-height:none;width:63.6%;margin:-1px 0 0;position:relative;z-index:1;min-height:0;overflow:hidden;container-type:inline-size}
         /* Bottom roller sits in front of the parchment edge, like the top roller. */
         /* The mount overlaps the parchment and casts an upward contact shadow,
            matching the way the top wooden roller sits against the paper. */
         .original-scroll-bottom-mount{position:relative;width:100%;flex-shrink:0;margin-top:calc(-1 * clamp(30px, 5.5vw, 70px));z-index:8;isolation:isolate;pointer-events:none}
         .original-scroll-bottom-mount::before{content:"";position:absolute;left:18.2%;right:18.2%;top:-20px;height:33px;z-index:1;pointer-events:none;background:linear-gradient(to bottom,rgba(65,29,12,0),rgba(69,31,12,.12) 22%,rgba(59,24,8,.38) 65%,rgba(44,17,6,.52) 100%);filter:blur(5px);border-radius:0 0 48% 48%}
         .original-scroll-bottom-roller{position:relative;z-index:2;margin:0;filter:drop-shadow(0 -3px 3px rgba(53,21,7,.28))}
-        .original-scroll-paper-surface{position:relative;min-height:390px;padding:6% 5% 8%;isolation:isolate}
+        .original-scroll-paper-surface{position:relative;display:flow-root;box-sizing:border-box;min-height:390px;height:auto;max-height:none;padding:6% 5% max(8%,clamp(34px,6vw,78px));isolation:isolate}
         .original-scroll-paper-surface::before{content:"";position:absolute;inset:0;z-index:-1;background:url('/magical-scroll/paper-bg.png') center / 100% 100% no-repeat;opacity:var(--paper-opacity);pointer-events:none}
-        .original-scroll-writing{direction:rtl;text-align:right;overflow-wrap:anywhere;font-size:clamp(11px,2.8cqw,22px);line-height:2.4;color:#422410;visibility:hidden}
+        .original-scroll-writing{display:flow-root;direction:rtl;text-align:right;overflow-wrap:anywhere;font-size:clamp(11px,2.8cqw,22px);line-height:2.4;color:#422410;visibility:hidden}
         .original-scroll-writing h2{font-size:1.55em;font-weight:700;text-align:center;line-height:2.2;margin:0 0 .8em;color:#71351d}
         .original-scroll-writing p,.original-scroll-writing li{margin:.7em 0}
         .original-scroll-writing img{max-width:100%;object-fit:contain}
@@ -1201,7 +1220,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-nib-sparks i:nth-child(10){animation-delay:.18s;background:#dbf7ff;box-shadow:0 0 7px #9ce7ffaa;animation-duration:.92s}
         .original-scroll-nib-sparks i:nth-child(11){animation-delay:.70s;background:#ffd17d;box-shadow:0 0 8px #ffb347cc;animation-duration:1.22s}
         @keyframes subtleNibSpark{from{transform:translate(0,0) scale(.92);opacity:.96}20%{opacity:1}to{transform:translate(10px,-16px) scale(.14);opacity:0}}
-        @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:6% 5% 8%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
+        @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:6% 5% max(8%,34px)}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
         @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-nib-sparks i{animation:none}.original-scroll-fluid-canvas{display:none}}
       `}</style>
     </>
