@@ -520,3 +520,9 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 @keyframes binding-synchronized-reveal{0%{mask-size:50% 100%}25%{mask-size:50% 100%}50%{mask-size:50% 100%}65%{mask-size:72% 100%}80%{mask-size:90% 100%}100%{mask-size:100% 100%}}
 .manuscript-cover::after{background-image:url('/images/deewan/paper-surface.webp')}
 @media(prefers-reduced-motion:reduce){.deewan-book[data-opening="opening"]::before{animation:none;mask:none}}
+
+/* Closing is the reverse of the cover opening, not an independent extra leaf. */
+.deewan-book[data-opening="closing"]::before{visibility:visible;opacity:1;mask-image:linear-gradient(#000,#000);mask-repeat:no-repeat;mask-position:left;animation:binding-synchronized-reveal 1.8s linear reverse both}
+[data-opening="closing"] .dedication{animation:none;visibility:hidden}
+.deewan-book[data-opening="closed"]::before{visibility:hidden!important;opacity:0!important;animation:none!important}
+@media(prefers-reduced-motion:reduce){.deewan-book[data-opening="closing"]::before{animation:none;visibility:hidden}}
