@@ -332,3 +332,11 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
   .printed-index .topic-title-page ol {display:block !important}
   .printed-index .topic-title-page li {margin-block:.25em}
 }
+
+/* Complete contents may span multiple book leaves without clipping. */
+.printed-index .book-full-title-index{height:auto;min-height:100%;break-inside:auto;break-after:column}
+.printed-index .book-complete-index{display:block;list-style:none;padding:0;margin:.3em 0}
+.printed-index .book-complete-index li{break-inside:avoid;display:flow-root;margin:.12em 0}
+.printed-index .book-complete-index.compact a.deewan-plaque{width:100%;font-size:.82em;line-height:1.8;padding:.24em .45em;margin:0}
+.printed-index .book-index-child a.deewan-plaque{width:88%;font-size:.78em;line-height:1.8;padding:.22em .45em;margin:0}
+.printed-index .book-index-group{display:block;color:#68252b;font-weight:700;font-size:.95em;line-height:2;padding:.1em .3em}
