@@ -277,6 +277,8 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
 
 export type BookNavigation = { turnTo: (href: string) => string | null }
 
+const isBismillahBookTitle = (value: string) => /^بسماللهالرحم(?:ا)?ن(?:الرحيم)?$/.test(value.normalize("NFKC").replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640\s\u200C\u200D\p{P}]/gu,"").replace(/[ہھۃ]/g,"ه").replace(/[یىے]/g,"ي"))
+
 export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigation }: { navigation: Ref<BookNavigation>; topic: NavItem; cards: NavItem[]; topics: NavItem[]; menuItems: NavItem[]; hash: string }) {
   const articles = cards.filter(isBookWriting)
   const current = articles.findIndex(item => hash === topic.href + '/read/' + encodeURIComponent(item.id))
@@ -651,7 +653,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         style={{visibility: page + (side === 'left' ? 1 : 0) >= flowCount ? 'hidden' : 'visible'}}>
         <div className={'deewan-columns ' + (card ? 'printed-text' : 'printed-index')}>
           {card ? entry ? <>
-            <div data-book-source hidden aria-hidden="true"><h3 className="book-article-heading">{entry.title || card.label}</h3>
+            <div data-book-source hidden aria-hidden="true">{!isBismillahBookTitle(entry.title || card.label) && <h3 className="book-article-heading">{entry.title || card.label}</h3>}
               {isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
               {entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} floatingObjects bookMode />
             </div><div data-book-target style={{display:'contents'}}/>
