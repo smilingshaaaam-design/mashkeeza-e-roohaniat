@@ -90,6 +90,17 @@ function turnDuration(distance: number) {
 
 type Sheet = { face: HTMLDivElement; right: boolean }
 
+// Cloned scroll containers start at zero. Restore their native position only
+// after insertion, rather than translating or reflowing the text itself.
+function restoreSheetScroll(root: HTMLElement) {
+  for (const viewport of root.querySelectorAll<HTMLElement>('[data-frozen-scroll-x]')) {
+    viewport.scrollTo({left:Number(viewport.dataset.frozenScrollX || 0),top:Number(viewport.dataset.frozenScrollY || 0),behavior:'instant'})
+  }
+}
+function setReadingColumn(viewport: HTMLElement, column: number) {
+  viewport.scrollTo({left:-column * viewport.clientWidth,top:0,behavior:'instant'})
+}
+
 // Freeze the currently visible column and artwork before navigation changes the DOM.
 function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
   const book = leaf.parentElement!
@@ -111,7 +122,8 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
     Object.assign(copy.style, {
       fontSize:panelStyle.fontSize,lineHeight:panelStyle.lineHeight,fontFamily:panelStyle.fontFamily,mixBlendMode:panelStyle.mixBlendMode,
       left:(panel.offsetLeft-left)+'px', right:'auto', top:(panel.offsetTop-top)+'px',
-      bottom:'auto', width:panel.offsetWidth+'px', height:panel.offsetHeight+'px',
+      bottom:'auto', width:panelStyle.width, height:panelStyle.height,boxSizing:panelStyle.boxSizing,
+      animation:'none',transition:'none',visibility:panelStyle.visibility,
       overflow:panel.querySelector('.ms-text-layer')?'visible':'hidden', pointerEvents:'none'
     })
     copy.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'))
@@ -121,12 +133,32 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
     if (viewport && viewportCopy) {
       // Freeze the old viewport's geometry and actual visible column.
       // Live article/index CSS can change while the turn is in flight.
-      Object.assign(viewportCopy.style, {width:viewport.clientWidth+'px',height:viewport.clientHeight+'px',visibility:getComputedStyle(viewport).visibility,overflow:'hidden'})
+      const viewportStyle = getComputedStyle(viewport)
+      Object.assign(viewportCopy.style, {width:viewportStyle.width,height:viewportStyle.height,visibility:viewportStyle.visibility,overflow:'hidden',scrollBehavior:'auto',overflowAnchor:'none'})
+      viewportCopy.dataset.frozenScrollX=String(viewport.scrollLeft)
+      viewportCopy.dataset.frozenScrollY=String(viewport.scrollTop)
       if (columns) {
         const original = viewport.querySelector<HTMLElement>('.deewan-columns')
-        if (original) Object.assign(columns.style,{width:original.clientWidth+'px',height:original.clientHeight+'px'})
-        columns.style.transform = 'translateX(' + (-viewport.scrollLeft) + 'px)'
+        if (original) {
+          const style=getComputedStyle(original)
+          Object.assign(columns.style,{width:style.width,height:style.height,columnCount:style.columnCount,columnWidth:style.columnWidth,columnGap:style.columnGap,columnFill:style.columnFill,fontFamily:style.fontFamily,fontSize:style.fontSize,lineHeight:style.lineHeight,transform:'none'})
+        }
       }
+      // Freeze values that otherwise change with the destination contour mode.
+      const selector='h2,h3,h4,img,.ms-text-layer,.ms-book-image-mask'
+      const originals=panel.querySelectorAll<HTMLElement>(selector)
+      const copies=copy.querySelectorAll<HTMLElement>(selector)
+      originals.forEach((element,i)=>{
+        const clone=copies[i];if(!clone)return
+        const style=getComputedStyle(element)
+        clone.style.setProperty('display',style.display,'important')
+        if(element.tagName==='IMG') {
+          clone.style.setProperty('clear',style.clear,'important')
+          clone.style.width=style.width;clone.style.height=style.height
+          if(clone instanceof HTMLImageElement && element instanceof HTMLImageElement){clone.loading='eager';if(element.currentSrc)clone.src=element.currentSrc}
+        }
+        if(element.classList.contains('ms-text-layer')||element.classList.contains('ms-book-image-mask')) Object.assign(clone.style,{top:style.top,left:style.left,right:style.right,bottom:style.bottom,width:style.width,height:style.height})
+      })
     }
     if (right && panel.scrollTop) {
       const inner = document.createElement('div')
@@ -152,10 +184,10 @@ function rifflePlan(distance: number) {
   return { leaves, interval, flight, delay: (leaves - 1) * interval + Math.round(flight * .72), final: Math.max(440, Math.round(650 - Math.min(200, turns * 12))) }
 }
 
-function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
+function animateLeaf(leaf: HTMLElement, turn: PageTurn, onRelease: () => void) {
   const width = leaf.clientWidth / 2
   const height = leaf.clientHeight
-  if (!width || !height) return
+  if (!width || !height) {onRelease();return}
 
   const fromRight = turn.outgoing.right
   const plan = rifflePlan(turn.distance)
@@ -181,6 +213,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   back.style.transform = 'rotateY(180deg) translateZ(.15px)'
   sheet.append(front, back)
   leaf.append(sheet)
+  restoreSheetScroll(sheet)
 
   const still = turn.landing.face
   Object.assign(still.style, {
@@ -191,6 +224,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   still.style.zIndex = '1'
   still.setAttribute('aria-hidden','true')
   leaf.before(still)
+  restoreSheetScroll(still)
 
   const transforms: Keyframe[] = []
   const light: Keyframe[] = []
@@ -200,10 +234,8 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
     const progress = t * t * t * (10 + t * (-15 + 6 * t))
     const angle = Math.PI * progress
     const bend = Math.sin(angle)
-    const easingOut = Math.sin(2 * angle)
-    // Shear along the free edge. Points on the vertical binding stay fixed.
-    transforms.push({transform:'rotateY(' + direction * 180 * progress + 'deg) skewY(' +
-      direction * (2.3 * bend + 1.6 * easingOut) + 'deg) scaleX(' + (1 - .045 * bend) + ')'})
+    // Keep ink rigidly attached to the leaf: no skew/scale that makes text wobble.
+    transforms.push({transform:'rotateY(' + direction * 180 * progress + 'deg)'})
     light.push({opacity:.70*bend, transform:'translateX(' + direction * (progress - .5) * 28 + '%)'})
 
   }
@@ -242,13 +274,14 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
     b.style.transform = 'rotateY(180deg) translateZ(.15px)'
     flick.append(a,b)
     leaf.append(flick)
+    restoreSheetScroll(flick)
     riffleSheets.push(flick)
     // Staggered overlapping leaves keep the fast currency-counter effect
     // without repeatedly mounting or loading intervening articles.
     animations.push(flick.animate([
       { offset:0, opacity:1, transform:'rotateY(0deg)' },
-      { offset:.43, opacity:1, transform:'rotateY(' + direction*83 + 'deg) skewY(' + direction*3 + 'deg) scaleX(.95)' },
-      { offset:.86, opacity:1, transform:'rotateY(' + direction*169 + 'deg) skewY(' + direction*1.1 + 'deg)' },
+      { offset:.43, opacity:1, transform:'rotateY(' + direction*83 + 'deg)' },
+      { offset:.86, opacity:1, transform:'rotateY(' + direction*169 + 'deg)' },
       { offset:1, opacity:0, transform:'rotateY(' + direction*180 + 'deg)' },
     ], {duration:plan.flight, delay:i*plan.interval, easing:'cubic-bezier(.32,.12,.65,.93)', fill:'none'}))
   }
@@ -264,12 +297,16 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
     animations.push(glaze.animate(light, timing))
   })
 
+  let released = false
   const release = () => {
+    if(released)return
+    released=true
     motion.onfinish = null
     animations.forEach(animation => animation.cancel())
     sheet.remove()
     riffleSheets.forEach(node => node.remove())
     still.remove()
+    onRelease()
   }
   motion.onfinish = release
   return release
@@ -335,6 +372,8 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   const leftPaper = useRef<HTMLDivElement>(null)
   const leaf = useRef<HTMLDivElement>(null)
   const pendingSheet = useRef<PageTurn | null>(null)
+  const turnInProgress = useRef(false)
+  const deferredLayout = useRef<(() => void) | null>(null)
   // A shared/deep book link mounts the full interactive manuscript directly
   // in reading mode, not an isolated article or cover animation.
   useEffect(() => {
@@ -402,11 +441,12 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     let clonedSourceSignature = ''
     const measure = () => {
       if (!active || !node.clientWidth) return
+      if(turnInProgress.current){deferredLayout.current=measure;return}
       const book = node.closest<HTMLElement>('.deewan-book')
       if (card && book) {
         const fontSize = Math.max(13, Math.min(19, book.clientWidth * .016))
         book.style.setProperty('--book-writing-font', fontSize + 'px')
-        const panels = Array.from(book.querySelectorAll<HTMLElement>('.book-panel:has(.printed-text)'))
+        const panels = Array.from(book.querySelectorAll<HTMLElement>(':scope > .book-panel:has(.printed-text)'))
         const source = panels[0]?.querySelector<HTMLElement>('[data-book-source]')
         const sourceSignature = source?.innerHTML || ''
         const signature = [book.clientWidth,book.clientHeight,sourceSignature,document.fonts.status].join('\u0001')
@@ -449,7 +489,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     observer.observe(node)
     const book = node.closest<HTMLElement>('.deewan-book')
     const onMediaLoad = (event: Event) => {
-      if (!(event.target instanceof HTMLImageElement) || !event.target.closest('[data-book-target]')) return
+      if (!(event.target instanceof HTMLImageElement) || !event.target.closest('[data-book-target]') || event.target.closest('.book-panel')?.parentElement!==book) return
       contourSignature=''
       measure()
     }
@@ -463,8 +503,8 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   }, [stage, hash, entry, indexSignature, cards.map(item => item.id + item.label).join('|')])
   useLayoutEffect(() => {
     const node = paper.current
-    if (node) node.scrollLeft = -page * node.clientWidth
-    if (leftPaper.current && page + 1 < count) leftPaper.current.scrollLeft = -(page + 1) * leftPaper.current.clientWidth
+    if (node) setReadingColumn(node,page)
+    if (leftPaper.current) setReadingColumn(leftPaper.current,page+1)
   }, [hash, page, count])
   const stopTurn = useRef<(() => void) | undefined>(undefined)
   useLayoutEffect(() => () => stopTurn.current?.(), [])
@@ -480,11 +520,17 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       if (right && left && right.clientWidth) {
         const total = Math.max(1, Math.round(right.scrollWidth / right.clientWidth))
         const destination = Math.min(2 * Math.floor((total - 1) / 2), measuredPage.current)
-        right.scrollLeft = -destination * right.clientWidth
+        setReadingColumn(right,destination)
         left.style.visibility = destination + 1 < total ? 'visible' : 'hidden'
-        left.scrollLeft = -(destination + 1) * left.clientWidth
+        setReadingColumn(left,destination+1)
       }
-      stopTurn.current = animateLeaf(el, sheet)
+      turnInProgress.current=true
+      stopTurn.current = animateLeaf(el, sheet, () => {
+        turnInProgress.current=false
+        const update=deferredLayout.current
+        deferredLayout.current=null
+        if(update)requestAnimationFrame(update)
+      })
     }
   }, [stage, hash, page])
 

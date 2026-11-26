@@ -492,3 +492,9 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book .printed-text :is(h2,h3,h4):not([data-ms-heading]):not([data-ms-color]):not([data-ms-ink])::before,
 .deewan-book .printed-text [data-ms-heading="royal"]::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:url('/images/deewan/plaque.webp') center / 100% 100% no-repeat;clip-path:polygon(1% 50%,3% 47%,4.7% 41%,6% 31%,7.2% 25%,9.5% 20%,9% 16%,11% 17%,12.4% 10%,14.2% 6.5%,16.5% 6.2%,18% 7.3%,82% 7.3%,83.5% 6.2%,85.8% 6.5%,87.6% 10%,89% 17%,91% 16%,90.5% 20%,92.8% 25%,94% 31%,95.3% 41%,97% 47%,99% 50%,97% 53%,95.3% 59%,94% 69%,92.8% 75%,90.5% 80%,91% 84%,89% 83%,87.6% 90%,85.8% 93.5%,83.5% 93.8%,82% 92.7%,18% 92.7%,16.5% 93.8%,14.2% 93.5%,12.4% 90%,11% 83%,9% 84%,9.5% 80%,7.2% 75%,6% 69%,4.7% 59%,3% 53%)}
 .deewan-book .printed-text .book-article-heading{margin-block:0 .22em;}
+
+/* Native column offsets are applied immediately, never smooth-scrolled during a turn. */
+.deewan-book .deewan-viewport{scroll-behavior:auto!important;overflow-anchor:none}
+/* Keep the live ink and independent images below the frozen turning leaves. */
+.deewan-book > .book-panel{z-index:0;isolation:isolate}
+.deewan-book > .deewan-controls{z-index:3}
