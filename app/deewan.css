@@ -485,3 +485,10 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book .printed-text h4{font-size:1.15em}
 .deewan-book .printed-text :is(h2,h3,h4):not([data-ms-heading]):not([data-ms-color]):not([data-ms-ink]){color:#ffe0a0;font-weight:700;text-align:center;line-height:2.05;background:radial-gradient(ellipse at 48% 35%,#9a4226 0%,#6b201b 48%,#380c10 100%);border:3px double #b98936;border-radius:.9em .28em;box-shadow:inset 0 0 0 1px #eac578,0 1px 2px #4e291d44;text-shadow:0 1px 1px #30120b,0 -1px 0 #f7cc7655;padding:.04em .42em;margin-block:.16em .22em;break-inside:avoid;mix-blend-mode:normal}
 .deewan-book .printed-text .book-article-heading{color:#ffe0a0;text-align:center;line-height:2.05;margin-block:0 .22em}
+
+/* Use the exact existing index plaque art, not a rectangular imitation. */
+.deewan-book .printed-text :is(h2,h3,h4):not([data-ms-heading]):not([data-ms-color]):not([data-ms-ink]),
+.deewan-book .printed-text [data-ms-heading="royal"]{position:relative;isolation:isolate;color:#ffd700!important;background:none;border:0;border-radius:0;box-shadow:none;padding:.28em 1.15em;text-align:center!important;text-shadow:0 -.45px .35px #fff1a0,0 .65px .45px #99600c,0 1px 2px #380c12!important;line-height:2.05;break-inside:avoid;mix-blend-mode:normal}
+.deewan-book .printed-text :is(h2,h3,h4):not([data-ms-heading]):not([data-ms-color]):not([data-ms-ink])::before,
+.deewan-book .printed-text [data-ms-heading="royal"]::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:url('/images/deewan/plaque.webp') center / 100% 100% no-repeat;clip-path:polygon(1% 50%,3% 47%,4.7% 41%,6% 31%,7.2% 25%,9.5% 20%,9% 16%,11% 17%,12.4% 10%,14.2% 6.5%,16.5% 6.2%,18% 7.3%,82% 7.3%,83.5% 6.2%,85.8% 6.5%,87.6% 10%,89% 17%,91% 16%,90.5% 20%,92.8% 25%,94% 31%,95.3% 41%,97% 47%,99% 50%,97% 53%,95.3% 59%,94% 69%,92.8% 75%,90.5% 80%,91% 84%,89% 83%,87.6% 90%,85.8% 93.5%,83.5% 93.8%,82% 92.7%,18% 92.7%,16.5% 93.8%,14.2% 93.5%,12.4% 90%,11% 83%,9% 84%,9.5% 80%,7.2% 75%,6% 69%,4.7% 59%,3% 53%)}
+.deewan-book .printed-text .book-article-heading{margin-block:0 .22em;}

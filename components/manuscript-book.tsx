@@ -107,7 +107,9 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
   })
   if (panel) {
     const copy = panel.cloneNode(true) as HTMLElement
+    const panelStyle = getComputedStyle(panel)
     Object.assign(copy.style, {
+      fontSize:panelStyle.fontSize,lineHeight:panelStyle.lineHeight,fontFamily:panelStyle.fontFamily,mixBlendMode:panelStyle.mixBlendMode,
       left:(panel.offsetLeft-left)+'px', right:'auto', top:(panel.offsetTop-top)+'px',
       bottom:'auto', width:panel.offsetWidth+'px', height:panel.offsetHeight+'px',
       overflow:panel.querySelector('.ms-text-layer')?'visible':'hidden', pointerEvents:'none'
@@ -115,7 +117,17 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
     copy.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'))
     const columns = copy.querySelector<HTMLElement>('.deewan-columns')
     const viewport = panel.querySelector<HTMLElement>('.deewan-viewport')
-    if (columns && viewport) columns.style.transform = 'translateX(' + (-viewport.scrollLeft) + 'px)'
+    const viewportCopy = copy.querySelector<HTMLElement>('.deewan-viewport')
+    if (viewport && viewportCopy) {
+      // Freeze the old viewport's geometry and actual visible column.
+      // Live article/index CSS can change while the turn is in flight.
+      Object.assign(viewportCopy.style, {width:viewport.clientWidth+'px',height:viewport.clientHeight+'px',visibility:getComputedStyle(viewport).visibility,overflow:'hidden'})
+      if (columns) {
+        const original = viewport.querySelector<HTMLElement>('.deewan-columns')
+        if (original) Object.assign(columns.style,{width:original.clientWidth+'px',height:original.clientHeight+'px'})
+        columns.style.transform = 'translateX(' + (-viewport.scrollLeft) + 'px)'
+      }
+    }
     if (right && panel.scrollTop) {
       const inner = document.createElement('div')
       inner.append(...Array.from(copy.childNodes))
@@ -149,8 +161,8 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   const plan = rifflePlan(turn.distance)
   const front = turn.outgoing.face
   const firstFace = plan.leaves ? front.cloneNode(true) as HTMLDivElement : null
-  // Skipped leaves use the original paper artwork without fabricating text.
-  if (plan.leaves) front.replaceChildren()
+  // Keep the captured writing on the turning face, even on a long jump.
+  // Intermediate leaves may be decorative, but never erase the actual outgoing sheet.
   const back = captureSheet(leaf, !fromRight).face
   const sheet = document.createElement('div')
   sheet.dataset.turningSheet = ''
