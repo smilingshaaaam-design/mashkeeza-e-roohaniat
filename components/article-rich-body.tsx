@@ -34,9 +34,10 @@ function safeNodes(root: ParentNode): React.ReactNode[] {
       const wrapped = align === "left" || align === "right";
       const free = align === "free" && percent > 0;
       const style: React.CSSProperties = {
-        maxWidth: "100%",
+        maxWidth: wrapped ? "calc(100% - 0.65em)" : align === "inline" ? "calc(100% - 0.5em)" : "100%",
         width: percent ? percent + "%" : validWidth ? validWidth + "px" : "auto",
         height: percent ? "auto" : validHeight ? validHeight + "px" : "auto",
+        aspectRatio: validWidth && validHeight ? validWidth + " / " + validHeight : undefined,
         display: align === "inline" ? "inline-block" : "block",
         float: wrapped ? align : undefined,
         clear: align === "center" || free ? "both" : undefined,
@@ -50,7 +51,7 @@ function safeNodes(root: ParentNode): React.ReactNode[] {
         mixBlendMode: effect === "ink" || effect === "antique" || effect === "faded" ? "multiply" : undefined,
         filter: effect === "ink" ? "grayscale(1) contrast(1.25) sepia(.55)" : effect === "antique" ? "sepia(.72) saturate(.72) contrast(1.04)" : effect === "faded" ? "sepia(.8) saturate(.55) contrast(.85)" : undefined
       };
-      return <img key={i} src={src} alt={el.getAttribute("alt") || ""} loading="lazy" decoding="async" data-manuscript-effect={effect} style={style} />;
+      return <img key={i} src={src} alt={el.getAttribute("alt") || ""} width={validWidth} height={validHeight} loading="lazy" decoding="async" data-manuscript-effect={effect} style={style} />;
     }
     if (tag === "a") {
       const href = el.getAttribute("href") || "";
