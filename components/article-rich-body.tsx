@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import { RICH_MARKER } from "./article-rich-editor";
 
-const TAGS = new Set(["DIV", "P", "BR", "STRONG", "B", "EM", "I", "U", "H2", "H3", "UL", "OL", "LI", "BLOCKQUOTE", "A", "IMG"]);
+const TAGS = new Set(["DIV", "P", "BR", "STRONG", "B", "EM", "I", "U", "H2", "H3", "UL", "OL", "LI", "BLOCKQUOTE", "A", "IMG", "SPAN", "H4", "HR"]);
 
 function safeNodes(root: ParentNode): React.ReactNode[] {
   return Array.from(root.childNodes).map((node, i): React.ReactNode => {
@@ -65,6 +65,20 @@ function safeNodes(root: ParentNode): React.ReactNode[] {
       if (pageBreak) props["data-ms-break"] = "1";
       if (Object.keys(layout).length) props.style = layout;
     }
+    if (["p","div","span","h2","h3","h4","blockquote","li"].includes(tag)) {
+      const choices: Record<string, string[]> = {"data-ms-font":["nastaliq","gulzar","naskh","system"],"data-ms-heading":["royal","gold","ink","rule","plain"],"data-ms-ink":["ancient","faded","gold","maroon","normal"],"data-ms-align":["right","center","left","justify"]};
+      for (const [name, values] of Object.entries(choices)) {
+        const value = el.getAttribute(name);
+        if (value && values.includes(value)) props[name] = value;
+      }
+      const layout = (props.style || {}) as React.CSSProperties;
+      const size = Number(el.getAttribute("data-ms-fontsize"));
+      const leading = Number(el.getAttribute("data-ms-leading"));
+      if (Number.isInteger(size) && size >= 70 && size <= 180) layout.fontSize = size + "%";
+      if (Number.isInteger(leading) && leading >= 16 && leading <= 36) layout.lineHeight = leading / 10;
+      if (Object.keys(layout).length) props.style = layout;
+    }
+    if (tag === "hr") return <hr key={i} className="ms-ornamental-rule" />;
     if (tag === "a") {
       const href = el.getAttribute("href") || "";
       try {

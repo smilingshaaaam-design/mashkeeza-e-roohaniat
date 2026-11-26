@@ -350,3 +350,20 @@ summary,
 /* Remove only plus-shaped star rays; keep twinkling stars and smoke. */
 .magic-star-cross::before,
 .magic-star-cross::after { content: none !important; }
+
+
+/* Author-selected Urdu typography; only opt-in attributes change existing articles. */
+[data-ms-font="nastaliq"]{font-family:var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="gulzar"]{font-family:var(--font-gulzar,'Gulzar'),serif!important}
+[data-ms-font="naskh"]{font-family:'Noto Naskh Arabic','Traditional Arabic',serif!important}
+[data-ms-font="system"]{font-family:system-ui,sans-serif!important}
+[data-ms-align="right"]{text-align:right!important}[data-ms-align="left"]{text-align:left!important}[data-ms-align="center"]{text-align:center!important}[data-ms-align="justify"]{text-align:justify!important}
+[data-ms-ink="ancient"]{color:#4d2b13!important;text-shadow:.025em .025em .035em #6c412952;mix-blend-mode:multiply}
+[data-ms-ink="faded"]{color:#795b37!important;text-shadow:.03em .03em .07em #956b3835;opacity:.83;mix-blend-mode:multiply}
+[data-ms-ink="maroon"]{color:#76252b!important}
+[data-ms-ink="gold"]{color:#936116!important;text-shadow:0 1px #fbe7b0,0 -1px #60401d55;font-weight:700}
+[data-ms-heading="royal"]{color:#ffe0a1!important;background:linear-gradient(115deg,#370c10,#842d28 49%,#42100f);border:3px double #d6ad55;border-radius:1em 0.35em;margin:.65em auto!important;padding:.1em .45em;text-align:center!important;box-shadow:0 1px 3px #4c240a45,inset 0 0 0 1px #f2d58f;break-inside:avoid;text-shadow:0 1px 1px #200b08!important;mix-blend-mode:normal!important}
+[data-ms-heading="gold"]{color:#8c5713!important;text-shadow:0 1px #fce3a4,0 -1px #7d521c66;text-align:center!important;border-block-end:1px solid #b18b44;padding-bottom:.12em;break-inside:avoid}
+[data-ms-heading="ink"]{color:#4d2618!important;font-weight:700;text-align:center!important;break-inside:avoid}
+[data-ms-heading="rule"]{color:#763126!important;text-align:center!important;border-block:1px solid #ae8548;padding:.12em .35em;break-inside:avoid}
+.ms-ornamental-rule{width:72%;height:6px;border:0;border-top:1px solid #b38a42;border-bottom:1px solid #b38a42;margin:1em auto;break-inside:avoid}
