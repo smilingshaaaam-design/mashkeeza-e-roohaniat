@@ -482,8 +482,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       })}</ol> : <p>اس موضوع سے ابھی کوئی تحریر منسلک نہیں ہے۔</p>}</>}
         </div>
       </div>
-    </div>)}
-    {!intro && <nav className="book-breadcrumbs" aria-label="کتاب میں موجودہ مقام" dir="rtl">
+      {side === 'right' && <nav className="book-breadcrumbs" aria-label="کتاب میں موجودہ مقام" dir="rtl">
       <ol>
         {breadcrumbs.map((crumb, index) => <li key={crumb.key}>
           {index > 0 && <span className="book-crumb-arrow" aria-hidden="true">‹</span>}
@@ -493,6 +492,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         </li>)}
       </ol>
     </nav>}
+    </div>)}
     <div aria-hidden="true" className="deewan-leaf" style={{inset:"0 4%"}} ref={leaf} />
     {(!intro || stage === 'returning' || stage === 'dedication') && <div className="deewan-controls">
       <button onClick={() => turn(-1)}>پچھلا صفحہ</button>
