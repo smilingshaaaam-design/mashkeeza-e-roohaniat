@@ -175,13 +175,14 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
         }
       }
       // Freeze values that otherwise change with the destination contour mode.
-      const selector='h2,h3,h4,img,.ms-text-layer,.ms-book-image-mask'
+      const selector='h2,h3,h4,img,.ms-text-layer,.ms-book-image-mask,.deewan-plaque,.deewan-index ol,.deewan-index li'
       const originals=panel.querySelectorAll<HTMLElement>(selector)
       const copies=copy.querySelectorAll<HTMLElement>(selector)
       originals.forEach((element,i)=>{
         const clone=copies[i];if(!clone)return
         const style=getComputedStyle(element)
         clone.style.setProperty('display',style.display,'important')
+        for(const property of ['font-size','font-family','font-weight','line-height','margin-top','margin-bottom','padding-top','padding-bottom','box-sizing','text-align','min-height','vertical-align','break-inside','break-after']) clone.style.setProperty(property,style.getPropertyValue(property),'important')
         if(element.tagName==='IMG') {
           clone.style.setProperty('clear',style.clear,'important')
           clone.style.width=style.width;clone.style.height=style.height
@@ -190,7 +191,7 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
         if(element.classList.contains('ms-text-layer')||element.classList.contains('ms-book-image-mask')) Object.assign(clone.style,{top:style.top,left:style.left,right:style.right,bottom:style.bottom,width:style.width,height:style.height})
       })
     }
-    if (right && panel.scrollTop) {
+    if (right && panel.scrollTop && !viewport) {
       const inner = document.createElement('div')
       inner.append(...Array.from(copy.childNodes))
       inner.style.transform = 'translateY(-' + panel.scrollTop + 'px)'
@@ -687,7 +688,6 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       const dx = e.changedTouches[0].clientX - start[0]
       if (Math.abs(dx) > 45 && Math.abs(dx) > 1.6 * Math.abs(e.changedTouches[0].clientY - start[1])) turn(dx > 0 ? 1 : -1)
     }}>
-    <div className="book-variable-stacks" aria-hidden="true"><i className="book-stack-left"/><i className="book-stack-right"/></div>
     <div aria-hidden="true" className="deewan-sky-backdrop"><Starfield count={125} seed={41} className="inset-0" /></div>
     {intro && stage === 'cover' && <div className="cover-sand" aria-hidden="true">{Array.from({length:32}, (_, i) =>
       <i key={i} style={{left:(i * 37 % 100) + '%',animationDelay:(i * 83 % 1050) + 'ms'}} />)}</div>}
