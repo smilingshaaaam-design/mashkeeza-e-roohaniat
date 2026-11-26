@@ -428,3 +428,12 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book .printed-text{line-height:2.25}
 .deewan-book .printed-text :is(p,blockquote,h2,h3,h4){margin-block:.28em}
 .deewan-book .book-panel:has(.printed-text) .deewan-viewport{overflow:hidden}
+
+/* Same compact manuscript typography as the CMS. Keep decoration clear. */
+.deewan-book .book-panel:has(.printed-text){font-size:var(--book-writing-font,16px)}
+.deewan-book .printed-text{line-height:2.2}
+.deewan-book .printed-text :is(p,div,blockquote,li){orphans:1;widows:1}
+.deewan-book .printed-text :is(p,blockquote){margin-block:.14em}
+.deewan-book .printed-text :is(ul,ol){margin-block:.14em;padding-inline-start:1.15em}
+.deewan-book .printed-text :is(h2,h3,h4){margin-block:.18em;break-after:avoid-column}
+.deewan-book .printed-text>h3:first-child{margin-block:0 .18em}

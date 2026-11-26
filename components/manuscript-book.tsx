@@ -385,6 +385,11 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     let active = true
     const measure = () => {
       if (!active || !node.clientWidth) return
+      const book = node.closest<HTMLElement>('.deewan-book')
+      if (card && book) {
+        const fontSize = Math.max(13, Math.min(19, book.clientWidth * .016))
+        book.style.setProperty('--book-writing-font', fontSize + 'px')
+      }
       const objectPages = readManuscriptText(entry?.body).reduce((n,o)=>Math.max(n,o.page+1),0)
       const flowPages = Math.max(1, Math.round(node.scrollWidth / node.clientWidth))
       setFlowCount(flowPages)
