@@ -173,7 +173,7 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
     Object.assign(copy.style, {
       fontSize:panelStyle.fontSize,lineHeight:panelStyle.lineHeight,fontFamily:panelStyle.fontFamily,mixBlendMode:panelStyle.mixBlendMode,
       left:(panelBounds.left-faceX)+'px', right:'auto', top:(panelBounds.top-bounds.top)+'px',
-      bottom:'auto', width:panelStyle.width, height:panelStyle.height,boxSizing:panelStyle.boxSizing,
+      bottom:'auto', width:panelBounds.width+'px', height:panelBounds.height+'px',boxSizing:panelStyle.boxSizing,
       animation:'none',transition:'none',visibility:panelStyle.visibility,
       overflow:panel.querySelector('.ms-text-layer')?'visible':'hidden', pointerEvents:'none'
     })
@@ -185,14 +185,16 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
       // Freeze the old viewport's geometry and actual visible column.
       // Live article/index CSS can change while the turn is in flight.
       const viewportStyle = getComputedStyle(viewport)
-      Object.assign(viewportCopy.style, {width:viewportStyle.width,height:viewportStyle.height,visibility:viewportStyle.visibility,overflow:'hidden',scrollBehavior:'auto',overflowAnchor:'none'})
+      const viewportBounds = viewport.getBoundingClientRect()
+      Object.assign(viewportCopy.style, {width:viewportBounds.width+'px',height:viewportBounds.height+'px',visibility:viewportStyle.visibility,overflow:'hidden',scrollBehavior:'auto',overflowAnchor:'none'})
       viewportCopy.dataset.frozenScrollX=String(viewport.scrollLeft)
       viewportCopy.dataset.frozenScrollY=String(viewport.scrollTop)
       if (columns) {
         const original = viewport.querySelector<HTMLElement>('.deewan-columns')
         if (original) {
           const style=getComputedStyle(original)
-          Object.assign(columns.style,{width:style.width,height:style.height,columnCount:style.columnCount,columnWidth:style.columnWidth,columnGap:style.columnGap,columnFill:style.columnFill,fontFamily:style.fontFamily,fontSize:style.fontSize,lineHeight:style.lineHeight,transform:style.transform})
+          const flowBounds = original.getBoundingClientRect()
+          Object.assign(columns.style,{width:flowBounds.width+'px',height:flowBounds.height+'px',columnCount:style.columnCount,columnWidth:style.columnWidth,columnGap:style.columnGap,columnFill:style.columnFill,fontFamily:style.fontFamily,fontSize:style.fontSize,lineHeight:style.lineHeight,transform:style.transform})
         }
       }
       // Freeze values that otherwise change with the destination contour mode.
@@ -204,7 +206,7 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
         const style=getComputedStyle(element)
         clone.style.setProperty('display',style.display,'important')
         if (element.matches('h2,h3,h4')) {
-          for (const property of ['width','font-size','font-family','line-height','margin','padding','text-align','direction']) {
+          for (const property of ['font-size','font-family','text-align','direction']) {
             clone.style.setProperty(property, style.getPropertyValue(property))
           }
         }
@@ -544,11 +546,11 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       } else if (book) book.dataset.bookContours='false'
       const objectPages = [...readManuscriptText(entry?.body), ...readManuscriptImages(entry?.body)].reduce((n,o)=>Math.max(n,o.page+1),0)
       // Match the exact subpixel geometry, including the fallback layout.
-      const geometry=getComputedStyle(rightFlow)
-      leftViewport.style.width=getComputedStyle(node).width
-      leftViewport.style.height=getComputedStyle(node).height
-      leftFlow.style.width=geometry.width
-      leftFlow.style.height=geometry.height
+      const geometry=rightFlow.getBoundingClientRect()
+      leftViewport.style.width=node.getBoundingClientRect().width+'px'
+      leftViewport.style.height=node.getBoundingClientRect().height+'px'
+      leftFlow.style.width=geometry.width+'px'
+      leftFlow.style.height=geometry.height+'px'
       const flowPages=countReadingColumns(rightFlow)
       flowPagesRef.current=flowPages
       setFlowCount(flowPages)
