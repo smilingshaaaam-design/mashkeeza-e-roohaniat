@@ -6,6 +6,7 @@ import { Starfield } from './magic/starfield'
 import { ArticleRichBody } from './article-rich-body'
 import { ManuscriptTextLayer, readManuscriptText } from './manuscript-text-objects'
 import { RelatedTopics } from './related-topics'
+import { applyBookContours, clearBookContours } from './book-contours'
 import type { NavItem } from './main-nav'
 
 type Entry = { id: string; slug: string; title: string; body?: string; excerpt?: string; content_type: string; use_magical_scroll?: number | boolean | null; include_in_book?: boolean | number | string | null }
@@ -383,13 +384,32 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     const node = paper.current
     if (!node) { setPage(0); setCount(1); setFlowCount(1); return }
     let active = true
+    let contourSignature = ''
     const measure = () => {
       if (!active || !node.clientWidth) return
       const book = node.closest<HTMLElement>('.deewan-book')
       if (card && book) {
         const fontSize = Math.max(13, Math.min(19, book.clientWidth * .016))
         book.style.setProperty('--book-writing-font', fontSize + 'px')
-      }
+        const panels = Array.from(book.querySelectorAll<HTMLElement>('.book-panel:has(.printed-text)'))
+        const source = panels[0]?.querySelector<HTMLElement>('[data-book-source]')
+        const signature = [book.clientWidth,book.clientHeight,source?.innerHTML || '',document.fonts.status].join('\u0001')
+        if (signature !== contourSignature) {
+          contourSignature = signature
+          const targets = panels.map(panel => ({source:panel.querySelector<HTMLElement>('[data-book-source]'),target:panel.querySelector<HTMLElement>('[data-book-target]'),columns:panel.querySelector<HTMLElement>('.deewan-columns')}))
+          if (entry && targets.length === 2 && targets.every(item => item.source && item.target && item.columns)) {
+            book.dataset.bookContours = 'true'
+            let ok = true
+            for (const item of targets) {
+              const target=item.target!, columns=item.columns!
+              target.replaceChildren(...Array.from(item.source!.childNodes,n=>n.cloneNode(true)))
+              target.querySelectorAll('link').forEach(n=>n.remove())
+              if(!applyBookContours(target,{width:columns.clientWidth,pitch:columns.clientWidth,height:columns.clientHeight,geometryRoot:columns})) ok=false
+            }
+            if(!ok){book.dataset.bookContours='false';for(const item of targets)clearBookContours(item.target!)}
+          } else book.dataset.bookContours='false'
+        }
+      } else if (book) book.dataset.bookContours='false'
       const objectPages = readManuscriptText(entry?.body).reduce((n,o)=>Math.max(n,o.page+1),0)
       const flowPages = Math.max(1, Math.round(node.scrollWidth / node.clientWidth))
       setFlowCount(flowPages)
@@ -409,8 +429,13 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     const observer = new ResizeObserver(measure)
     observer.observe(node)
     node.addEventListener('load', measure, true)
-    document.fonts.ready.then(measure)
-    return () => { active = false; observer.disconnect(); node.removeEventListener('load', measure, true) }
+    const book = node.closest<HTMLElement>('.deewan-book')
+    const sourceObserver = new MutationObserver(measure)
+    book?.querySelectorAll('[data-book-source]').forEach(source=>sourceObserver.observe(source,{subtree:true,childList:true,characterData:true,attributes:true}))
+    const onFonts = () => { contourSignature='';measure() }
+    document.fonts.ready.then(onFonts)
+    document.fonts.addEventListener('loadingdone',onFonts)
+    return () => { active = false; observer.disconnect(); sourceObserver.disconnect(); node.removeEventListener('load', measure, true);document.fonts.removeEventListener('loadingdone',onFonts) }
   }, [stage, hash, entry, indexSignature, cards.map(item => item.id + item.label).join('|')])
   useLayoutEffect(() => {
     const node = paper.current
@@ -603,11 +628,12 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       <div ref={side === 'right' ? paper : leftPaper} className="deewan-viewport"
         style={{visibility: page + (side === 'left' ? 1 : 0) >= flowCount ? 'hidden' : 'visible'}}>
         <div className={'deewan-columns ' + (card ? 'printed-text' : 'printed-index')}>
-          {card ? <><h3>{entry?.title || card.label}</h3>
-        {entry && isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
-        {entry ? <>{entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} floatingObjects /></> :
-          failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> :
-          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{mainIndex ? <h2 className="book-main-index-title">مرکزی فہرست</h2> : <h2>{topic.label}</h2>}
+          {card ? entry ? <>
+            <div data-book-source hidden aria-hidden="true"><h3>{entry.title || card.label}</h3>
+              {isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
+              {entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} floatingObjects />
+            </div><div data-book-target style={{display:'contents'}}/>
+          </> : <><h3>{card.label}</h3>{failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> : <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{mainIndex ? <h2 className="book-main-index-title">مرکزی فہرست</h2> : <h2>{topic.label}</h2>}
       {!mainIndex && topic.id === 'contact' && <p>سوال یا معلومات کے لیے درج ذیل ذرائع سے رابطہ کریں۔</p>}
       {!mainIndex && <h3>فہرست</h3>}
       {mainIndex ? <CompleteBookIndex items={completeIndex} onSelect={selectHeading} /> : indexItems.length ? <ol>{indexItems.map(item => {

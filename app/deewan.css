@@ -456,3 +456,16 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 }
 .deewan-book .printed-text>h3:first-child:not([data-ms-heading]){margin-block:0 .22em}
 .deewan-book .printed-text img[data-manuscript-effect="impose"]{mix-blend-mode:multiply}
+
+/* Contour columns stay on the unpainted parchment. */
+.deewan-book[data-book-contours="true"] .book-panel:has(.printed-text){width:36%;top:10%;bottom:24%}
+.deewan-book[data-book-contours="true"] .book-panel[data-side="right"]:has(.printed-text){right:9.5%;bottom:8%}
+.deewan-book[data-book-contours="true"] .book-panel[data-side="left"]:has(.printed-text){left:9.5%}
+.deewan-book[data-book-contours="true"] .book-panel[data-side="right"]:has(.printed-text)>.deewan-viewport{height:80.487804878%}
+.deewan-book[data-book-contours="true"] .printed-text :is(h2,h3,h4){display:flow-root;max-width:100%;overflow-wrap:anywhere}
+.deewan-book[data-book-contours="true"] .ms-text-layer-book{top:-15.1515151515%;left:-26.3888888889%;width:138.8888888889%;height:151.5151515152%}
+.deewan-book[data-book-contours="true"] .ms-text-layer-right{top:-12.1951219512%;left:-12.5%;height:121.9512195122%}
+.deewan-book [data-book-source]{display:none!important}
+.deewan-book [data-book-target]{display:contents}
+.deewan-book [data-book-contour]{pointer-events:none!important;user-select:none!important;-webkit-user-select:none!important;font-size:0!important;line-height:0!important}
+.deewan-book .printed-text [data-book-target]>h3:first-child{margin-block:0 .22em}
