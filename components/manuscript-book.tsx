@@ -79,13 +79,13 @@ function CompleteBookIndex({ items, compact = false, onSelect }: { items: BookIn
 }
 
 // Opening: 1.75s arrival, 1.2s cover, .95s dedication, 1.1s first turn.
-const COVER_ARRIVAL_MS = 1250
-const COVER_HOLD_MS = 1750
-const COVER_OPEN_MS = 1200
-const DEDICATION_MS = 950
+const COVER_ARRIVAL_MS = 1600
+const COVER_HOLD_MS = 6600
+const COVER_OPEN_MS = 1800
+const DEDICATION_MS = 4000
 
 function turnDuration(distance: number) {
-  return Math.round(640 + 460 / Math.sqrt(Math.max(1, distance)))
+  return Math.round(680 + 670 / Math.sqrt(Math.max(1, distance)))
 }
 
 type Sheet = { face: HTMLDivElement; right: boolean }
@@ -229,18 +229,7 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
   return {face, right}
 }
 
-type PageTurn = { duration: number; distance: number; outgoing: Sheet; landing: Sheet }
-
-// More distant jumps show more leaves at a faster cadence. Cap the visual
-// sample so even a very long manuscript stays responsive.
-function rifflePlan(distance: number) {
-  const turns = Math.max(1, Math.ceil(distance))
-  if (turns === 1) return { leaves: 0, interval: 0, flight: 0, delay: 0, final: turnDuration(1) }
-  const leaves = Math.min(15, turns - 1)
-  const interval = Math.max(53, Math.round(185 / Math.sqrt(turns)))
-  const flight = Math.round(interval * 2.15)
-  return { leaves, interval, flight, delay: (leaves - 1) * interval + Math.round(flight * .72), final: Math.max(440, Math.round(650 - Math.min(200, turns * 12))) }
-}
+type PageTurn = { duration: number; outgoing: Sheet; landing: Sheet }
 
 function animateLeaf(leaf: HTMLElement, turn: PageTurn, onRelease: () => void) {
   const bounds = leaf.getBoundingClientRect()
@@ -252,18 +241,14 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn, onRelease: () => void) {
   if (!width || !height) {onRelease();return}
 
   const fromRight = turn.outgoing.right
-  const plan = rifflePlan(turn.distance)
-  // The outgoing ink travels on the first leaf only. On a long jump the
-  // final leaf carries the destination on its reverse.
-  const firstFace = plan.leaves ? turn.outgoing.face : null
-  const front = firstFace ? turn.outgoing.face.cloneNode(false) as HTMLDivElement : turn.outgoing.face
+  const front = turn.outgoing.face
   const back = captureSheet(leaf, !fromRight).face
   const sheet = document.createElement('div')
   sheet.dataset.turningSheet = ''
   Object.assign(sheet.style, {
     position:'absolute', left:fromRight ? '50%' : '0', top:'0', width:'50%', height:'100%',
     transformStyle:'preserve-3d', transformOrigin:fromRight ? 'left center' : 'right center',
-    pointerEvents:'none', willChange:'transform'
+    pointerEvents:'none'
   })
   // Both inked faces share a single hinge; native backface culling handles the
   // edge-on frame, even when perspective or the viewport changes the viewing angle.
@@ -271,8 +256,8 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn, onRelease: () => void) {
     face.style.backfaceVisibility = 'hidden'
     face.style.setProperty('-webkit-backface-visibility', 'hidden')
   }
-  front.style.transform = 'translateZ(0px)'
-  back.style.transform = 'rotateY(180deg) translateZ(0px)'
+  front.style.transform = 'translateZ(.15px)'
+  back.style.transform = 'rotateY(180deg) translateZ(.15px)'
   sheet.append(front, back)
   leaf.append(sheet)
   restoreSheetScroll(sheet)
@@ -291,62 +276,22 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn, onRelease: () => void) {
   const transforms: Keyframe[] = []
   const light: Keyframe[] = []
   const direction = fromRight ? -1 : 1
-  for (let i = 0; i <= 64; i++) {
-    const t = i / 64
-    const progress = t * t * t * (10 + t * (-15 + 6 * t))
+  for (let i = 0; i <= 48; i++) {
+    const t = i / 48
+    const progress = t * t * (3 - 2 * t)
     const angle = Math.PI * progress
     const bend = Math.sin(angle)
-    // Keep ink rigidly attached to the leaf: no skew/scale that makes text wobble.
-    transforms.push({transform:'rotateY(' + direction * 180 * progress + 'deg)'})
+    const easingOut = Math.sin(2 * angle)
+    // Shear along the free edge. Points on the vertical binding stay fixed.
+    transforms.push({transform:'rotateY(' + direction * 180 * progress + 'deg) skewY(' +
+      direction * (2.3 * bend + 1.6 * easingOut) + 'deg) scaleX(' + (1 - .045 * bend) + ')'})
     light.push({opacity:.70*bend, transform:'translateX(' + direction * (progress - .5) * 28 + '%)'})
 
   }
 
-  const timing: KeyframeAnimationOptions = {duration:plan.leaves ? plan.final : turn.duration, delay:plan.delay, easing:'linear', fill:'both'}
+  const timing: KeyframeAnimationOptions = {duration:turn.duration, fill:'both'}
   const motion = sheet.animate(transforms, timing)
   const animations = [motion]
-  const riffleSheets: HTMLDivElement[] = []
-  const makePaper = (right: boolean) => {
-    const face = document.createElement('div')
-    const book = leaf.parentElement!
-    const left = leafLeft + (right ? width : 0)
-    Object.assign(face.style, {
-      position:'absolute', inset:'0', pointerEvents:'none',
-      backgroundImage:"url('/images/deewan/paper-surface.webp')",
-      backgroundSize:book.clientWidth + 'px ' + book.clientHeight + 'px',
-      backgroundPosition:-left + 'px ' + (-leafTop) + 'px',
-      backfaceVisibility:'hidden', overflow:'hidden',
-    })
-    face.style.setProperty('-webkit-backface-visibility','hidden')
-    return face
-  }
-  for (let i = 0; i < plan.leaves; i++) {
-    const flick = document.createElement('div')
-    flick.inert = true
-    Object.assign(flick.style, {
-      position:'absolute', left:fromRight ? '50%' : '0', top:'0', width:'50%', height:'100%',
-      transformStyle:'preserve-3d', transformOrigin:fromRight ? 'left center' : 'right center',
-      pointerEvents:'none', opacity:'0', zIndex:String(i+1), willChange:'transform, opacity',
-    })
-    const a = i === 0 && firstFace ? firstFace : makePaper(fromRight)
-    const b = makePaper(!fromRight)
-    a.style.backfaceVisibility = 'hidden'
-    a.style.setProperty('-webkit-backface-visibility','hidden')
-    a.style.transform = 'translateZ(0px)'
-    b.style.transform = 'rotateY(180deg) translateZ(0px)'
-    flick.append(a,b)
-    leaf.append(flick)
-    restoreSheetScroll(flick)
-    riffleSheets.push(flick)
-    // Staggered overlapping leaves keep the fast currency-counter effect
-    // without repeatedly mounting or loading intervening articles.
-    animations.push(flick.animate([
-      { offset:0, opacity:1, transform:'rotateY(0deg)' },
-      { offset:.43, opacity:1, transform:'rotateY(' + direction*83 + 'deg)' },
-      { offset:.86, opacity:1, transform:'rotateY(' + direction*169 + 'deg)' },
-      { offset:1, opacity:0, transform:'rotateY(' + direction*180 + 'deg)' },
-    ], {duration:plan.flight, delay:i*plan.interval, easing:'cubic-bezier(.32,.12,.65,.93)', fill:'none'}))
-  }
   ;[front, back].forEach(face => {
     face.style.overflow = 'hidden'
     const glaze = document.createElement('div')
@@ -361,12 +306,11 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn, onRelease: () => void) {
 
   let released = false
   const release = () => {
-    if(released)return
-    released=true
+    if (released) return
+    released = true
     motion.onfinish = null
     animations.forEach(animation => animation.cancel())
     sheet.remove()
-    riffleSheets.forEach(node => node.remove())
     still.remove()
     onRelease()
   }
@@ -447,7 +391,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   function rememberSheet(fromRight: boolean, distance = 1, destination?: string) {
     if (leaf.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       pendingDestination.current = destination
-      pendingSheet.current = { duration:turnDuration(distance), distance, outgoing:captureSheet(leaf.current, fromRight), landing:captureSheet(leaf.current, !fromRight) }
+      pendingSheet.current = { duration:turnDuration(distance), outgoing:captureSheet(leaf.current, fromRight), landing:captureSheet(leaf.current, !fromRight) }
     }
   }
   useEffect(() => {
