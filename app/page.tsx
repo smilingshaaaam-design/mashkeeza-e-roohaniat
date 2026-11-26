@@ -13,8 +13,8 @@ const googleThumbnailSchema = {
   name: 'مشکیزہ روحانیت | علم و معرفت کا روحانی مرکز',
   primaryImageOfPage: {
     '@type': 'ImageObject',
-    contentUrl: 'https://mashkeeza-e-roohaniat.com/google-thumbnail.png',
-    url: 'https://mashkeeza-e-roohaniat.com/google-thumbnail.png',
+    contentUrl: 'https://mashkeeza-e-roohaniat.com/mashkeeza-whatsapp-share.jpg',
+    url: 'https://mashkeeza-e-roohaniat.com/mashkeeza-whatsapp-share.jpg',
   },
 }
 
