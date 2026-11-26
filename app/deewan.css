@@ -198,10 +198,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 
 /* The gilded binding swings around the same spine as the manuscript leaves. */
 .deewan-book[data-opening="cover"] {animation:none}
-.deewan-book[data-opening="cover"]::before {
-  mask-image:linear-gradient(to right,#000 50%,transparent 50%);
-  animation:uncover-paper 1ms step-end 6.6s both;
-}
+
 @keyframes uncover-paper {from{visibility:hidden}to{visibility:visible}}
 @keyframes reveal-binding {0%{opacity:0} 55%,100%{opacity:1}}
 .manuscript-cover {
@@ -296,25 +293,12 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book[data-opening="cover"]::before,
 [data-opening="cover"] .book-panel {animation:none;visibility:hidden}
 .deewan-book[data-opening="opening"] {animation:none}
-.deewan-book[data-opening="opening"]::before {mask-image:linear-gradient(to right,#000 50%,transparent 50%)}
+
 [data-opening="opening"] .manuscript-cover {animation:open-binding 1.8s linear both}
 .reopen-cover {z-index:2;touch-action:pinch-zoom;transform:translateZ(3px)}
 @media(prefers-reduced-motion:reduce){[data-opening="opening"] .manuscript-cover{animation:none}}
 
-/* Expose the stationary paper only as the free edge travels towards the spine. */
-@keyframes uncover-left-sheet {
-  0% {mask-size:50% 100%}
-  100% {mask-size:100% 100%}
-}
-.deewan-book:is([data-opening="opening"],[data-opening="closing"])::before {
-  mask-image:linear-gradient(#000,#000);mask-position:left;mask-repeat:no-repeat;
-  animation:uncover-left-sheet 1.8s linear both;
-}
-.deewan-book[data-opening="opening"]::before {animation-duration:1.8s}
-.deewan-book[data-opening="closing"]::before {animation-direction:reverse}
-@media(prefers-reduced-motion:reduce) {
-  .deewan-book:is([data-opening="opening"],[data-opening="closing"])::before {animation:none;visibility:hidden}
-}
+
 
 /* The manuscript keeps a desktop-width viewport even on phones. */
 @media (pointer:coarse) and (hover:none) and (max-device-width:960px) {
@@ -514,20 +498,11 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book [data-turning-sheet] .deewan-plaque{transition:none!important;animation:none!important}
 
 
-/* Reveal the stationary right leaf only as the cover crosses the spine. */
-.deewan-book[data-opening="cover"]::before{visibility:visible!important;opacity:0;animation:none;mask:none}
-.deewan-book[data-opening="opening"]::before{visibility:visible;opacity:1;mask-image:linear-gradient(#000,#000);mask-repeat:no-repeat;mask-position:left;animation:binding-synchronized-reveal 1.8s linear both}
-@keyframes binding-synchronized-reveal{0%{mask-size:50% 100%}25%{mask-size:50% 100%}50%{mask-size:50% 100%}65%{mask-size:72% 100%}80%{mask-size:90% 100%}100%{mask-size:100% 100%}}
-.manuscript-cover::after{background-image:url('/images/deewan/paper-surface.webp')}
-@media(prefers-reduced-motion:reduce){.deewan-book[data-opening="opening"]::before{animation:none;mask:none}}
 
-/* Closing is the reverse of the cover opening, not an independent extra leaf. */
-.deewan-book[data-opening="closing"]::before{visibility:visible;opacity:1;mask-image:linear-gradient(#000,#000);mask-repeat:no-repeat;mask-position:left;animation:binding-synchronized-reveal 1.8s linear reverse both}
-[data-opening="closing"] .dedication{animation:none;visibility:hidden}
-.deewan-book[data-opening="closed"]::before{visibility:hidden!important;opacity:0!important;animation:none!important}
-@media(prefers-reduced-motion:reduce){.deewan-book[data-opening="closing"]::before{animation:none;visibility:hidden}}
-
-/* Never crop a stationary leaf halfway across its artwork. The rotating cover supplies the motion. */
-.deewan-book:is([data-opening="opening"],[data-opening="closing"])::before{mask:none!important;-webkit-mask:none!important;animation:none!important;visibility:visible!important;opacity:1!important}
-.deewan-book[data-opening="closing"]::before{animation:binding-close-whole 1.8s step-end both!important}
-@keyframes binding-close-whole{from{opacity:1}to{opacity:0}}
+/* One stationary spread, two whole halves. No moving rectangular crop. */
+.deewan-book[data-opening="cover"]::before,.deewan-book[data-opening="closed"]::before{visibility:visible;opacity:0;animation:none;mask:none}
+.deewan-book[data-opening="opening"]::before{visibility:visible;opacity:1;mask:none;animation:binding-open-halves 1.8s steps(1,end) both}
+.deewan-book[data-opening="closing"]::before{visibility:visible;opacity:1;mask:none;animation:binding-open-halves 1.8s steps(1,end) reverse both}
+@keyframes binding-open-halves{0%{clip-path:inset(0 50% 0 0)}50%,100%{clip-path:inset(0)}}
+[data-opening="closing"] .dedication{visibility:hidden;animation:none}
+@media(prefers-reduced-motion:reduce){.deewan-book[data-opening="opening"]::before{animation:none}.deewan-book[data-opening="closing"]::before{animation:none;opacity:0}}
