@@ -368,19 +368,19 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
   .reshmi-header:has(.deewan-book) .reshmi-mast{--moon-title-offset:clamp(16px,2.6vh,30px)}
 }
 
-/* Fine manuscript breadcrumb: a small, gilded inscription along the lower margin. */
-.deewan-book .book-breadcrumbs{position:absolute;top:88.6%;left:14%;right:14%;z-index:3;transform:translateY(-50%);font-family:var(--font-nastaliq),serif;font-size:clamp(11px,.95vw,15px);font-weight:600;line-height:1.65}
-.book-breadcrumbs ol{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.18em .38em;list-style:none;margin:0;padding:0}
-.book-breadcrumbs li{display:flex;align-items:center;gap:.38em;min-width:0;max-width:100%}
-.book-breadcrumbs .book-crumb-arrow{color:#956d33;font-family:serif;font-size:1.15em;line-height:1;flex:none;text-shadow:0 1px #f8e5b2}
-.book-breadcrumbs .book-crumb{position:relative;min-width:0;max-width:100%;overflow-wrap:anywhere;padding:.03em .75em .13em;border:1px solid #ae823d;border-radius:2px;background:linear-gradient(105deg,#54212a,#753642 49%,#54212a);color:#f5d88b;box-shadow:inset 0 0 0 1px #e9bc682c,0 1px 1px #45231238;cursor:pointer;line-height:1.8;text-shadow:0 .5px 1px #30120b66}
-.book-breadcrumbs .book-crumb::before,.book-breadcrumbs .book-crumb::after{content:"";position:absolute;top:50%;width:3px;height:3px;border:1px solid #d8ae61;transform:translateY(-50%) rotate(45deg);pointer-events:none}
-.book-breadcrumbs .book-crumb::before{right:2px}
-.book-breadcrumbs .book-crumb::after{left:2px}
-.book-breadcrumbs .book-crumb[aria-current="page"]{background:linear-gradient(90deg,#b88b3f12,#e5c68a65,#b88b3f12);border-color:#a7824c90;color:#64252e;box-shadow:inset 0 1px 1px #8c633321;text-shadow:none}
-.book-breadcrumbs .book-crumb[aria-current="page"]::before,.book-breadcrumbs .book-crumb[aria-current="page"]::after{border-color:#a77a37}
-.book-breadcrumbs .book-crumb:hover{border-color:#c79d50;filter:brightness(1.08)}
-.book-breadcrumbs .book-crumb:focus-visible{outline:2px solid #693121;outline-offset:2px}
-.book-breadcrumbs .book-crumb:active{transform:translateY(1px);box-shadow:inset 0 2px 3px #26081155}
-@media(min-width:1024px) and (hover:hover) and (pointer:fine){.deewan-book .book-breadcrumbs{font-size:clamp(11px,.85vw,14px)}}
-@media(max-width:650px){.deewan-book .book-breadcrumbs{left:8%;right:8%;font-size:clamp(10px,2.7vw,13px)}.book-breadcrumbs ol{gap:.15em .25em}.book-breadcrumbs .book-crumb{padding:.06em .7em .13em}}
+/* Printed navigation belongs to the right-hand leaf, including its turning snapshot.
+   Extend only the leaf's lower margin; retain the original reading viewport (58% of book height). */
+.deewan-book .book-panel[data-side="right"]:has(.book-breadcrumbs){bottom:8%}
+.deewan-book .book-panel[data-side="right"]:has(.book-breadcrumbs)>.deewan-viewport{height:78.378378%}
+.deewan-book .book-panel>.book-breadcrumbs{position:absolute;inset-inline:0;bottom:3%;font-family:var(--font-nastaliq),serif;font-size:clamp(10px,.85vw,14px);font-weight:600;line-height:1.9;text-align:center;color:#693828;mix-blend-mode:multiply}
+.book-breadcrumbs::before{content:"";display:block;width:46%;height:1px;margin:0 auto .38em;background:linear-gradient(90deg,transparent,#a67b3e99,transparent)}
+.book-breadcrumbs ol{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:0 .38em;list-style:none;margin:0;padding:0}
+.book-breadcrumbs li{display:flex;align-items:baseline;gap:.38em;min-width:0;max-width:100%;margin:0}
+.book-breadcrumbs .book-crumb-arrow{color:#8e622d;font-family:serif;font-size:1em;line-height:1;flex:none}
+.book-breadcrumbs .book-crumb{min-width:0;max-width:100%;padding:0 .1em;border:0;border-radius:0;background:none;color:#71382d;box-shadow:none;cursor:pointer;font:inherit;line-height:inherit;text-shadow:.12px .2px .25px #6b421b35;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.book-breadcrumbs .book-crumb[aria-current="page"]{color:#4d281b;font-weight:700;text-shadow:.12px .2px .25px #6b421b35}
+.book-breadcrumbs .book-crumb:hover{color:#9b6029;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.24em}
+.book-breadcrumbs .book-crumb:focus-visible{outline:1px dashed #8e622d;outline-offset:2px}
+.book-breadcrumbs .book-crumb:active{color:#3f1f18}
+@media(min-width:1024px) and (hover:hover) and (pointer:fine){.deewan-book .book-panel>.book-breadcrumbs{font-size:clamp(10px,.8vw,13px)}}
+@media(max-width:650px){.deewan-book .book-panel>.book-breadcrumbs{font-size:clamp(10px,2.3vw,12px);bottom:2%}.book-breadcrumbs ol{gap:0 .25em}}
