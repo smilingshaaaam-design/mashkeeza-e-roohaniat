@@ -6,43 +6,49 @@ import { Starfield } from './magic/starfield'
 import { ArticleRichBody } from './article-rich-body'
 import type { NavItem } from './main-nav'
 
-type Entry = { slug: string; title: string; body?: string; excerpt?: string; content_type: string; use_magical_scroll?: number | boolean | null }
+type Entry = { id: string; slug: string; title: string; body?: string; excerpt?: string; content_type: string; use_magical_scroll?: number | boolean | null }
 
 function pageSlug(href: string) {
-  const url = new URL(href, 'https://mashkeeza-e-roohaniat.com')
-  if (!['mashkeeza-e-roohaniat.com', 'www.mashkeeza-e-roohaniat.com', 'mashkeeza-e-roohaniat.pages.dev'].includes(url.hostname)) return null
-  return /^\/pages\/?$/.test(url.pathname) ? url.searchParams.get('slug') : null
+  try {
+    const url = new URL(href, 'https://mashkeeza-e-roohaniat.com')
+    if (!['mashkeeza-e-roohaniat.com', 'www.mashkeeza-e-roohaniat.com', 'mashkeeza-e-roohaniat.pages.dev'].includes(url.hostname)) return null
+    if (/^\/pages\/?$/.test(url.pathname)) return url.searchParams.get('slug')
+    const read = url.pathname.match(/^\/read\/([a-z0-9-]+)\/?$/i)
+    return read ? read[1] : null
+  } catch { return null }
 }
 
+function articleId(href: string) {
+  try {
+    const url = new URL(href, 'https://mashkeeza-e-roohaniat.com')
+    if (!['mashkeeza-e-roohaniat.com', 'www.mashkeeza-e-roohaniat.com', 'mashkeeza-e-roohaniat.pages.dev'].includes(url.hostname)) return null
+    return url.pathname === '/' && url.hash.startsWith('#article-') ? decodeURIComponent(url.hash.slice(9)) : null
+  } catch { return null }
+}
+function isBookWriting(item: NavItem) { return Boolean(pageSlug(item.href) || articleId(item.href)) }
+
 function topicDestination(item: NavItem) {
-  const pages = (item.children ?? []).filter(child => child.visible !== false && pageSlug(child.href))
+  const pages = (item.children ?? []).filter(child => child.visible !== false && isBookWriting(child))
   return pages.length === 1 ? item.href + '/read/' + encodeURIComponent(pages[0].id) : item.href + '/section'
 }
 
-// Main contents mirrors the complete visible public navigation, rather than
-// only the categories which can launch a book.
-type BookIndexEntry = { id: string; label: string; href?: string; newTab?: boolean; depth: number }
-function bookIndexEntries(items: NavItem[], depth = 0): BookIndexEntry[] {
-  return items.filter(item => item.visible !== false).flatMap(item => {
-    const topic = item.href.startsWith('#topic-')
-    const children = (item.children ?? []).filter(child => child.visible !== false)
-    const isGroup = item.href === '#contact' || item.href === '#published-articles' || item.href === '#'
-    const safe = /^(?:\/(?!\/)|#[^#]|https?:\/\/)/i.test(item.href)
-    const href = topic ? topicDestination(item) : !isGroup && safe ? item.href : undefined
-    const entry = { id: item.id, label: item.label, href, newTab: item.openInNewTab, depth }
-    // The root topic opens its existing book section, where its subtopics are
-    // already listed. Other navigation groups expose their children directly.
-    return [entry, ...(!topic && children.length ? bookIndexEntries(children, depth + 1) : [])]
-  })
+// Only top-level menu headings are printed in the central contents.
+type BookIndexEntry = { id: string; label: string; href: string }
+function bookIndexEntries(items: NavItem[]): BookIndexEntry[] {
+  return items.filter(item => item.visible !== false).map(item => ({
+    id: item.id, label: item.label,
+    href: item.href.startsWith('#topic-') ? item.href + '/section' : item.href,
+  }))
 }
 
-function CompleteBookIndex({ items, compact = false }: { items: BookIndexEntry[]; compact?: boolean }) {
+function CompleteBookIndex({ items, compact = false, onSelect }: { items: BookIndexEntry[]; compact?: boolean; onSelect: (href: string) => void }) {
   return <ol className={compact ? 'book-complete-index compact' : 'book-complete-index'}>
-    {items.map(item => <li key={item.id} className={item.depth ? 'book-index-child' : undefined}>
-      {item.href ? <a className="deewan-plaque" href={item.href}
-        target={item.newTab ? '_blank' : undefined}
-        rel={item.newTab ? 'noopener noreferrer' : undefined}>{item.label}</a>
-        : <span className="book-index-group">{item.label}</span>}
+    {items.map(item => <li key={item.id}>
+      <a className="deewan-plaque" href={item.href} onClick={event => {
+        if (!item.href.startsWith('#topic-') || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+        event.preventDefault()
+        onSelect(item.href)
+      }}>{item.label}</a>
     </li>)}
   </ol>
 }
@@ -172,7 +178,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
 export type BookNavigation = { turnTo: (href: string) => string | null }
 
 export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigation }: { navigation: Ref<BookNavigation>; topic: NavItem; cards: NavItem[]; topics: NavItem[]; menuItems: NavItem[]; hash: string }) {
-  const articles = cards.filter(item => pageSlug(item.href))
+  const articles = cards.filter(isBookWriting)
   const current = articles.findIndex(item => hash === topic.href + '/read/' + encodeURIComponent(item.id))
   const card = articles[current]
   const [stage, setStage] = useState<'cover' | 'opening' | 'dedication' | 'returning' | 'closing' | 'closed' | 'title' | 'contents'>(() =>
@@ -273,7 +279,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       }).catch(() => { if (!controller.signal.aborted) setFailed(true) })
     return () => controller.abort()
   }, [entries, attempt])
-  const entry = card && entries?.find(item => item.slug === pageSlug(card.href) && item.content_type === 'page')
+  const entry = card && entries?.find(item => articleId(card.href) ? item.id === articleId(card.href) : item.slug === pageSlug(card.href))
 
   useLayoutEffect(() => {
     const node = paper.current
@@ -326,8 +332,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     }
   }, [stage, hash, page])
 
-  useImperativeHandle(navigation, () => ({
-    turnTo(href) {
+  function turnTo(href: string) {
       const root = href.split('/')[0]
       const destination = topics.find(item => item.href === root)
       if (!destination) return null
@@ -344,12 +349,16 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       }
       leaf.current?.closest('.deewan-book')?.scrollIntoView({ block: 'center', behavior: 'instant' })
       return target
-    },
-  }))
+  }
+  useImperativeHandle(navigation, () => ({ turnTo }))
+  function selectHeading(href: string) {
+    const target = turnTo(href)
+    if (target) window.location.hash = target
+  }
 
   function open(i: number, fromEnd = false) {
     const next = articles[i]
-    const target = next ? topic.href + '/read/' + encodeURIComponent(next.id) : topic.href
+    const target = next ? topic.href + '/read/' + encodeURIComponent(next.id) : topic.href + '/section'
     rememberSheet(fromEnd)
     lastPage.current = fromEnd ? target : null
     window.location.hash = target
@@ -433,12 +442,13 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
           failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> :
           <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{!mainIndex && hash !== topic.href + '/section' && <nav className="topic-title-page book-full-title-index" aria-label="مرکزی فہرست" style={{display:'block'}}>
       <h2>مرکزی فہرست</h2>
-      <CompleteBookIndex items={completeIndex} compact />
+      <CompleteBookIndex items={completeIndex} compact onSelect={selectHeading} />
     </nav>}
       {!mainIndex && <h2>{topic.label}</h2>}
+      {!mainIndex && topic.id === 'contact' && <p>سوال یا معلومات کے لیے درج ذیل ذرائع سے رابطہ کریں۔</p>}
       <h3>{mainIndex ? 'مرکزی فہرست' : 'فہرست'}</h3>
-      {mainIndex ? <CompleteBookIndex items={completeIndex} /> : indexItems.length ? <ol>{indexItems.map(item => {
-        const internal = Boolean(pageSlug(item.href))
+      {mainIndex ? <CompleteBookIndex items={completeIndex} onSelect={selectHeading} /> : indexItems.length ? <ol>{indexItems.map(item => {
+        const internal = isBookWriting(item)
         return <li key={item.id}><a className="deewan-plaque" href={internal ? topic.href + '/read/' + encodeURIComponent(item.id) : item.href}
           target={!internal && item.openInNewTab ? '_blank' : undefined} rel={!internal && item.openInNewTab ? 'noopener noreferrer' : undefined}
           onClick={event => {
