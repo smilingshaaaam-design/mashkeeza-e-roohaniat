@@ -399,7 +399,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   }
   function firstIndex() {
     if (mainIndex && page === 0) return
-    rememberSheet(false, Math.max(1, current + 1) + page / 2)
+    rememberSheet(true, Math.max(1, current + 1) + page / 2)
     lastPage.current = null
     if (mainIndex) setPage(0)
     else window.location.hash = topic.href + '/contents'
