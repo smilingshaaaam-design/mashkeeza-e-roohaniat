@@ -343,3 +343,8 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 
 /* Restore the compact, two-column appearance of the original main contents. */
 @media(min-width:900px){.printed-index .book-complete-index.compact:has(>li:nth-child(2)):not(:has(>li:nth-child(17))){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:.15em}}
+
+/* Main contents: original full-width plaques and large manuscript heading. */
+.book-panel .printed-index h2.book-main-index-title{font:700 clamp(28px,3.4vw,64px)/2.1 var(--font-nastaliq),serif;color:#6a2026}
+.printed-index .book-complete-index:not(.compact) a.deewan-plaque{width:90%;font-size:1em;line-height:2;padding:.55em 1.5em;margin:.45em auto}
+@media(max-width:650px){.printed-index .book-complete-index:not(.compact) a.deewan-plaque{width:100%;padding:.45em .7em}}
