@@ -520,3 +520,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book[data-opening="opening"]::before{mask:none!important;-webkit-mask:none!important;animation:none!important;visibility:visible!important;opacity:1!important}
 /* Preload the original spread while the closed cover is displayed. */
 .deewan-book[data-opening="cover"]::before{visibility:visible!important;opacity:0!important;animation:none!important;mask:none!important;-webkit-mask:none!important}
+
+/* Match the moving cover's back to the original stationary binding, including its edge. */
+.manuscript-cover::after{background-image:url('/images/deewan/book.webp');background-size:217.3913% 100%;background-position:92.5926% 0;}
+.deewan-book[data-opening="opening"]::before{mask-image:linear-gradient(#000,#000)!important;mask-position:left!important;mask-repeat:no-repeat!important;mask-size:100% 100%!important;visibility:visible!important;opacity:1!important;animation:none!important}
