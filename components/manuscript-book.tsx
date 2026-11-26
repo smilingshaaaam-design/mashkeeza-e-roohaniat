@@ -54,8 +54,14 @@ function CompleteBookIndex({ items, compact = false, onSelect }: { items: BookIn
   </ol>
 }
 
+// Opening: 1.75s arrival, 1.2s cover, .95s dedication, 1.1s first turn.
+const COVER_ARRIVAL_MS = 1250
+const COVER_HOLD_MS = 1750
+const COVER_OPEN_MS = 1200
+const DEDICATION_MS = 950
+
 function turnDuration(distance: number) {
-  return Math.round(680 + 670 / Math.sqrt(Math.max(1, distance)))
+  return Math.round(640 + 460 / Math.sqrt(Math.max(1, distance)))
 }
 
 type Sheet = { face: HTMLDivElement; right: boolean }
@@ -127,7 +133,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   Object.assign(sheet.style, {
     position:'absolute', left:fromRight ? '50%' : '0', top:'0', width:'50%', height:'100%',
     transformStyle:'preserve-3d', transformOrigin:fromRight ? 'left center' : 'right center',
-    pointerEvents:'none'
+    pointerEvents:'none', willChange:'transform'
   })
   // Both inked faces share a single hinge; native backface culling handles the
   // edge-on frame, even when perspective or the viewport changes the viewing angle.
@@ -153,9 +159,9 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   const transforms: Keyframe[] = []
   const light: Keyframe[] = []
   const direction = fromRight ? -1 : 1
-  for (let i = 0; i <= 48; i++) {
-    const t = i / 48
-    const progress = t * t * (3 - 2 * t)
+  for (let i = 0; i <= 64; i++) {
+    const t = i / 64
+    const progress = t * t * t * (10 + t * (-15 + 6 * t))
     const angle = Math.PI * progress
     const bend = Math.sin(angle)
     const easingOut = Math.sin(2 * angle)
@@ -166,7 +172,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
 
   }
 
-  const timing: KeyframeAnimationOptions = {duration:plan.leaves ? plan.final : turn.duration, delay:plan.delay, fill:'both'}
+  const timing: KeyframeAnimationOptions = {duration:plan.leaves ? plan.final : turn.duration, delay:plan.delay, easing:'linear', fill:'both'}
   const motion = sheet.animate(transforms, timing)
   const animations = [motion]
   const riffleSheets: HTMLDivElement[] = []
@@ -190,7 +196,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
     Object.assign(flick.style, {
       position:'absolute', left:fromRight ? '50%' : '0', top:'0', width:'50%', height:'100%',
       transformStyle:'preserve-3d', transformOrigin:fromRight ? 'left center' : 'right center',
-      pointerEvents:'none', opacity:'0', zIndex:String(i+1),
+      pointerEvents:'none', opacity:'0', zIndex:String(i+1), willChange:'transform, opacity',
     })
     const a = i === 0 && firstFace ? firstFace : makePaper(fromRight)
     const b = makePaper(!fromRight)
@@ -208,7 +214,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
       { offset:.43, opacity:1, transform:'rotateY(' + direction*83 + 'deg) skewY(' + direction*3 + 'deg) scaleX(.95)' },
       { offset:.86, opacity:1, transform:'rotateY(' + direction*169 + 'deg) skewY(' + direction*1.1 + 'deg)' },
       { offset:1, opacity:0, transform:'rotateY(' + direction*180 + 'deg)' },
-    ], {duration:plan.flight, delay:i*plan.interval, easing:'linear', fill:'none'}))
+    ], {duration:plan.flight, delay:i*plan.interval, easing:'cubic-bezier(.32,.12,.65,.93)', fill:'none'}))
   }
   ;[front, back].forEach(face => {
     face.style.overflow = 'hidden'
@@ -259,7 +265,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   }, [stage])
   function openByTouch() {
     const remaining = stage === 'cover' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      ? 1600 - (performance.now() - arrivalStarted.current) : 0
+      ? COVER_ARRIVAL_MS - (performance.now() - arrivalStarted.current) : 0
     clearTimeout(earlyTap.current)
     if (remaining > 0) earlyTap.current = setTimeout(() => setStage('opening'), remaining)
     else setStage('opening')
@@ -275,7 +281,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     if (stage !== 'cover' && stage !== 'opening') return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const next = stage === 'cover' ? 'opening' : 'dedication'
-    const delay = stage === 'cover' ? (reduced ? 5000 : 6600) : (reduced ? 0 : 1850)
+    const delay = stage === 'cover' ? (reduced ? 350 : COVER_HOLD_MS) : (reduced ? 0 : COVER_OPEN_MS + 50)
     const timer = window.setTimeout(() => setStage(next), delay)
     return () => window.clearTimeout(timer)
   }, [stage])
@@ -305,7 +311,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     const timer = window.setTimeout(() => {
       rememberSheet(false)
       setStage('title')
-    }, 4000)
+    }, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 350 : DEDICATION_MS)
     return () => window.clearTimeout(timer)
   }, [stage, intro])
   const [zoomed, setZoomed] = useState(false)
