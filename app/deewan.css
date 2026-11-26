@@ -303,11 +303,8 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 
 /* Expose the stationary paper only as the free edge travels towards the spine. */
 @keyframes uncover-left-sheet {
-  0% {mask-size:0% 100%}
-  18% {mask-size:1% 100%}
-  30% {mask-size:8% 100%}
-  40% {mask-size:24% 100%}
-  50%,100% {mask-size:50% 100%}
+  0% {mask-size:50% 100%}
+  100% {mask-size:100% 100%}
 }
 .deewan-book:is([data-opening="opening"],[data-opening="closing"])::before {
   mask-image:linear-gradient(#000,#000);mask-position:left;mask-repeat:no-repeat;
@@ -515,3 +512,6 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 /* Preserve identical index plaque geometry on the live page and its frozen copy. */
 .deewan-book .deewan-index .deewan-plaque{overflow-anchor:none;transition:filter .2s ease,color .2s ease;animation:none!important}
 .deewan-book [data-turning-sheet] .deewan-plaque{transition:none!important;animation:none!important}
+
+/* Keep the original hardcover present under the first moving leaf, rather than mounting it after the cover turn. */
+.deewan-book[data-opening="opening"]::before{mask-image:none;animation:none;visibility:visible}
