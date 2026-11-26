@@ -54,6 +54,12 @@ function CompleteBookIndex({ items, compact = false, onSelect }: { items: BookIn
   </ol>
 }
 
+// Contents navigation always uses the requested left-to-right turn,
+// regardless of relative page distance. true means the right leaf moves left.
+function contentsDirection(toContents: boolean, fromContents: boolean, backwards: boolean) {
+  return toContents || fromContents ? false : backwards
+}
+
 function turnDuration(distance: number) {
   return Math.round(680 + 670 / Math.sqrt(Math.max(1, distance)))
 }
@@ -443,7 +449,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         const from = bookPosition(hash, Math.floor(page / 2))
         const to = bookPosition(target)
         const backwards = from !== undefined && to !== undefined ? to < from : offset < 0 || (offset === 0 && page > 0)
-        rememberSheet(fromIndex || mainIndex ? false : backwards, jumpDistance(target, Math.abs(offset)))
+        rememberSheet(contentsDirection(target.endsWith('/contents'), fromIndex || mainIndex, backwards), jumpDistance(target, Math.abs(offset)))
         clearTimeout(earlyTap.current)
         lastPage.current = null
         measuredPage.current = 0
@@ -482,7 +488,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       return
     }
     if (delta < 0 && !card && page === 0) {
-      rememberSheet(true)
+      rememberSheet(contentsDirection(!mainIndex, false, true))
       if (!mainIndex) {
         window.location.hash = topic.href + '/contents'
         return
@@ -501,11 +507,12 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     }
   }
   // The breadcrumb is the reader's current location, not a history log.
-  // Returning to an ancestor uses the original right-to-left page turn.
+  // Returning to the main contents is always left-to-right. Other ancestor
+  // navigation retains its existing backwards page turn.
   function returnToLocation(target: string, distance: number) {
     if (hash === target && page === 0) return
     stopTurn.current?.()
-    rememberSheet(true, jumpDistance(target, Math.max(1, distance) + page / 2))
+    rememberSheet(contentsDirection(target.endsWith('/contents') || mainIndex, mainIndex, true), jumpDistance(target, Math.max(1, distance) + page / 2))
     lastPage.current = null
     measuredPage.current = 0
     if (hash === target) setPage(0)
