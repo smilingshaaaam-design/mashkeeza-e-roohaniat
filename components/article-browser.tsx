@@ -7,12 +7,14 @@ import {
   type ArticleAppearance,
 } from './article-background'
 import { ArticleRichBody } from './article-rich-body'
+import { RelatedTopics } from './related-topics'
 import { MagicalScroll, isMagicalScrollEnabled } from './magical-scroll'
 
 const CMS_API = 'https://mashkeeza-cms-api.smilingshaaaam.workers.dev'
 
 type Article = ArticleAppearance & {
   id: string
+  slug?: string
   title: string
   body?: string | null
   excerpt?: string | null
@@ -89,5 +91,6 @@ export function ArticleBrowser() {
                   </div>
                 </article>
     )}
+    <RelatedTopics key={selected.id} slug={selected.slug} />
   </section>
 }
