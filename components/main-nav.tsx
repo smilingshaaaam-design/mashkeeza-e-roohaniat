@@ -440,7 +440,7 @@ export function MainNav() {
       ...bookEntries(item.children ?? []),
     ])
   }
-  const items = topicNavigation(cms?.menus ?? navItems).filter(item => item.visible !== false).map(item => ({
+  const items: NavItem[] = topicNavigation(cms?.menus ?? navItems).filter(item => item.visible !== false).map(item => ({
     ...item, outsideBookLinks: item.href.startsWith('#topic-') ? bookEntries(item.children ?? []).filter(child => outsideBook(child.href)) : undefined,
   }))
   const articleMenu: NavItem = {
