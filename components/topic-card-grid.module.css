@@ -1,7 +1,8 @@
 .grid {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* Two tracks per card allow exact centering of incomplete rows. */
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   --card-gap: clamp(10px, 1.15vw, 18px);
   gap: var(--card-gap);
   max-width: 1560px;
@@ -78,10 +79,16 @@
 }
 
 .grid > .card {
+  grid-column: auto / span 2;
   width: min(100%, calc(100% * var(--card-scale, 1)));
   justify-self: center;
   align-self: stretch;
 }
+
+/* Desktop: center the first card of a final row of one, two or three. */
+.grid > .card:where(:nth-child(4n + 1):nth-last-child(1)) { grid-column-start: 4; }
+.grid > .card:where(:nth-child(4n + 1):nth-last-child(2)) { grid-column-start: 3; }
+.grid > .card:where(:nth-child(4n + 1):nth-last-child(3)) { grid-column-start: 2; }
 
 .grid > .card[style*="height"] img {
   flex: 1;
@@ -155,9 +162,13 @@
 
 @media (pointer: coarse) and (max-device-width: 800px) {
   .grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     --card-gap: clamp(6px, .75vw, 10px);
   }
+  /* Reset desktop offsets, then center incomplete mobile rows. */
+  .grid > .card { grid-column-start: auto; }
+  .grid > .card:where(:nth-child(3n + 1):nth-last-child(1)) { grid-column-start: 3; }
+  .grid > .card:where(:nth-child(3n + 1):nth-last-child(2)) { grid-column-start: 2; }
   .title { padding-inline: 4%; }
 }
 
