@@ -79,10 +79,10 @@ function CompleteBookIndex({ items, compact = false, onSelect }: { items: BookIn
 }
 
 // Opening: 1.75s arrival, 1.2s cover, .95s dedication, 1.1s first turn.
-const COVER_ARRIVAL_MS = 1600
-const COVER_HOLD_MS = 6600
-const COVER_OPEN_MS = 1800
-const DEDICATION_MS = 4000
+const COVER_ARRIVAL_MS = 1250
+const COVER_HOLD_MS = 1750
+const COVER_OPEN_MS = 1200
+const DEDICATION_MS = 950
 
 function turnDuration(distance: number) {
   return Math.round(680 + 670 / Math.sqrt(Math.max(1, distance)))
