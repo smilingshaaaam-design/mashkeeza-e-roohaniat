@@ -147,7 +147,25 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
     backgroundPosition:-left + 'px ' + (-top) + 'px'
   })
   if (panel) {
-    const copy = panel.cloneNode(true) as HTMLElement
+    // Skip the hidden authoring copy while taking the snapshot. Deep-cloning
+    // it doubles the article and its images on every face of every turn.
+    const copy = panel.cloneNode(false) as HTMLElement
+    for (const child of Array.from(panel.children)) {
+      if (!child.matches('.deewan-viewport')) {
+        copy.append(child.cloneNode(true))
+        continue
+      }
+      const frame = child.cloneNode(false) as HTMLElement
+      const originalFlow = child.firstElementChild
+      if (originalFlow) {
+        const ink = originalFlow.cloneNode(false)
+        for (const part of Array.from(originalFlow.childNodes)) {
+          if (!(part instanceof Element && part.hasAttribute('data-book-source'))) ink.appendChild(part.cloneNode(true))
+        }
+        frame.append(ink)
+      }
+      copy.append(frame)
+    }
     const panelStyle = getComputedStyle(panel)
     Object.assign(copy.style, {
       fontSize:panelStyle.fontSize,lineHeight:panelStyle.lineHeight,fontFamily:panelStyle.fontFamily,mixBlendMode:panelStyle.mixBlendMode,
@@ -176,7 +194,7 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
       }
       // Freeze values that otherwise change with the destination contour mode.
       const selector='h2,h3,h4,img,.ms-text-layer,.ms-book-image-mask'
-      const originals=panel.querySelectorAll<HTMLElement>(selector)
+      const originals=Array.from(panel.querySelectorAll<HTMLElement>(selector)).filter(element => !element.closest('[data-book-source]'))
       const copies=copy.querySelectorAll<HTMLElement>(selector)
       originals.forEach((element,i)=>{
         const clone=copies[i];if(!clone)return
@@ -221,10 +239,10 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn, onRelease: () => void) {
 
   const fromRight = turn.outgoing.right
   const plan = rifflePlan(turn.distance)
-  const front = turn.outgoing.face
-  const firstFace = plan.leaves ? front.cloneNode(true) as HTMLDivElement : null
-  // Keep the captured writing on the turning face, even on a long jump.
-  // Intermediate leaves may be decorative, but never erase the actual outgoing sheet.
+  // The outgoing ink travels on the first leaf only. On a long jump the
+  // final leaf carries the destination on its reverse.
+  const firstFace = plan.leaves ? turn.outgoing.face : null
+  const front = firstFace ? turn.outgoing.face.cloneNode(false) as HTMLDivElement : turn.outgoing.face
   const back = captureSheet(leaf, !fromRight).face
   const sheet = document.createElement('div')
   sheet.dataset.turningSheet = ''
@@ -411,8 +429,10 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   useEffect(() => {
     if (hash.includes('/read/')) leaf.current?.closest('.deewan-book')?.scrollIntoView({ block: 'center', behavior: 'instant' })
   }, [])
-  function rememberSheet(fromRight: boolean, distance = 1) {
+  const pendingDestination = useRef<string | undefined>(undefined)
+  function rememberSheet(fromRight: boolean, distance = 1, destination?: string) {
     if (leaf.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      pendingDestination.current = destination
       pendingSheet.current = { duration:turnDuration(distance), distance, outgoing:captureSheet(leaf.current, fromRight), landing:captureSheet(leaf.current, !fromRight) }
     }
   }
@@ -538,21 +558,28 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       setPage(0)
     }
     measure()
-    const observer = new ResizeObserver(measure)
+    let frame = 0
+    const scheduleMeasure = () => {
+      if (!active || frame) return
+      frame = requestAnimationFrame(() => { frame = 0; measure() })
+    }
+    const observer = new ResizeObserver(scheduleMeasure)
     observer.observe(node)
     const book = node.closest<HTMLElement>('.deewan-book')
     const onMediaLoad = (event: Event) => {
-      if (!(event.target instanceof HTMLImageElement) || !event.target.closest('[data-book-target]') || event.target.closest('.book-panel')?.parentElement!==book) return
+      // The left page is a fresh clone after each layout. Its load events
+      // must never cause another clone-and-load cycle.
+      if (!(event.target instanceof HTMLImageElement) || !node.contains(event.target) || !event.target.closest('[data-book-target]')) return
       contourSignature=''
-      measure()
+      scheduleMeasure()
     }
     book?.addEventListener('load', onMediaLoad, true)
-    const sourceObserver = new MutationObserver(measure)
+    const sourceObserver = new MutationObserver(scheduleMeasure)
     book?.querySelectorAll('[data-book-source]').forEach(source=>sourceObserver.observe(source,{subtree:true,childList:true,characterData:true,attributes:true}))
-    const onFonts = () => { contourSignature='';measure() }
+    const onFonts = () => { contourSignature='';scheduleMeasure() }
     document.fonts.ready.then(onFonts)
     document.fonts.addEventListener('loadingdone',onFonts)
-    return () => { active = false; observer.disconnect(); sourceObserver.disconnect(); book?.removeEventListener('load', onMediaLoad, true);document.fonts.removeEventListener('loadingdone',onFonts) }
+    return () => { active = false; cancelAnimationFrame(frame); observer.disconnect(); sourceObserver.disconnect(); book?.removeEventListener('load', onMediaLoad, true);document.fonts.removeEventListener('loadingdone',onFonts) }
   }, [stage, hash, entry, indexSignature, cards.map(item => item.id + item.label).join('|')])
   useLayoutEffect(() => {
     const node = paper.current
@@ -564,6 +591,8 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   useLayoutEffect(() => {
     const el = leaf.current
     const sheet = pendingSheet.current
+    if (pendingDestination.current && pendingDestination.current !== hash) return
+    pendingDestination.current = undefined
     pendingSheet.current = null
     if (el && sheet) {
       stopTurn.current?.()
@@ -625,7 +654,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         const from = bookPosition(hash, Math.floor(page / 2))
         const to = bookPosition(target)
         const backwards = from !== undefined && to !== undefined ? to < from : offset < 0 || (offset === 0 && page > 0)
-        rememberSheet(fromIndex || mainIndex ? false : backwards, jumpDistance(target, Math.abs(offset)))
+        rememberSheet(fromIndex || mainIndex ? false : backwards, jumpDistance(target, Math.abs(offset)), target)
         clearTimeout(earlyTap.current)
         lastPage.current = null
         measuredPage.current = 0
@@ -643,7 +672,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
 
   function openAdjacent(target: string, fromEnd: boolean) {
     stopTurn.current?.()
-    rememberSheet(fromEnd)
+    rememberSheet(fromEnd, 1, target)
     lastPage.current = fromEnd ? target : null
     measuredPage.current = 0
     setStage('contents')
@@ -716,7 +745,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   return <>
   <section className="deewan-book" style={zoomed ? {touchAction:"manipulation"} : undefined} data-opening={intro ? stage : undefined} tabIndex={0} aria-label={topic.label}
     onKeyDown={e => {
-      if (e.altKey || e.metaKey || e.ctrlKey) return
+      if (e.altKey || e.metaKey || e.ctrlKey || e.repeat) return
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); turn(e.key === 'ArrowLeft' ? 1 : -1) }
     }}
     onTouchStart={e => { touch.current = !isMagnified() && e.touches.length === 1 ? [e.touches[0].clientX, e.touches[0].clientY] : null }}
@@ -766,8 +795,10 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
             if (!internal || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
             event.preventDefault()
             lastPage.current = null
-            rememberSheet(false, jumpDistance(topic.href + '/read/' + encodeURIComponent(item.id), Math.max(1, Math.ceil((count - page) / 2)) + articles.indexOf(item)))
-            window.location.hash = topic.href + '/read/' + encodeURIComponent(item.id)
+            const destination = topic.href + '/read/' + encodeURIComponent(item.id)
+            stopTurn.current?.()
+            rememberSheet(false, jumpDistance(destination, Math.max(1, Math.ceil((count - page) / 2)) + articles.indexOf(item)), destination)
+            window.location.hash = destination
           }}>{item.label}</a></li>
       })}</ol> : <p>اس موضوع سے ابھی کوئی تحریر منسلک نہیں ہے۔</p>}</>}
         </div>
