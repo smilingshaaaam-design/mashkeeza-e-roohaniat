@@ -414,7 +414,7 @@ export function MainNav() {
     const update = () => {
       const hash = window.location.hash
       const root = hash.split('/')[0]
-      if (root !== activeTopicHref.current) setBookSession(value => value + 1)
+      if (root !== activeTopicHref.current && !(root.startsWith('#topic-') && activeTopicHref.current.startsWith('#topic-'))) setBookSession(value => value + 1)
       activeTopicHref.current = root
       setActiveHash(hash)
     }
@@ -429,9 +429,23 @@ export function MainNav() {
   }
   const contactIndex = items.findIndex(item => item.id === 'contact')
   items.splice(contactIndex < 0 ? items.length : contactIndex, 0, articleMenu)
-  const bookTopics = items.filter(item => item.href.startsWith('#topic-'))
+  // The book index contains main headings only. Every public group has its
+  // own in-book section, including contact and the published article list.
+  const bookTopics = items.filter(item => item.href !== '/').map(item => {
+    if (item.href.startsWith('#topic-')) return item
+    const children = item.id === 'contact' ? (item.children?.length ? item.children : contactLinks) : (item.children ?? [])
+    const ownLink = item.id !== 'published-articles' && item.id !== 'contact' && isSafeHref(item.href) && !item.href.startsWith('#')
+      ? [{ ...item, id: item.id + '-book-content', children: undefined }] : []
+    return { ...item, href: '#topic-book-' + encodeURIComponent(item.id), children: [...ownLink, ...children] }
+  })
   const topic = bookTopics.find(item => item.href === activeHash.split('/')[0])
-  const cards = topic?.children?.filter(card => card.visible !== false && isSafeHref(card.href) && !card.href.startsWith('#')) ?? []
+  function bookEntries(children: NavItem[]): NavItem[] {
+    return children.filter(item => item.visible !== false).flatMap(item => [
+      ...(isSafeHref(item.href) && !item.href.startsWith('#') ? [item] : []),
+      ...bookEntries(item.children ?? []),
+    ])
+  }
+  const cards = [...new Map(bookEntries(topic?.children ?? []).map(item => [item.href, item])).values()]
 
   const navRef = useRef<HTMLElement>(null)
   const [dismissal, setDismissal] = useState(0)
@@ -478,7 +492,7 @@ export function MainNav() {
           ))}
         </ul>
       </div>
-      {topic && <ManuscriptBook key={bookSession} navigation={bookNavigation} topic={topic} topics={bookTopics} menuItems={items.map(item => item.id === 'contact' && !item.children?.length ? { ...item, children: contactLinks } : item)} cards={cards} hash={activeHash} />}
+      {topic && <ManuscriptBook key={bookSession} navigation={bookNavigation} topic={topic} topics={bookTopics} menuItems={items.map(item => bookTopics.find(book => book.id === item.id) ?? item)} cards={cards} hash={activeHash} />}
       {cardHost && (!activeHash || topic) && createPortal(
         <TopicCardGrid items={items} showGrid={!topic} turnToCard={href => {
           const target = bookNavigation.current?.turnTo(href)
