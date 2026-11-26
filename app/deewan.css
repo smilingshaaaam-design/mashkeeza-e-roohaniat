@@ -372,15 +372,15 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
    Extend only the leaf's lower margin; retain the original reading viewport (58% of book height). */
 .deewan-book .book-panel[data-side="right"]:has(.book-breadcrumbs){bottom:8%}
 .deewan-book .book-panel[data-side="right"]:has(.book-breadcrumbs)>.deewan-viewport{height:78.378378%}
-.deewan-book .book-panel>.book-breadcrumbs{position:absolute;inset-inline:0;bottom:3%;font-family:var(--font-nastaliq),serif;font-size:clamp(10px,.85vw,14px);font-weight:600;line-height:1.9;direction:rtl;text-align:right;color:#693828;mix-blend-mode:multiply}
+.deewan-book .book-panel>.book-breadcrumbs{position:absolute;inset-inline:0;bottom:3%;font-family:var(--font-nastaliq),serif;font-size:clamp(10px,.85vw,14px);font-weight:700;line-height:1.9;direction:rtl;text-align:right;color:#92702d;mix-blend-mode:multiply}
 .book-breadcrumbs::before{content:"";display:block;width:46%;height:1px;margin:0 0 .38em auto;background:linear-gradient(90deg,transparent,#a67b3e99)}
 .book-breadcrumbs ol{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:flex-start;gap:0 .38em;list-style:none;margin:0;padding:0}
 .book-breadcrumbs li{display:flex;align-items:baseline;gap:.38em;min-width:0;max-width:100%;margin:0}
-.book-breadcrumbs .book-crumb-arrow{color:#8e622d;font-family:serif;font-size:1em;line-height:1;flex:none}
-.book-breadcrumbs .book-crumb{min-width:0;max-width:100%;padding:0 .1em;border:0;border-radius:0;background:none;color:#71382d;box-shadow:none;cursor:pointer;font:inherit;line-height:inherit;text-shadow:.12px .2px .25px #6b421b35;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.book-breadcrumbs .book-crumb[aria-current="page"]{color:#4d281b;font-weight:700;text-shadow:.12px .2px .25px #6b421b35}
-.book-breadcrumbs .book-crumb:hover{color:#9b6029;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.24em}
+.book-breadcrumbs .book-crumb-arrow{color:#a27b35;font-family:serif;font-size:1em;line-height:1;flex:none}
+.book-breadcrumbs .book-crumb{min-width:0;max-width:100%;padding:0 .1em;border:0;border-radius:0;background:none;color:#92702d;box-shadow:none;cursor:pointer;font:inherit;line-height:inherit;text-shadow:0 .3px .2px #77501c40,0 -.2px .25px #e8c67b50;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.book-breadcrumbs .book-crumb[aria-current="page"]{color:#805d21;font-weight:700;text-shadow:0 .3px .2px #77501c40,0 -.2px .25px #e8c67b50}
+.book-breadcrumbs .book-crumb:hover{color:#78551d;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.24em}
 .book-breadcrumbs .book-crumb:focus-visible{outline:1px dashed #8e622d;outline-offset:2px}
-.book-breadcrumbs .book-crumb:active{color:#3f1f18}
+.book-breadcrumbs .book-crumb:active{color:#674817}
 @media(min-width:1024px) and (hover:hover) and (pointer:fine){.deewan-book .book-panel>.book-breadcrumbs{font-size:clamp(10px,.8vw,13px)}}
 @media(max-width:650px){.deewan-book .book-panel>.book-breadcrumbs{font-size:clamp(10px,2.3vw,12px);bottom:2%}.book-breadcrumbs ol{gap:0 .25em}}
