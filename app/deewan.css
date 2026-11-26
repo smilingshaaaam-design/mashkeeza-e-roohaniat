@@ -340,3 +340,6 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .printed-index .book-complete-index.compact a.deewan-plaque{width:100%;font-size:.82em;line-height:1.8;padding:.24em .45em;margin:0}
 .printed-index .book-index-child a.deewan-plaque{width:88%;font-size:.78em;line-height:1.8;padding:.22em .45em;margin:0}
 .printed-index .book-index-group{display:block;color:#68252b;font-weight:700;font-size:.95em;line-height:2;padding:.1em .3em}
+
+/* Restore the compact, two-column appearance of the original main contents. */
+@media(min-width:900px){.printed-index .book-complete-index.compact:has(>li:nth-child(2)):not(:has(>li:nth-child(17))){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:.15em}}
