@@ -95,9 +95,22 @@
   transform: scale(1.12);
 }
 
+.artworkExtension {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  z-index: 1;
+  visibility: hidden;
+}
+
+.artworkExtension[data-extended="true"] { visibility: visible; }
+
 .artworkImage {
   object-fit: contain;
-  z-index: 1;
+  z-index: 2;
 }
 
 .grid > .card {
