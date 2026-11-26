@@ -409,14 +409,22 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book .printed-text [data-ms-break="1"]{break-before:column; -webkit-column-break-before:always}
 
 /* Expanded real writing area; only the binding and outer ornament remain reserved. */
-.deewan-book .book-panel:has(.printed-text){width:36%;top:10%;bottom:17%;overflow:visible}
-.deewan-book .book-panel[data-side="right"]:has(.printed-text){right:8%;bottom:8%}
-.deewan-book .book-panel[data-side="left"]:has(.printed-text){left:8%}
-.deewan-book .book-panel[data-side="right"]:has(.printed-text)>.deewan-viewport{height:89.024390%}
-.deewan-book:has(.printed-text) .deewan-controls{bottom:7%;left:8%;width:36%}
+.deewan-book .book-panel:has(.printed-text){width:29%;top:18%;bottom:24%;overflow:visible}
+.deewan-book .book-panel[data-side="right"]:has(.printed-text){right:16.5%;bottom:8%}
+.deewan-book .book-panel[data-side="left"]:has(.printed-text){left:16.5%}
+.deewan-book .book-panel[data-side="right"]:has(.printed-text)>.deewan-viewport{height:78.3783783784%}
+.deewan-book:has(.printed-text) .deewan-controls{bottom:7%;left:16.5%;width:29%}
 .deewan-book .ms-text-layer-book{position:absolute;top:-8.219178%;left:-11.111111%;width:122.222222%;height:123.287671%;pointer-events:none;z-index:4}
 .deewan-book .ms-text-layer-right{top:-7.317073%;height:109.756098%}
 
 /* Page-relative free text uses the whole leaf, including decorative margins. */
-.deewan-book .ms-text-layer-book{inset:auto;position:absolute;top:-13.698630%;left:-22.222222%;width:138.888889%;height:136.986301%;overflow:visible}
-.deewan-book .ms-text-layer-right{top:-12.195122%;left:-16.666667%;height:121.951220%}
+.deewan-book .ms-text-layer-book{inset:auto;position:absolute;top:-31.0344827586%;left:-56.8965517241%;width:172.4137931034%;height:172.4137931034%;overflow:visible}
+.deewan-book .ms-text-layer-right{top:-24.3243243243%;left:-15.5172413793%;height:135.1351351351%}
+
+/* Artwork-safe text geometry matches the CMS editor: outer 16.5%, 
+   spine clearance 4.5% per leaf, top 18%, bottom 24%.
+   Each reading column occupies exactly 29% × 58% of the spread. 
+   Full-leaf coordinates of manually dragged Unicode text are preserved. */
+.deewan-book .printed-text{line-height:2.25}
+.deewan-book .printed-text :is(p,blockquote,h2,h3,h4){margin-block:.28em}
+.deewan-book .book-panel:has(.printed-text) .deewan-viewport{overflow:hidden}
