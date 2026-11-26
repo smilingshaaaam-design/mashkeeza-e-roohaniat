@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ArticleRichBody } from './article-rich-body'
+import { RelatedTopics } from './related-topics'
 import type { ArticleAppearance } from './article-background'
 
 // Shared between the homepage ArticleBrowser and public CMS pages.
 // The approved feather position, paper, rollers and blue flame are unchanged.
 export type MagicalArticle = ArticleAppearance & {
   id: string
+  slug?: string
   title: string
   body?: string | null
   excerpt?: string | null
@@ -279,6 +281,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
     const dustCanvas = engravingCanvasRef.current
     if (!stage || !paper || !text || !quill || !pot || !spark || !dustCanvas) return
 
+    setOpened(false)
     paper.style.height = '0px'
     paper.style.overflow = 'hidden'
     let cancelled = false
@@ -1154,6 +1157,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         {opened && <span className="sr-only">Scroll opened</span>}
       </div>
     </article>
+    <RelatedTopics key={article.id} slug={article.slug} visible={opened} />
       <style jsx global>{`
         .original-mashkeeza-scroll{font-family:'Noto Nastaliq Urdu',serif;color:#422410;width:100%;position:relative;z-index:100;overflow:visible}
         .original-scroll-stage{position:relative;z-index:101;width:100%;min-height:max-content;padding:8px 0 145px;overflow:visible;isolation:auto}
