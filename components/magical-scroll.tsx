@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ArticleRichBody } from './article-rich-body'
+import { ManuscriptTextLayer } from './manuscript-text-objects'
 import { RelatedTopics } from './related-topics'
 import type { ArticleAppearance } from './article-background'
 
@@ -1140,9 +1141,10 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
                 <h2>{article.title}</h2>
                 {article.excerpt && <p className="original-scroll-excerpt">{article.excerpt}</p>}
                 <div data-magical-article-body="true">
-                  <ArticleRichBody body={article.body}/>
+                  <ArticleRichBody body={article.body} floatingObjects/>
                 </div>
               </div>
+              {opened && <ManuscriptTextLayer body={article.body} mode="roller"/>}
             </div>
           </div>
           <div className="original-scroll-bottom-mount" aria-hidden="true">
@@ -1171,7 +1173,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-bottom-mount{position:relative;width:100%;flex-shrink:0;margin-top:calc(-1 * clamp(30px, 5.5vw, 70px));z-index:8;isolation:isolate;pointer-events:none}
         .original-scroll-bottom-mount::before{content:"";position:absolute;left:18.2%;right:18.2%;top:-20px;height:33px;z-index:1;pointer-events:none;background:linear-gradient(to bottom,rgba(65,29,12,0),rgba(69,31,12,.12) 22%,rgba(59,24,8,.38) 65%,rgba(44,17,6,.52) 100%);filter:blur(5px);border-radius:0 0 48% 48%}
         .original-scroll-bottom-roller{position:relative;z-index:2;margin:0;filter:drop-shadow(0 -3px 3px rgba(53,21,7,.28))}
-        .original-scroll-paper-surface{position:relative;min-height:390px;padding:12% 10% 18%;isolation:isolate}
+        .original-scroll-paper-surface{position:relative;min-height:390px;padding:6% 5% 8%;isolation:isolate}
         .original-scroll-paper-surface::before{content:"";position:absolute;inset:0;z-index:-1;background:url('/magical-scroll/paper-bg.png') center / 100% 100% no-repeat;opacity:var(--paper-opacity);pointer-events:none}
         .original-scroll-writing{direction:rtl;text-align:right;overflow-wrap:anywhere;font-size:clamp(11px,2.8cqw,22px);line-height:2.4;color:#422410;visibility:hidden}
         .original-scroll-writing h2{font-size:1.55em;font-weight:700;text-align:center;line-height:2.2;margin:0 0 .8em;color:#71351d}
@@ -1199,7 +1201,7 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
         .original-scroll-nib-sparks i:nth-child(10){animation-delay:.18s;background:#dbf7ff;box-shadow:0 0 7px #9ce7ffaa;animation-duration:.92s}
         .original-scroll-nib-sparks i:nth-child(11){animation-delay:.70s;background:#ffd17d;box-shadow:0 0 8px #ffb347cc;animation-duration:1.22s}
         @keyframes subtleNibSpark{from{transform:translate(0,0) scale(.92);opacity:.96}20%{opacity:1}to{transform:translate(10px,-16px) scale(.14);opacity:0}}
-        @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:11% 10% 17%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
+        @media(max-width:640px){.original-scroll-stage{padding-bottom:55px}.original-scroll-paper-surface{min-height:260px;padding:6% 5% 8%}.original-scroll-writing{font-size:clamp(9px,3.6cqw,15px);line-height:2.1}}
         @media(prefers-reduced-motion:reduce){.original-scroll-writing{visibility:visible}.original-scroll-nib-sparks i{animation:none}.original-scroll-fluid-canvas{display:none}}
       `}</style>
     </>

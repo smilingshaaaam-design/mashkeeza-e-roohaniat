@@ -407,3 +407,12 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 
 /* Explicit author page starts apply only inside the physical book. */
 .deewan-book .printed-text [data-ms-break="1"]{break-before:column; -webkit-column-break-before:always}
+
+/* Expanded real writing area; only the binding and outer ornament remain reserved. */
+.deewan-book .book-panel:has(.printed-text){width:36%;top:10%;bottom:17%;overflow:visible}
+.deewan-book .book-panel[data-side="right"]:has(.printed-text){right:8%;bottom:8%}
+.deewan-book .book-panel[data-side="left"]:has(.printed-text){left:8%}
+.deewan-book .book-panel[data-side="right"]:has(.printed-text)>.deewan-viewport{height:89.024390%}
+.deewan-book:has(.printed-text) .deewan-controls{bottom:7%;left:8%;width:36%}
+.deewan-book .ms-text-layer-book{position:absolute;top:-8.219178%;left:-11.111111%;width:122.222222%;height:123.287671%;pointer-events:none;z-index:4}
+.deewan-book .ms-text-layer-right{top:-7.317073%;height:109.756098%}

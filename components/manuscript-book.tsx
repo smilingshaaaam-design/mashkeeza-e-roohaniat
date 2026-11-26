@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useImperativeHandle, type Ref, useRef, useS
 import { isMagicalScrollEnabled } from './magical-scroll'
 import { Starfield } from './magic/starfield'
 import { ArticleRichBody } from './article-rich-body'
+import { ManuscriptTextLayer, readManuscriptText } from './manuscript-text-objects'
 import { RelatedTopics } from './related-topics'
 import type { NavItem } from './main-nav'
 
@@ -108,7 +109,7 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
     Object.assign(copy.style, {
       left:(panel.offsetLeft-left)+'px', right:'auto', top:(panel.offsetTop-top)+'px',
       bottom:'auto', width:panel.offsetWidth+'px', height:panel.offsetHeight+'px',
-      overflow:'hidden', pointerEvents:'none'
+      overflow:panel.querySelector('.ms-text-layer')?'visible':'hidden', pointerEvents:'none'
     })
     copy.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'))
     const columns = copy.querySelector<HTMLElement>('.deewan-columns')
@@ -383,7 +384,8 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     let active = true
     const measure = () => {
       if (!active || !node.clientWidth) return
-      const pages = Math.max(1, Math.round(node.scrollWidth / node.clientWidth))
+      const objectPages = readManuscriptText(entry?.body).reduce((n,o)=>Math.max(n,o.page+1),0)
+      const pages = Math.max(1, objectPages, Math.round(node.scrollWidth / node.clientWidth))
       measuredPage.current = Math.min(measuredPage.current, 2 * Math.floor((pages - 1) / 2))
       setCount(pages)
       if (entry || !card) measuredSpreads.current.set(mainIndex ? 'contents' : hash, Math.max(1, Math.ceil(pages / 2)))
@@ -595,7 +597,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         <div className={'deewan-columns ' + (card ? 'printed-text' : 'printed-index')}>
           {card ? <><h3>{entry?.title || card.label}</h3>
         {entry && isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
-        {entry ? <>{entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} /></> :
+        {entry ? <>{entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} floatingObjects /></> :
           failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> :
           <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{mainIndex ? <h2 className="book-main-index-title">مرکزی فہرست</h2> : <h2>{topic.label}</h2>}
       {!mainIndex && topic.id === 'contact' && <p>سوال یا معلومات کے لیے درج ذیل ذرائع سے رابطہ کریں۔</p>}
@@ -614,6 +616,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       })}</ol> : <p>اس موضوع سے ابھی کوئی تحریر منسلک نہیں ہے۔</p>}</>}
         </div>
       </div>
+      {entry && <ManuscriptTextLayer body={entry.body} mode="book" page={page+(side==='left'?1:0)} side={side}/>}
       {side === 'right' && <nav className="book-breadcrumbs" aria-label="کتاب میں موجودہ مقام" dir="rtl">
       <ol>
         {breadcrumbs.map((crumb, index) => <li key={crumb.key}>
