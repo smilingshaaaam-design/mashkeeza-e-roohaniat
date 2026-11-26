@@ -76,8 +76,15 @@ function safeNodes(root: ParentNode, floatingObjects = false): React.ReactNode[]
       const layout = (props.style || {}) as React.CSSProperties;
       const size = Number(el.getAttribute("data-ms-fontsize"));
       const leading = Number(el.getAttribute("data-ms-leading"));
-      if (Number.isInteger(size) && size >= 70 && size <= 180) layout.fontSize = size + "%";
+      if (Number.isInteger(size) && size >= 50 && size <= 350) layout.fontSize = size + "%";
       if (Number.isInteger(leading) && leading >= 16 && leading <= 36) layout.lineHeight = leading / 10;
+      const weight=el.getAttribute("data-ms-weight"),ink=el.getAttribute("data-ms-color"),highlight=el.getAttribute("data-ms-highlight");
+      if(weight==="400"||weight==="700")layout.fontWeight=Number(weight);
+      if(el.hasAttribute("data-ms-italic"))layout.fontStyle=el.getAttribute("data-ms-italic")==="1"?"italic":"normal";
+      const underline=el.getAttribute("data-ms-underline"),strike=el.getAttribute("data-ms-strike");
+      if(underline!==null||strike!==null)layout.textDecoration=[underline==="1"?"underline":"",strike==="1"?"line-through":""].filter(Boolean).join(" ")||"none";
+      if(ink&&/^#[0-9a-f]{6}$/i.test(ink))layout.color=ink;
+      if(highlight&&(/^#[0-9a-f]{6}$/i.test(highlight)||highlight==="transparent"))layout.backgroundColor=highlight;
       if (Object.keys(layout).length) props.style = layout;
     }
     if (tag === "span" && el.getAttribute("data-ms-object") === "text") {
