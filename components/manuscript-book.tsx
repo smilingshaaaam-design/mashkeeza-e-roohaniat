@@ -19,6 +19,34 @@ function topicDestination(item: NavItem) {
   return pages.length === 1 ? item.href + '/read/' + encodeURIComponent(pages[0].id) : item.href + '/section'
 }
 
+// Main contents mirrors the complete visible public navigation, rather than
+// only the categories which can launch a book.
+type BookIndexEntry = { id: string; label: string; href?: string; newTab?: boolean; depth: number }
+function bookIndexEntries(items: NavItem[], depth = 0): BookIndexEntry[] {
+  return items.filter(item => item.visible !== false).flatMap(item => {
+    const topic = item.href.startsWith('#topic-')
+    const children = (item.children ?? []).filter(child => child.visible !== false)
+    const isGroup = item.href === '#contact' || item.href === '#published-articles' || item.href === '#'
+    const safe = /^(?:\/(?!\/)|#[^#]|https?:\/\/)/i.test(item.href)
+    const href = topic ? topicDestination(item) : !isGroup && safe ? item.href : undefined
+    const entry = { id: item.id, label: item.label, href, newTab: item.openInNewTab, depth }
+    // The root topic opens its existing book section, where its subtopics are
+    // already listed. Other navigation groups expose their children directly.
+    return [entry, ...(!topic && children.length ? bookIndexEntries(children, depth + 1) : [])]
+  })
+}
+
+function CompleteBookIndex({ items, compact = false }: { items: BookIndexEntry[]; compact?: boolean }) {
+  return <ol className={compact ? 'book-complete-index compact' : 'book-complete-index'}>
+    {items.map(item => <li key={item.id} className={item.depth ? 'book-index-child' : undefined}>
+      {item.href ? <a className="deewan-plaque" href={item.href}
+        target={item.newTab ? '_blank' : undefined}
+        rel={item.newTab ? 'noopener noreferrer' : undefined}>{item.label}</a>
+        : <span className="book-index-group">{item.label}</span>}
+    </li>)}
+  </ol>
+}
+
 function turnDuration(distance: number) {
   return Math.round(680 + 670 / Math.sqrt(Math.max(1, distance)))
 }
@@ -143,7 +171,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
 
 export type BookNavigation = { turnTo: (href: string) => string | null }
 
-export function ManuscriptBook({ topic, cards, topics, hash, navigation }: { navigation: Ref<BookNavigation>; topic: NavItem; cards: NavItem[]; topics: NavItem[]; hash: string }) {
+export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigation }: { navigation: Ref<BookNavigation>; topic: NavItem; cards: NavItem[]; topics: NavItem[]; menuItems: NavItem[]; hash: string }) {
   const articles = cards.filter(item => pageSlug(item.href))
   const current = articles.findIndex(item => hash === topic.href + '/read/' + encodeURIComponent(item.id))
   const card = articles[current]
@@ -173,7 +201,9 @@ export function ManuscriptBook({ topic, cards, topics, hash, navigation }: { nav
     else setStage('opening')
   }
   const intro = (stage === 'cover' || stage === 'opening' || stage === 'dedication' || stage === 'returning' || stage === 'closing' || stage === 'closed') && !card && !mainIndex
-  const indexItems = mainIndex ? topics : cards
+  const indexItems = cards
+  const completeIndex = bookIndexEntries(menuItems)
+  const indexSignature = completeIndex.map(item => item.id + ':' + item.label + ':' + item.href).join('|')
   useEffect(() => {
     if (card || mainIndex) setStage('contents')
   }, [card?.id, mainIndex])
@@ -268,7 +298,7 @@ export function ManuscriptBook({ topic, cards, topics, hash, navigation }: { nav
     node.addEventListener('load', measure, true)
     document.fonts.ready.then(measure)
     return () => { active = false; observer.disconnect(); node.removeEventListener('load', measure, true) }
-  }, [stage, hash, entry, cards.map(item => item.id + item.label).join('|')])
+  }, [stage, hash, entry, indexSignature, cards.map(item => item.id + item.label).join('|')])
   useLayoutEffect(() => {
     const node = paper.current
     if (node) node.scrollLeft = -page * node.clientWidth
@@ -401,19 +431,15 @@ export function ManuscriptBook({ topic, cards, topics, hash, navigation }: { nav
         {entry && isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
         {entry ? <>{entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} /></> :
           failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> :
-          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{!mainIndex && hash !== topic.href + '/section' && <nav className="topic-title-page" aria-label="مرکزی فہرست" style={{display:'block'}}>
+          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{!mainIndex && hash !== topic.href + '/section' && <nav className="topic-title-page book-full-title-index" aria-label="مرکزی فہرست" style={{display:'block'}}>
       <h2>مرکزی فہرست</h2>
-      <ol style={{display:'grid', gridTemplateColumns:'repeat(2,minmax(0,1fr))', alignContent:'start', gap:'.15em'}}>
-        {topics.map(item => <li key={item.id}><a className="deewan-plaque"
-          style={{width:'100%', padding:'.35em .5em', fontSize:'.82em', margin:0, color:'#ffd700'}}
-          href={topicDestination(item)}>{item.label}</a></li>)}
-      </ol>
+      <CompleteBookIndex items={completeIndex} compact />
     </nav>}
       {!mainIndex && <h2>{topic.label}</h2>}
       <h3>{mainIndex ? 'مرکزی فہرست' : 'فہرست'}</h3>
-      {indexItems.length ? <ol>{indexItems.map(item => {
+      {mainIndex ? <CompleteBookIndex items={completeIndex} /> : indexItems.length ? <ol>{indexItems.map(item => {
         const internal = Boolean(pageSlug(item.href))
-        return <li key={item.id}><a className="deewan-plaque" href={mainIndex ? topicDestination(item) : internal ? topic.href + '/read/' + encodeURIComponent(item.id) : item.href}
+        return <li key={item.id}><a className="deewan-plaque" href={internal ? topic.href + '/read/' + encodeURIComponent(item.id) : item.href}
           target={!internal && item.openInNewTab ? '_blank' : undefined} rel={!internal && item.openInNewTab ? 'noopener noreferrer' : undefined}
           onClick={event => {
             if (!internal || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
