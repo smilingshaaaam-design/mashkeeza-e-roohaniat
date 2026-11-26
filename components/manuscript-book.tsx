@@ -588,7 +588,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         setPage(0)
         setStage('contents')
       }
-      leaf.current?.closest('.deewan-book')?.scrollIntoView({ block: 'center', behavior: 'instant' })
+      // Keep the viewport fixed during internal book navigation.
       return target
   }
   useImperativeHandle(navigation, () => ({ turnTo }))
@@ -746,7 +746,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     </div>)}
     <div aria-hidden="true" className="deewan-leaf" style={{inset:"0 4%"}} ref={leaf} />
   </section>
-    {(!intro || stage === 'returning' || stage === 'dedication') && <div className="deewan-controls">
+    {<div className="deewan-controls" style={{visibility:(!intro || stage === 'returning' || stage === 'dedication') ? 'visible' : 'hidden'}}>
       <button onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1}–{Math.min(page + 2, count)} / {count}</span>}
       <button disabled={!intro && !nextLocation && page + 2 >= count} onClick={() => turn(1)}>اگلا صفحہ</button>
