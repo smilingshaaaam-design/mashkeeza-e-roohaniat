@@ -404,3 +404,6 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book .printed-text img[data-manuscript-effect="ink"]{mix-blend-mode:multiply}
 .deewan-book .printed-text img[data-manuscript-effect="antique"]{mix-blend-mode:multiply}
 .deewan-book .printed-text img[data-manuscript-effect="faded"]{mix-blend-mode:multiply}
+
+/* Explicit author page starts apply only inside the physical book. */
+.deewan-book .printed-text [data-ms-break="1"]{break-before:column; -webkit-column-break-before:always}

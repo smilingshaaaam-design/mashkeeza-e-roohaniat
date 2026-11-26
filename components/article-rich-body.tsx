@@ -53,6 +53,18 @@ function safeNodes(root: ParentNode): React.ReactNode[] {
       };
       return <img key={i} src={src} alt={el.getAttribute("alt") || ""} width={validWidth} height={validHeight} loading="lazy" decoding="async" data-manuscript-effect={effect} style={style} />;
     }
+    if (tag === "p" || tag === "div") {
+      // Only validated layout values are persisted. Editor guides and handles
+      // never enter the saved HTML. Relative units keep placement responsive.
+      const indent = Number(el.getAttribute("data-ms-indent"));
+      const space = Number(el.getAttribute("data-ms-space"));
+      const pageBreak = el.getAttribute("data-ms-break") === "1";
+      const layout: React.CSSProperties = {};
+      if (Number.isInteger(indent) && indent > 0 && indent <= 85) layout.textIndent = indent + "%";
+      if (Number.isInteger(space) && space > 0 && space <= 20) layout.paddingBlockStart = space + "lh";
+      if (pageBreak) props["data-ms-break"] = "1";
+      if (Object.keys(layout).length) props.style = layout;
+    }
     if (tag === "a") {
       const href = el.getAttribute("href") || "";
       try {
