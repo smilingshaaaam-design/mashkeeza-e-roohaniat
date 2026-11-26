@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { manuscriptFontLinks } from "./manuscript-fonts";
 import { RICH_MARKER } from "./article-rich-editor";
 
 const TAGS = new Set(["DIV", "P", "BR", "STRONG", "B", "EM", "I", "U", "H2", "H3", "UL", "OL", "LI", "BLOCKQUOTE", "A", "IMG", "SPAN", "H4", "HR"]);
@@ -66,7 +67,7 @@ function safeNodes(root: ParentNode): React.ReactNode[] {
       if (Object.keys(layout).length) props.style = layout;
     }
     if (["p","div","span","h2","h3","h4","blockquote","li"].includes(tag)) {
-      const choices: Record<string, string[]> = {"data-ms-font":["nastaliq","gulzar","naskh","system"],"data-ms-heading":["royal","gold","ink","rule","plain"],"data-ms-ink":["ancient","faded","gold","maroon","normal"],"data-ms-align":["right","center","left","justify"]};
+      const choices: Record<string, string[]> = {"data-ms-font":["nastaliq","gulzar","naskh","system","amiri","aref-ruqaa","aref-ruqaa-ink","scheherazade","lateef","harmattan","noto-sans-arabic","noto-kufi-arabic","markazi","mirza","katibeh","rakkas","lalezar","reem-kufi","reem-kufi-ink","reem-kufi-fun","cairo","tajawal","ibm-plex-arabic","vazirmatn"],"data-ms-heading":["royal","gold","ink","rule","plain"],"data-ms-ink":["ancient","faded","gold","maroon","normal"],"data-ms-align":["right","center","left","justify"]};
       for (const [name, values] of Object.entries(choices)) {
         const value = el.getAttribute(name);
         if (value && values.includes(value)) props[name] = value;
@@ -96,11 +97,12 @@ function safeNodes(root: ParentNode): React.ReactNode[] {
 }
 
 export function ArticleRichBody({ body }: { body?: string | null }) {
+  const fontLinks = useMemo(() => manuscriptFontLinks(body || ""), [body]);
   const nodes = useMemo(() => {
     if (!body?.startsWith(RICH_MARKER) || typeof window === "undefined") return null;
     const doc = new DOMParser().parseFromString(body.slice(RICH_MARKER.length), "text/html");
     return safeNodes(doc.body);
   }, [body]);
   if (!body?.startsWith(RICH_MARKER)) return <div className="whitespace-pre-wrap">{body || ""}</div>;
-  return <div dir="rtl" className="break-words [&_h2]:my-3 [&_h2]:text-[1.4em] [&_h2]:font-bold [&_h3]:my-2 [&_h3]:text-[1.2em] [&_h3]:font-bold [&_p]:my-2 [&_a]:text-amber-300 [&_a]:underline [&_ul]:my-2 [&_ul]:list-disc [&_ol]:my-2 [&_ol]:list-decimal [&_ul]:pr-6 [&_ol]:pr-6">{nodes}</div>;
+  return <>{fontLinks.map(href => <link key={href} rel="stylesheet" href={href} precedence="manuscript-fonts" />)}<div dir="rtl" className="break-words [&_h2]:my-3 [&_h2]:text-[1.4em] [&_h2]:font-bold [&_h3]:my-2 [&_h3]:text-[1.2em] [&_h3]:font-bold [&_p]:my-2 [&_a]:text-amber-300 [&_a]:underline [&_ul]:my-2 [&_ul]:list-disc [&_ol]:my-2 [&_ol]:list-decimal [&_ul]:pr-6 [&_ol]:pr-6">{nodes}</div></>;
 }

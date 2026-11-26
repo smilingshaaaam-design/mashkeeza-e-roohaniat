@@ -1038,7 +1038,8 @@ export function MagicalScroll({ article }: { article: MagicalArticle }) {
       for (const img of contentImages) img.loading = 'eager'
       await Promise.all([pot, quill, ...contentImages].map(img => img.decode().catch(() => undefined)))
       if (cancelled) return
-      await document.fonts.load(window.getComputedStyle(text).font).catch(() => [])
+      const styledFonts = new Set([window.getComputedStyle(text).font, ...Array.from(text.querySelectorAll<HTMLElement>('[data-ms-font]'), el => window.getComputedStyle(el).font)])
+      await Promise.all([...styledFonts].map(font => document.fonts.load(font).catch(() => [])))
       await document.fonts.ready
       if (cancelled) return
       // Let the browser apply the final font and image dimensions before the

@@ -367,3 +367,24 @@ summary,
 [data-ms-heading="ink"]{color:#4d2618!important;font-weight:700;text-align:center!important;break-inside:avoid}
 [data-ms-heading="rule"]{color:#763126!important;text-align:center!important;border-block:1px solid #ae8548;padding:.12em .35em;break-inside:avoid}
 .ms-ornamental-rule{width:72%;height:6px;border:0;border-top:1px solid #b38a42;border-bottom:1px solid #b38a42;margin:1em auto;break-inside:avoid}
+
+[data-ms-font="amiri"]{font-family:'Amiri',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="aref-ruqaa"]{font-family:'Aref Ruqaa',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="aref-ruqaa-ink"]{font-family:'Aref Ruqaa Ink',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="scheherazade"]{font-family:'Scheherazade New',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="lateef"]{font-family:'Lateef',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="harmattan"]{font-family:'Harmattan',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="noto-sans-arabic"]{font-family:'Noto Sans Arabic',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="noto-kufi-arabic"]{font-family:'Noto Kufi Arabic',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="markazi"]{font-family:'Markazi Text',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="mirza"]{font-family:'Mirza',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="katibeh"]{font-family:'Katibeh',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="rakkas"]{font-family:'Rakkas',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="lalezar"]{font-family:'Lalezar',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="reem-kufi"]{font-family:'Reem Kufi',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="reem-kufi-ink"]{font-family:'Reem Kufi Ink',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="reem-kufi-fun"]{font-family:'Reem Kufi Fun',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="cairo"]{font-family:'Cairo',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="tajawal"]{font-family:'Tajawal',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="ibm-plex-arabic"]{font-family:'IBM Plex Sans Arabic',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
+[data-ms-font="vazirmatn"]{font-family:'Vazirmatn',var(--font-nastaliq,'Noto Nastaliq Urdu'),serif!important}
