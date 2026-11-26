@@ -74,7 +74,10 @@ export function TopicCardGrid({ items, showGrid, openMenu, turnToCard }: { turnT
   }
   function renderCard(card: TopicCard, strip = false, duplicate = false) {
     const content = <><span className={styles.title}>{card.label}</span>
-      <img loading="lazy" decoding="async" width="480" height="285" alt="" src={card.image}/></>
+      <span className={styles.artwork}>
+        <img className={styles.artworkBackdrop} loading="lazy" decoding="async" width="480" height="285" alt="" aria-hidden="true" src={card.image}/>
+        <img className={styles.artworkImage} loading="lazy" decoding="async" width="480" height="285" alt="" src={card.image}/>
+      </span></>
     const style = { '--card-scale': Math.max(.5, Math.min(2, (card.width || 100) / 100)),
       ...(card.height && !strip ? { height: Math.min(900, Math.max(1, card.height)) } : {}) } as CSSProperties
     const props = { className: styles.card, style, tabIndex: duplicate ? -1 : undefined, 'aria-hidden': duplicate || undefined }
