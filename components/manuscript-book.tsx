@@ -97,7 +97,18 @@ function captureSheet(leaf: HTMLElement, right: boolean): Sheet {
   return {face, right}
 }
 
-type PageTurn = { duration: number; outgoing: Sheet; landing: Sheet }
+type PageTurn = { duration: number; distance: number; outgoing: Sheet; landing: Sheet }
+
+// More distant jumps show more leaves at a faster cadence. Cap the visual
+// sample so even a very long manuscript stays responsive.
+function rifflePlan(distance: number) {
+  const turns = Math.max(1, Math.ceil(distance))
+  if (turns === 1) return { leaves: 0, interval: 0, flight: 0, delay: 0, final: turnDuration(1) }
+  const leaves = Math.min(15, turns - 1)
+  const interval = Math.max(53, Math.round(185 / Math.sqrt(turns)))
+  const flight = Math.round(interval * 2.15)
+  return { leaves, interval, flight, delay: (leaves - 1) * interval + Math.round(flight * .72), final: Math.max(440, Math.round(650 - Math.min(200, turns * 12))) }
+}
 
 function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   const width = leaf.clientWidth / 2
@@ -105,7 +116,11 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
   if (!width || !height) return
 
   const fromRight = turn.outgoing.right
+  const plan = rifflePlan(turn.distance)
   const front = turn.outgoing.face
+  const firstFace = plan.leaves ? front.cloneNode(true) as HTMLDivElement : null
+  // Skipped leaves use the original paper artwork without fabricating text.
+  if (plan.leaves) front.replaceChildren()
   const back = captureSheet(leaf, !fromRight).face
   const sheet = document.createElement('div')
   sheet.dataset.turningSheet = ''
@@ -151,9 +166,50 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
 
   }
 
-  const timing: KeyframeAnimationOptions = {duration:turn.duration, fill:'both'}
+  const timing: KeyframeAnimationOptions = {duration:plan.leaves ? plan.final : turn.duration, delay:plan.delay, fill:'both'}
   const motion = sheet.animate(transforms, timing)
   const animations = [motion]
+  const riffleSheets: HTMLDivElement[] = []
+  const makePaper = (right: boolean) => {
+    const face = document.createElement('div')
+    const book = leaf.parentElement!
+    const left = leaf.offsetLeft + (right ? width : 0)
+    Object.assign(face.style, {
+      position:'absolute', inset:'0', pointerEvents:'none',
+      backgroundImage:"url('/images/deewan/paper-surface.webp')",
+      backgroundSize:book.clientWidth + 'px ' + book.clientHeight + 'px',
+      backgroundPosition:-left + 'px ' + (-leaf.offsetTop) + 'px',
+      backfaceVisibility:'hidden', overflow:'hidden',
+    })
+    face.style.setProperty('-webkit-backface-visibility','hidden')
+    return face
+  }
+  for (let i = 0; i < plan.leaves; i++) {
+    const flick = document.createElement('div')
+    flick.inert = true
+    Object.assign(flick.style, {
+      position:'absolute', left:fromRight ? '50%' : '0', top:'0', width:'50%', height:'100%',
+      transformStyle:'preserve-3d', transformOrigin:fromRight ? 'left center' : 'right center',
+      pointerEvents:'none', opacity:'0', zIndex:String(i+1),
+    })
+    const a = i === 0 && firstFace ? firstFace : makePaper(fromRight)
+    const b = makePaper(!fromRight)
+    a.style.backfaceVisibility = 'hidden'
+    a.style.setProperty('-webkit-backface-visibility','hidden')
+    a.style.transform = 'translateZ(.15px)'
+    b.style.transform = 'rotateY(180deg) translateZ(.15px)'
+    flick.append(a,b)
+    leaf.append(flick)
+    riffleSheets.push(flick)
+    // Staggered overlapping leaves keep the fast currency-counter effect
+    // without repeatedly mounting or loading intervening articles.
+    animations.push(flick.animate([
+      { offset:0, opacity:1, transform:'rotateY(0deg)' },
+      { offset:.43, opacity:1, transform:'rotateY(' + direction*83 + 'deg) skewY(' + direction*3 + 'deg) scaleX(.95)' },
+      { offset:.86, opacity:1, transform:'rotateY(' + direction*169 + 'deg) skewY(' + direction*1.1 + 'deg)' },
+      { offset:1, opacity:0, transform:'rotateY(' + direction*180 + 'deg)' },
+    ], {duration:plan.flight, delay:i*plan.interval, easing:'linear', fill:'none'}))
+  }
   ;[front, back].forEach(face => {
     face.style.overflow = 'hidden'
     const glaze = document.createElement('div')
@@ -170,6 +226,7 @@ function animateLeaf(leaf: HTMLElement, turn: PageTurn) {
     motion.onfinish = null
     animations.forEach(animation => animation.cancel())
     sheet.remove()
+    riffleSheets.forEach(node => node.remove())
     still.remove()
   }
   motion.onfinish = release
@@ -229,6 +286,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   const [count, setCount] = useState(1)
   const paper = useRef<HTMLDivElement>(null)
   const measuredPage = useRef(0)
+  const measuredSpreads = useRef(new Map<string, number>())
   const leftPaper = useRef<HTMLDivElement>(null)
   const leaf = useRef<HTMLDivElement>(null)
   const pendingSheet = useRef<PageTurn | null>(null)
@@ -239,7 +297,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   }, [])
   function rememberSheet(fromRight: boolean, distance = 1) {
     if (leaf.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      pendingSheet.current = { duration:turnDuration(distance), outgoing:captureSheet(leaf.current, fromRight), landing:captureSheet(leaf.current, !fromRight) }
+      pendingSheet.current = { duration:turnDuration(distance), distance, outgoing:captureSheet(leaf.current, fromRight), landing:captureSheet(leaf.current, !fromRight) }
     }
   }
   useEffect(() => {
@@ -296,6 +354,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       const pages = Math.max(1, Math.round(node.scrollWidth / node.clientWidth))
       measuredPage.current = Math.min(measuredPage.current, 2 * Math.floor((pages - 1) / 2))
       setCount(pages)
+      if (entry || !card) measuredSpreads.current.set(mainIndex ? 'contents' : hash, Math.max(1, Math.ceil(pages / 2)))
       if ((entry || !card) && lastPage.current === hash) {
         measuredPage.current = 2 * Math.floor((pages - 1) / 2)
         setPage(measuredPage.current)
@@ -338,6 +397,41 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     }
   }, [stage, hash, page])
 
+  // Calculate distance in book spreads, using measured pagination for visited
+  // writings and a text-length estimate for writings not yet laid out.
+  function bookPosition(target: string, spread = 0) {
+    const normalized = target.endsWith('/contents') || (target === hash && mainIndex) ? 'contents' : target
+    if (normalized === 'contents') return spread
+    let position = measuredSpreads.current.get('contents') ?? 1
+    const currentLength = entry?.body?.replace(/<[^>]*>/g, '').length ?? 0
+    const perSpread = currentLength > 0 ? Math.max(180, currentLength / Math.max(1, Math.ceil(count / 2))) : 1000
+    function visibleWritings(items: NavItem[]): NavItem[] {
+      return items.filter(item => item.visible !== false).flatMap(item => [
+        ...(isBookWriting(item) ? [item] : []),
+        ...visibleWritings(item.children ?? []),
+      ])
+    }
+    for (const section of topics) {
+      const sectionHash = section.href + '/section'
+      if (normalized === section.href || normalized === sectionHash) return position + spread
+      position += measuredSpreads.current.get(sectionHash) ?? 1
+      const writings = [...new Map(visibleWritings(section.children ?? []).map(item => [item.href,item])).values()]
+      for (const item of writings) {
+        const published = entries?.find(value => articleId(item.href) ? value.id === articleId(item.href) : value.slug === pageSlug(item.href))
+        if (entries && (!published || published.include_in_book === false || published.include_in_book === 0 || published.include_in_book === '0')) continue
+        const writingHash = section.href + '/read/' + encodeURIComponent(item.id)
+        if (normalized === writingHash) return position + spread
+        const textLength = published?.body?.replace(/<[^>]*>/g, '').length ?? 0
+        position += measuredSpreads.current.get(writingHash) ?? Math.max(1, Math.ceil(textLength / perSpread))
+      }
+    }
+    return undefined
+  }
+  function jumpDistance(target: string, fallback = 1) {
+    const from = bookPosition(hash, Math.floor(page / 2))
+    const to = bookPosition(target)
+    return from === undefined || to === undefined ? Math.max(1, fallback) : Math.max(1, Math.abs(to - from))
+  }
   function turnTo(href: string, fromIndex = false) {
       const root = href.split('/')[0]
       const destination = topics.find(item => item.href === root)
@@ -346,7 +440,10 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       const offset = topics.indexOf(destination) - topics.findIndex(item => item.id === topic.id)
       if (hash !== target || page !== 0 || intro) {
         stopTurn.current?.()
-        rememberSheet(fromIndex || mainIndex ? false : offset < 0 || (offset === 0 && page > 0), Math.max(1, Math.abs(offset)))
+        const from = bookPosition(hash, Math.floor(page / 2))
+        const to = bookPosition(target)
+        const backwards = from !== undefined && to !== undefined ? to < from : offset < 0 || (offset === 0 && page > 0)
+        rememberSheet(fromIndex || mainIndex ? false : backwards, jumpDistance(target, Math.abs(offset)))
         clearTimeout(earlyTap.current)
         lastPage.current = null
         measuredPage.current = 0
@@ -408,7 +505,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   function returnToLocation(target: string, distance: number) {
     if (hash === target && page === 0) return
     stopTurn.current?.()
-    rememberSheet(true, Math.max(1, distance) + page / 2)
+    rememberSheet(true, jumpDistance(target, Math.max(1, distance) + page / 2))
     lastPage.current = null
     measuredPage.current = 0
     if (hash === target) setPage(0)
@@ -481,7 +578,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
             if (!internal || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
             event.preventDefault()
             lastPage.current = null
-            rememberSheet(false, Math.max(1, Math.ceil((count - page) / 2)) + articles.indexOf(item))
+            rememberSheet(false, jumpDistance(topic.href + '/read/' + encodeURIComponent(item.id), Math.max(1, Math.ceil((count - page) / 2)) + articles.indexOf(item)))
             window.location.hash = topic.href + '/read/' + encodeURIComponent(item.id)
           }}>{item.label}</a></li>
       })}</ol> : <p>اس موضوع سے ابھی کوئی تحریر منسلک نہیں ہے۔</p>}</>}
