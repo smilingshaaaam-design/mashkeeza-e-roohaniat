@@ -6,22 +6,48 @@ export function clearBookContours(root){root.querySelectorAll('[data-book-contou
 export function applyBookContours(root,options){
   const {width,pitch,height,geometryRoot=root,maxPages=100}=options;
   clearBookContours(root);
-  if(!width||!pitch||height<50||!CSS.supports('shape-outside','polygon(0 0,100% 0,0 100%)')||root.querySelector('img,hr,table,[data-ms-align="justify"]'))return false;
-  const oldScroll=geometryRoot.scrollLeft;geometryRoot.scrollLeft=0;
+  if(!width||!pitch||height<50||!CSS.supports('shape-outside','polygon(0 0,100% 0,0 100%)')||root.querySelector('table'))return false;
+  const viewport=geometryRoot.parentElement||geometryRoot;
+  const oldScroll=viewport.scrollLeft;viewport.scrollLeft=0;
   const origin=geometryRoot.getBoundingClientRect().right,top=geometryRoot.getBoundingClientRect().top;
   const colOf=r=>Math.max(0,Math.floor((origin-(r.left+r.right)/2)/pitch+.0001));
-  const left='polygon(0 0,100% 0,83% 6%,66% 12%,48% 18%,32% 26%,16% 35%,6% 44%,0 54%,0 68%,10% 76%,22% 84%,38% 92%,51% 100%,0 100%)';
-  const right='polygon(100% 0,0 0,17% 6%,34% 12%,52% 18%,68% 26%,84% 35%,94% 44%,100% 54%,100% 68%,90% 76%,78% 84%,62% 92%,49% 100%,100% 100%)';
+  // Match the floral corners in book.webp; the middle of each outer edge is plain paper.
+  const profile=[[0,100],[6,80],[12,64],[18,51],[25,36],[33,23],[41,13],[48,4],[52,0],[69,0],[75,7],[81,15],[87,26],[94,41],[100,56]];
+  const polygon=odd=>'polygon('+[odd?'0 0':'100% 0',...profile.map(([y,x])=>(odd?x:100-x)+'% '+y+'%'),odd?'0 100%':'100% 100%'].join(',')+')';
+  const floatWidth=width*13.5/36.8, floatHeight=height-5;
+  function reserveAt(y){
+    y=Math.min(100,Math.max(0,y));
+    for(let i=1;i<profile.length;i++){
+      const [a,x]=profile[i-1],[b,z]=profile[i];
+      if(y<=b)return (x+(z-x)*(y-a)/(b-a))*floatWidth/100;
+    }
+    return 0;
+  }
+  // Floats wrap native text, but a manually positioned image can ignore the contour.
+  // Never publish that layout if its image or rule crosses into the floral artwork.
+  function mediaSafe(){
+    for(const item of root.querySelectorAll('img,hr')){
+      for(const r of item.getClientRects()){
+        if(!r.width||!r.height)continue;
+        const col=colOf(r),right=origin-col*pitch,left=right-width;
+        const a=(r.top-top)/floatHeight*100,b=(r.bottom-top)/floatHeight*100;
+        if(r.top<top-1||r.bottom>top+height+1||r.left<left-1||r.right>right+1)return false;
+        const reserve=Math.max(reserveAt(a),reserveAt(b),...profile.filter(([y])=>y>=a&&y<=b).map(([,x])=>x*floatWidth/100));
+        if(col%2?r.left<left+reserve+3:r.right>right-reserve-3)return false;
+      }
+    }
+    return true;
+  }
   const make=kind=>{const el=document.createElement('span');el.setAttribute('data-book-contour',kind);el.setAttribute('aria-hidden','true');el.contentEditable='false';return el;};
   function floatFor(col){
     const el=make('float');
-    Object.assign(el.style,{display:'block',float:col%2?'left':'right',width:(width*14.5/36)+'px',height:(height-5)+'px',shapeOutside:col%2?left:right,shapeMargin:'3px',pointerEvents:'none',userSelect:'none',padding:'0',margin:'0',border:'0',fontSize:'0',lineHeight:'0'});
+    Object.assign(el.style,{display:'block',float:col%2?'left':'right',width:floatWidth+'px',height:floatHeight+'px',shapeOutside:polygon(col%2),shapeMargin:'3px',pointerEvents:'none',userSelect:'none',padding:'0',margin:'0',border:'0',fontSize:'0',lineHeight:'0'});
     return el;
   }
   function firstAfter(col,back=1){
     const walker=document.createTreeWalker(root,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT,{acceptNode(n){
       if(n.nodeType===1){if(n.hasAttribute('data-book-contour')||n.matches('[data-ms-object="text"],script,style,[hidden]'))return NodeFilter.FILTER_REJECT;
-        return n.matches('h2,h3,h4')?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_SKIP;}
+        return n.matches('h2,h3,h4,img,hr')?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_SKIP;}
       return n.length?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;
     }});
     for(let n=walker.nextNode();n;n=walker.nextNode()){
@@ -38,7 +64,7 @@ export function applyBookContours(root,options){
     }
     return null;
   }
-  const fail=()=>{clearBookContours(root);geometryRoot.scrollLeft=oldScroll;return false;};
+  const fail=()=>{clearBookContours(root);viewport.scrollLeft=oldScroll;return false;};
   try{
     const first=floatFor(0);root.prepend(first);
     const firstRect=first.getBoundingClientRect();
@@ -47,7 +73,7 @@ export function applyBookContours(root,options){
       let placed=false;
       for(let attempt=1;attempt<=8;attempt++){
         const range=firstAfter(col,attempt);
-        if(!range){geometryRoot.scrollLeft=oldScroll;return true;}
+        if(!range){if(!mediaSafe())return fail();viewport.scrollLeft=oldScroll;return true;}
         const n=range.startContainer,block=n.nodeType===1?n:n.parentElement,manual=block?.closest('[data-ms-break="1"]');
         const f=floatFor(col);let br=null;
         if(manual&&root.contains(manual)&&!manual.querySelector('[data-book-contour]')&&colOf(manual.getBoundingClientRect())===col)manual.prepend(f);

@@ -385,6 +385,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     if (!node) { setPage(0); setCount(1); setFlowCount(1); return }
     let active = true
     let contourSignature = ''
+    let clonedSourceSignature = ''
     const measure = () => {
       if (!active || !node.clientWidth) return
       const book = node.closest<HTMLElement>('.deewan-book')
@@ -393,7 +394,8 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         book.style.setProperty('--book-writing-font', fontSize + 'px')
         const panels = Array.from(book.querySelectorAll<HTMLElement>('.book-panel:has(.printed-text)'))
         const source = panels[0]?.querySelector<HTMLElement>('[data-book-source]')
-        const signature = [book.clientWidth,book.clientHeight,source?.innerHTML || '',document.fonts.status].join('\u0001')
+        const sourceSignature = source?.innerHTML || ''
+        const signature = [book.clientWidth,book.clientHeight,sourceSignature,document.fonts.status].join('\u0001')
         if (signature !== contourSignature) {
           contourSignature = signature
           const targets = panels.map(panel => ({source:panel.querySelector<HTMLElement>('[data-book-source]'),target:panel.querySelector<HTMLElement>('[data-book-target]'),columns:panel.querySelector<HTMLElement>('.deewan-columns')}))
@@ -402,10 +404,13 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
             let ok = true
             for (const item of targets) {
               const target=item.target!, columns=item.columns!
-              target.replaceChildren(...Array.from(item.source!.childNodes,n=>n.cloneNode(true)))
-              target.querySelectorAll('link').forEach(n=>n.remove())
+              if (sourceSignature !== clonedSourceSignature || !target.hasChildNodes()) {
+                target.replaceChildren(...Array.from(item.source!.childNodes,n=>n.cloneNode(true)))
+                target.querySelectorAll('link').forEach(n=>n.remove())
+              }
               if(!applyBookContours(target,{width:columns.clientWidth,pitch:columns.clientWidth,height:columns.clientHeight,geometryRoot:columns})) ok=false
             }
+            clonedSourceSignature=sourceSignature
             if(!ok){book.dataset.bookContours='false';for(const item of targets)clearBookContours(item.target!)}
           } else book.dataset.bookContours='false'
         }
@@ -428,14 +433,19 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(node)
-    node.addEventListener('load', measure, true)
     const book = node.closest<HTMLElement>('.deewan-book')
+    const onMediaLoad = (event: Event) => {
+      if (!(event.target instanceof HTMLImageElement) || !event.target.closest('[data-book-target]')) return
+      contourSignature=''
+      measure()
+    }
+    book?.addEventListener('load', onMediaLoad, true)
     const sourceObserver = new MutationObserver(measure)
     book?.querySelectorAll('[data-book-source]').forEach(source=>sourceObserver.observe(source,{subtree:true,childList:true,characterData:true,attributes:true}))
     const onFonts = () => { contourSignature='';measure() }
     document.fonts.ready.then(onFonts)
     document.fonts.addEventListener('loadingdone',onFonts)
-    return () => { active = false; observer.disconnect(); sourceObserver.disconnect(); node.removeEventListener('load', measure, true);document.fonts.removeEventListener('loadingdone',onFonts) }
+    return () => { active = false; observer.disconnect(); sourceObserver.disconnect(); book?.removeEventListener('load', onMediaLoad, true);document.fonts.removeEventListener('loadingdone',onFonts) }
   }, [stage, hash, entry, indexSignature, cards.map(item => item.id + item.label).join('|')])
   useLayoutEffect(() => {
     const node = paper.current
