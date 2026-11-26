@@ -503,6 +503,6 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .deewan-book[data-opening="cover"]::before,.deewan-book[data-opening="closed"]::before{visibility:visible;opacity:0;animation:none;mask:none}
 .deewan-book[data-opening="opening"]::before{visibility:visible;opacity:1;mask:none;animation:binding-open-halves 1.8s steps(1,end) both}
 .deewan-book[data-opening="closing"]::before{visibility:visible;opacity:1;mask:none;animation:binding-open-halves 1.8s steps(1,end) reverse both}
-@keyframes binding-open-halves{0%{clip-path:inset(0 50% 0 0)}50%,100%{clip-path:inset(0)}}
+@keyframes binding-open-halves{0%,99.99%{clip-path:inset(0 50% 0 0)}100%{clip-path:inset(0)}}
 [data-opening="closing"] .dedication{visibility:hidden;animation:none}
 @media(prefers-reduced-motion:reduce){.deewan-book[data-opening="opening"]::before{animation:none}.deewan-book[data-opening="closing"]::before{animation:none;opacity:0}}
