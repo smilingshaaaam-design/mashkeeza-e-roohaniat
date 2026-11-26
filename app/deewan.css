@@ -348,3 +348,22 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .book-panel .printed-index h2.book-main-index-title{font:700 clamp(28px,3.4vw,64px)/2.1 var(--font-nastaliq),serif;color:#6a2026}
 .printed-index .book-complete-index:not(.compact) a.deewan-plaque{width:90%;font-size:1em;line-height:2;padding:.55em 1.5em;margin:.45em auto}
 @media(max-width:650px){.printed-index .book-complete-index:not(.compact) a.deewan-plaque{width:100%;padding:.45em .7em}}
+
+/* Desktop reader fit: keep the browser's zoom and mobile layout untouched.
+   Use real layout dimensions (not transform:scale), so page-turn geometry,
+   pointer positions, columns and the footer remain correctly aligned. */
+.book-related-topics{position:relative;z-index:3;width:min(92%,52rem);margin:.25rem auto 1.5rem}
+@media(min-width:1024px) and (hover:hover) and (pointer:fine){
+  .deewan-book{
+    --book-extra-width:0px;
+    --book-extension:clamp(24px,4vh,48px);
+    width:min(92%,1080px,max(620px,calc((100vh - 100px) * 1.43)));
+    min-height:0;
+    margin:clamp(18px,4vh,42px) auto 0;
+  }
+  .deewan-book .book-panel{font-size:clamp(14px,1.2vw,20px)}
+  .book-panel .printed-index h2.book-main-index-title{font-size:clamp(27px,2.65vw,46px)}
+  .deewan-book .index-return{font-size:clamp(15px,1.15vw,20px)}
+  .reshmi-header:has(.deewan-book){--sky-depth:clamp(125px,23vh,205px);--mast-gap:25px}
+  .reshmi-header:has(.deewan-book) .reshmi-mast{--moon-title-offset:clamp(16px,2.6vh,30px)}
+}
