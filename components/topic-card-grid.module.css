@@ -1,7 +1,7 @@
 .grid {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   --card-gap: clamp(10px, 1.15vw, 18px);
   gap: var(--card-gap);
   max-width: 1560px;
@@ -154,7 +154,10 @@
 }
 
 @media (max-width: 700px), (pointer: coarse) and (max-device-width: 800px) {
-  .grid { --card-gap: clamp(6px, .75vw, 10px); }
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    --card-gap: clamp(6px, .75vw, 10px);
+  }
   .title { padding-inline: 4%; }
 }
 
