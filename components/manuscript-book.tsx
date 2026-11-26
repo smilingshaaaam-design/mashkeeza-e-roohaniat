@@ -54,15 +54,6 @@ function CompleteBookIndex({ items, compact = false, onSelect }: { items: BookIn
   </ol>
 }
 
-// Physical leaf direction for the Urdu manuscript:
-// true = right leaf turns to the left (forward).
-// false = left leaf turns to the right (backward).
-function contentsDirection(toContents: boolean, fromContents: boolean, backwards: boolean) {
-  if (toContents) return false
-  if (fromContents) return true
-  return !backwards
-}
-
 function turnDuration(distance: number) {
   return Math.round(680 + 670 / Math.sqrt(Math.max(1, distance)))
 }
@@ -312,7 +303,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   useEffect(() => {
     if (stage !== 'dedication' || !intro) return
     const timer = window.setTimeout(() => {
-      rememberSheet(true)
+      rememberSheet(false)
       setStage('title')
     }, 4000)
     return () => window.clearTimeout(timer)
@@ -452,7 +443,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         const from = bookPosition(hash, Math.floor(page / 2))
         const to = bookPosition(target)
         const backwards = from !== undefined && to !== undefined ? to < from : offset < 0 || (offset === 0 && page > 0)
-        rememberSheet(contentsDirection(target.endsWith('/contents'), fromIndex || mainIndex, backwards), jumpDistance(target, Math.abs(offset)))
+        rememberSheet(fromIndex || mainIndex ? false : backwards, jumpDistance(target, Math.abs(offset)))
         clearTimeout(earlyTap.current)
         lastPage.current = null
         measuredPage.current = 0
@@ -471,7 +462,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   function open(i: number, fromEnd = false) {
     const next = articles[i]
     const target = next ? topic.href + '/read/' + encodeURIComponent(next.id) : topic.href + '/section'
-    rememberSheet(!fromEnd)
+    rememberSheet(fromEnd)
     lastPage.current = fromEnd ? target : null
     window.location.hash = target
   }
@@ -486,12 +477,12 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       if (stage === 'returning' || stage === 'dedication') {
         stopTurn.current?.()
         if (delta < 0) setStage('closing')
-        else { rememberSheet(true); setStage('title') }
+        else { rememberSheet(false); setStage('title') }
       }
       return
     }
     if (delta < 0 && !card && page === 0) {
-      rememberSheet(contentsDirection(!mainIndex, false, true))
+      rememberSheet(true)
       if (!mainIndex) {
         window.location.hash = topic.href + '/contents'
         return
@@ -502,7 +493,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     }
     const next = page + 2 * delta
     if (next >= 0 && next < count) {
-      rememberSheet(delta > 0)
+      rememberSheet(delta < 0)
       measuredPage.current = next
       setPage(next)
     } else if (!mainIndex && current + delta >= -1 && current + delta < articles.length) {
@@ -510,12 +501,11 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     }
   }
   // The breadcrumb is the reader's current location, not a history log.
-  // Returning to the main contents or an ancestor turns the left leaf
-  // toward the right. Forward navigation turns the right leaf toward the left.
+  // Returning to an ancestor uses the original right-to-left page turn.
   function returnToLocation(target: string, distance: number) {
     if (hash === target && page === 0) return
     stopTurn.current?.()
-    rememberSheet(contentsDirection(target.endsWith('/contents') || mainIndex, false, true), jumpDistance(target, Math.max(1, distance) + page / 2))
+    rememberSheet(true, jumpDistance(target, Math.max(1, distance) + page / 2))
     lastPage.current = null
     measuredPage.current = 0
     if (hash === target) setPage(0)
@@ -588,7 +578,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
             if (!internal || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
             event.preventDefault()
             lastPage.current = null
-            rememberSheet(true, jumpDistance(topic.href + '/read/' + encodeURIComponent(item.id), Math.max(1, Math.ceil((count - page) / 2)) + articles.indexOf(item)))
+            rememberSheet(false, jumpDistance(topic.href + '/read/' + encodeURIComponent(item.id), Math.max(1, Math.ceil((count - page) / 2)) + articles.indexOf(item)))
             window.location.hash = topic.href + '/read/' + encodeURIComponent(item.id)
           }}>{item.label}</a></li>
       })}</ol> : <p>اس موضوع سے ابھی کوئی تحریر منسلک نہیں ہے۔</p>}</>}
