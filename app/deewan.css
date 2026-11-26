@@ -230,7 +230,7 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 93.75%{transform:rotateY(177.979deg) skewY(0deg) scaleX(0.99937)}
 100%{transform:rotateY(180deg) skewY(0deg) scaleX(1)}
 }
-.manuscript-cover::after {content:"";position:absolute;inset:0;border-radius:inherit;backface-visibility:hidden;transform:rotateY(180deg) translateZ(.15px);background:transparent url('/images/deewan/paper-surface.webp') 92.5926% 0 / 217.3913% 100% no-repeat;border:0;box-shadow:none;filter:none}
+.manuscript-cover::after {content:"";position:absolute;inset:0;border-radius:inherit;backface-visibility:hidden;transform:rotateY(180deg) translateZ(.15px);background:transparent url('/images/deewan/book.webp') 92.5926% 0 / 217.3913% 100% no-repeat;border:0;box-shadow:none;filter:none;mask-image:url('/images/deewan/paper-surface.webp');mask-position:92.5926% 0;mask-size:217.3913% 100%;mask-repeat:no-repeat;mask-mode:alpha}
 .manuscript-cover>div {backface-visibility:hidden;transform:translateZ(2px)}
 .manuscript-cover>div,.frontispiece-frame {display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
 .manuscript-cover>div {width:81%;height:84%;border:5px double #c99c4c;outline:1px solid #966c36;outline-offset:6px;color:#e7c070;gap:1em;background:linear-gradient(0deg,#32171299,#32171299),url('/images/reshmi/trim.webp') center top / auto 9px repeat-x}
