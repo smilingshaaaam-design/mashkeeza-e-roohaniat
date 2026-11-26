@@ -398,13 +398,32 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       open(current + delta, delta < 0)
     }
   }
+  // The breadcrumb is the reader's current location, not a history log.
+  // Returning to an ancestor uses the original right-to-left page turn.
+  function returnToLocation(target: string, distance: number) {
+    if (hash === target && page === 0) return
+    stopTurn.current?.()
+    rememberSheet(true, Math.max(1, distance) + page / 2)
+    lastPage.current = null
+    measuredPage.current = 0
+    if (hash === target) setPage(0)
+    else window.location.hash = target
+  }
   function firstIndex() {
     if (mainIndex && page === 0) return
-    rememberSheet(true, Math.max(1, current + 1) + page / 2)
-    lastPage.current = null
-    if (mainIndex) setPage(0)
-    else window.location.hash = topic.href + '/contents'
+    returnToLocation(mainIndex ? hash : topic.href + '/contents', current + 2)
   }
+  const breadcrumbs = [
+    { key: 'contents', label: 'فہرست', action: firstIndex },
+    ...(!mainIndex ? [{
+      key: 'section', label: topic.label,
+      action: () => returnToLocation(topic.href + '/section', current + 1),
+    }] : []),
+    ...(!mainIndex && card ? [{
+      key: 'writing', label: entry?.title || card.label,
+      action: () => returnToLocation(topic.href + '/read/' + encodeURIComponent(card.id), 1),
+    }] : []),
+  ]
   return <>
   <section className="deewan-book" style={zoomed ? {touchAction:"manipulation"} : undefined} data-opening={intro ? stage : undefined} tabIndex={0} aria-label={topic.label}
     onKeyDown={e => {
@@ -464,7 +483,16 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         </div>
       </div>
     </div>)}
-    {!intro && ['right','left'].map(side => <button key={side} type="button" className={'index-return index-return-' + side} onClick={firstIndex}>فہرست</button>)}
+    {!intro && <nav className="book-breadcrumbs" aria-label="کتاب میں موجودہ مقام" dir="rtl">
+      <ol>
+        {breadcrumbs.map((crumb, index) => <li key={crumb.key}>
+          {index > 0 && <span className="book-crumb-arrow" aria-hidden="true">‹</span>}
+          <button type="button" onClick={crumb.action} title={crumb.label}
+            aria-current={index === breadcrumbs.length - 1 ? 'page' : undefined}
+            className="book-crumb">{crumb.label}</button>
+        </li>)}
+      </ol>
+    </nav>}
     <div aria-hidden="true" className="deewan-leaf" style={{inset:"0 4%"}} ref={leaf} />
     {(!intro || stage === 'returning' || stage === 'dedication') && <div className="deewan-controls">
       <button onClick={() => turn(-1)}>پچھلا صفحہ</button>
