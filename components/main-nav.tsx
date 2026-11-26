@@ -440,6 +440,7 @@ export function MainNav() {
       ...bookEntries(item.children ?? []),
     ])
   }
+  // Explicit element type allows the injected published-articles menu without optional book-only links.
   const items: NavItem[] = topicNavigation(cms?.menus ?? navItems).filter(item => item.visible !== false).map(item => ({
     ...item, outsideBookLinks: item.href.startsWith('#topic-') ? bookEntries(item.children ?? []).filter(child => outsideBook(child.href)) : undefined,
   }))
