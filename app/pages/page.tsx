@@ -61,7 +61,7 @@ function PublishedPageContent() {
   return (
     <main dir="rtl" className="mx-auto min-h-[60vh] max-w-5xl px-5 py-12 text-amber-100 sm:px-10">
       {page && isMagicalScrollEnabled(page.use_magical_scroll) ? (
-        <MagicalScroll article={page} />
+        <MagicalScroll key={page.id} article={page} />
       ) : (
       <article className="relative isolate overflow-hidden rounded-2xl border border-amber-700/50 p-6 shadow-2xl sm:p-12" style={page ? articleBackgroundStyle(page) : { backgroundColor: '#0000008c' }}>
         {page && <div className="pointer-events-none absolute inset-0 z-0" style={{ backgroundColor: `rgba(0,0,0,${articleOverlayOpacity(page.overlay_opacity)})` }} />}
@@ -78,7 +78,7 @@ function PublishedPageContent() {
         </div>
       </article>
       )}
-      {page && <RelatedTopics key={page.id} slug={page.slug} />}
+      {page && !isMagicalScrollEnabled(page.use_magical_scroll) && <RelatedTopics key={page.id} slug={page.slug} />}
       <Link className="mt-8 inline-block text-amber-300 underline" href="/">صفحۂ اول</Link>
     </main>
   );
