@@ -22,16 +22,35 @@ function safeNodes(root: ParentNode): React.ReactNode[] {
       const align = el.getAttribute("data-align") || "center";
       const validWidth = Number.isInteger(width) && width >= 20 && width <= 2000 ? width : undefined;
       const validHeight = Number.isInteger(height) && height >= 20 && height <= 2000 ? height : undefined;
+      const bounded = (name: string, min: number, max: number, fallback: number) => {
+        const raw = el.getAttribute(name);
+        const n = raw === null ? fallback : Number(raw);
+        return Number.isInteger(n) && n >= min && n <= max ? n : fallback;
+      };
+      const percent = bounded("data-size", 10, 100, 0);
+      const x = bounded("data-x", 0, 100, 50);
+      const effect = el.getAttribute("data-effect") || "original";
+      const opacity = bounded("data-opacity", 30, 100, 100) / 100;
+      const wrapped = align === "left" || align === "right";
+      const free = align === "free" && percent > 0;
       const style: React.CSSProperties = {
         maxWidth: "100%",
-        width: validWidth ? `${validWidth}px` : "auto",
-        height: validHeight ? `${validHeight}px` : "auto",
+        width: percent ? percent + "%" : validWidth ? validWidth + "px" : "auto",
+        height: percent ? "auto" : validHeight ? validHeight + "px" : "auto",
         display: align === "inline" ? "inline-block" : "block",
-        margin: align === "left" ? "1rem auto 1rem 0" : align === "right" ? "1rem 0 1rem auto" : align === "inline" ? "0 .25rem" : "1rem auto",
-        objectFit: "fill",
-        verticalAlign: "middle"
+        float: wrapped ? align : undefined,
+        clear: align === "center" || free ? "both" : undefined,
+        margin: align === "left" ? "0.35em 0.65em 0.35em 0" : align === "right" ? "0.35em 0 0.35em 0.65em" : align === "inline" ? "0 .25em" : "0.6em auto",
+        marginLeft: free ? ((100 - percent) * x / 100) + "%" : undefined,
+        marginRight: free ? ((100 - percent) * (100 - x) / 100) + "%" : undefined,
+        objectFit: "contain",
+        verticalAlign: "middle",
+        breakInside: "avoid",
+        opacity,
+        mixBlendMode: effect === "ink" || effect === "antique" || effect === "faded" ? "multiply" : undefined,
+        filter: effect === "ink" ? "grayscale(1) contrast(1.25) sepia(.55)" : effect === "antique" ? "sepia(.72) saturate(.72) contrast(1.04)" : effect === "faded" ? "sepia(.8) saturate(.55) contrast(.85)" : undefined
       };
-      return <img key={i} src={src} alt={el.getAttribute("alt") || ""} loading="lazy" style={style} />;
+      return <img key={i} src={src} alt={el.getAttribute("alt") || ""} loading="lazy" decoding="async" data-manuscript-effect={effect} style={style} />;
     }
     if (tag === "a") {
       const href = el.getAttribute("href") || "";

@@ -391,3 +391,16 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 .book-breadcrumbs .book-crumb[aria-current="page"]{color:#100d09}
 @keyframes book-ink-glimmer{0%,100%{text-shadow:0 0 1px #ffe7a2,0 0 3px #dda82f99}50%{text-shadow:0 0 2px #fff1b3,0 0 5px #efb82dcc,0 0 8px #d99c2466}}
 @media(prefers-reduced-motion:reduce){.book-breadcrumbs .book-crumb{animation:none;text-shadow:0 0 2px #ffdf85,0 0 4px #d9a82c99}}
+
+/* Protected manuscript writing area: equal-sized columns stay inside the decorated margins.
+   Keep the normal image mode distinct from ink that blends into the parchment. */
+.deewan-book .book-panel:has(.printed-text){width:28%;top:20%;bottom:25%;mix-blend-mode:normal}
+.deewan-book .book-panel[data-side="right"]:has(.printed-text){right:13%;bottom:8%}
+.deewan-book .book-panel[data-side="left"]:has(.printed-text){left:13%}
+.deewan-book .book-panel[data-side="right"]:has(.printed-text)>.deewan-viewport{height:76.388889%}
+.deewan-book .printed-text{box-sizing:border-box;overflow-wrap:anywhere;word-break:normal}
+.deewan-book .printed-text :is(p,div,blockquote,ul,ol,h2,h3){max-width:100%;overflow-wrap:anywhere}
+.deewan-book .printed-text img{max-width:100%;max-height:12em;object-fit:contain!important;break-inside:avoid;page-break-inside:avoid}
+.deewan-book .printed-text img[data-manuscript-effect="ink"]{mix-blend-mode:multiply}
+.deewan-book .printed-text img[data-manuscript-effect="antique"]{mix-blend-mode:multiply}
+.deewan-book .printed-text img[data-manuscript-effect="faded"]{mix-blend-mode:multiply}
