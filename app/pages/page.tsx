@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArticleRichBody } from "@/components/article-rich-body";
+import { RelatedTopics } from "@/components/related-topics";
 import { MagicalScroll, isMagicalScrollEnabled } from "@/components/magical-scroll";
 import { articleBackgroundStyle, articleOverlayOpacity, type ArticleAppearance } from "@/components/article-background";
 import { useSearchParams } from "next/navigation";
@@ -77,6 +78,7 @@ function PublishedPageContent() {
         </div>
       </article>
       )}
+      {page && <RelatedTopics key={page.id} slug={page.slug} />}
       <Link className="mt-8 inline-block text-amber-300 underline" href="/">صفحۂ اول</Link>
     </main>
   );
