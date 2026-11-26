@@ -1,16 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { findBookLocation, requestBookLocation, useBookLocations } from './book-links'
 
 const API = 'https://mashkeeza-cms-api.smilingshaaaam.workers.dev'
 const validSlug = (value: unknown): value is string =>
   typeof value === 'string' && value.length <= 180 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
 
-type Tag = { word: string; slug?: string; title?: string }
+type Tag = { word: string; slug?: string; title?: string; test?: boolean }
 type Topics = { slug: string; heading: string; color: string; size: number; tags: Tag[] }
 
 export function RelatedTopics({ slug, visible = true }: { slug?: string; visible?: boolean }) {
   const [topics, setTopics] = useState<Topics | null>(null)
+  const bookLocations = useBookLocations()
 
   useEffect(() => {
     setTopics(null)
@@ -62,6 +64,15 @@ export function RelatedTopics({ slug, visible = true }: { slug?: string; visible
   // The default gold CMS colour is intended for a dark surface. On antique
   // parchment use burnt ink instead, while honouring explicit custom colours.
   const ink = topics.color.toLowerCase() === '#e5bd70' ? '#63391e' : topics.color
+  const currentRoot = typeof window === 'undefined' ? '' : window.location.hash.split('/')[0]
+  const tags: Tag[] = [...topics.tags]
+  // One explicitly labelled test link on the existing test post. Its target
+  // is selected only from real, published, enabled and assigned book content.
+  if (slug === 'bismillah-01' && !tags.some(tag => tag.slug && findBookLocation(bookLocations, tag.slug))) {
+    const candidates = bookLocations.filter(item => item.slug !== slug)
+    const sample = candidates.find(item => item.slug === 'bismillah-ar-rehman') ?? candidates[0]
+    if (sample) tags.push({ word: sample.title + ' (آزمائشی رابطہ)', slug: sample.slug, title: sample.title, test: true })
+  }
   return (
     <section dir="rtl" aria-label={topics.heading} className="ancient-related-topics horizontal-topics-scroll">
       <svg className="topics-scroll-roller topics-scroll-roller-right" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
@@ -71,12 +82,20 @@ export function RelatedTopics({ slug, visible = true }: { slug?: string; visible
         <div className="topics-scroll-art" aria-hidden="true" />
         <div className="ancient-related-heading"><span aria-hidden="true">❦</span><h2>{topics.heading}</h2><span aria-hidden="true">❦</span></div>
         <div className="ancient-related-list" style={{ color: ink, fontSize: topics.size }}>
-          {topics.tags.map(tag => tag.slug ? (
-            <a key={tag.word} dir="auto" href={'/read/' + tag.slug} title={tag.title}
-              className="ancient-related-inscription">{tag.word}</a>
-          ) : (
-            <span key={tag.word} dir="auto" className="ancient-related-inscription">{tag.word}</span>
-          ))}
+          {tags.map((tag, index) => {
+            const location = tag.slug ? findBookLocation(bookLocations, tag.slug, currentRoot) : undefined
+            return tag.slug ? (
+              <a key={tag.word + ':' + index} dir="auto" href={location?.href ?? '/read/' + tag.slug}
+                title={location ? 'کتاب میں پڑھیں: ' + (tag.title || tag.word) : tag.title}
+                onClick={event => {
+                  if (!location || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+                  if (requestBookLocation(location.href)) event.preventDefault()
+                }}
+                className="ancient-related-inscription">{tag.word}</a>
+            ) : (
+              <span key={tag.word + ':' + index} dir="auto" className="ancient-related-inscription">{tag.word}</span>
+            )
+          })}
         </div>
       </div>
       <svg className="topics-scroll-roller topics-scroll-roller-left" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
@@ -99,7 +118,7 @@ export function RelatedTopics({ slug, visible = true }: { slug?: string; visible
         .ancient-related-list{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:.24em .75em;line-height:2.65;mix-blend-mode:multiply}
         .ancient-related-inscription{display:inline-block;position:relative;max-width:100%;overflow-wrap:anywhere;padding:0 .3em;color:inherit;font-weight:500;opacity:.94;background:none;border:0;box-shadow:none;text-shadow:.12px .24px .35px #51331b30;font-family:inherit}
         .ancient-related-inscription::after{content:none}
-        a.ancient-related-inscription{color:inherit;text-decoration:none;border:0;cursor:pointer}
+        a.ancient-related-inscription{color:#382410;font-weight:700;text-decoration:underline;text-decoration-color:#a47c35;text-decoration-thickness:1px;text-underline-offset:.27em;border:0;cursor:pointer}
         a.ancient-related-inscription:hover{color:#68252b;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.24em}
         a.ancient-related-inscription:focus-visible{outline:2px solid #793b20;outline-offset:2px}
         @keyframes relatedScrollAppear{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
