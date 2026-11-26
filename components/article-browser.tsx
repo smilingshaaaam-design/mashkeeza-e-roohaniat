@@ -91,6 +91,6 @@ export function ArticleBrowser() {
                   </div>
                 </article>
     )}
-    <RelatedTopics key={selected.id} slug={selected.slug} />
+    {!isMagicalScrollEnabled(selected.use_magical_scroll) && <RelatedTopics key={selected.id} slug={selected.slug} />}
   </section>
 }
