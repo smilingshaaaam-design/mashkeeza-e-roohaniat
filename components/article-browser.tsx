@@ -22,11 +22,12 @@ type Article = ArticleAppearance & {
   published_at?: string | null
   paper_opacity?: number | null
   use_magical_scroll?: boolean | number | null
+  include_in_book?: boolean | number | string | null
 }
 
 let pending: Promise<Article[]> | undefined
 
-export function usePublishedArticles() {
+export function usePublishedContent() {
   const [articles, setArticles] = useState<Article[]>([])
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   useEffect(() => {
@@ -37,14 +38,19 @@ export function usePublishedArticles() {
         const data = await response.json()
         if (!Array.isArray(data.items)) throw Error('Invalid articles')
         return data.items.filter((item: Article) => item && typeof item.id === 'string' &&
-          typeof item.title === 'string' && item.content_type !== 'page') as Article[]
+          typeof item.title === 'string') as Article[]
       }).catch(error => { pending = undefined; throw error })
     pending.then(items => {
       if (active) { setArticles(items); setStatus('ready') }
     }).catch(() => { if (active) setStatus('error') })
     return () => { active = false }
   }, [])
-  return { articles, status }
+  return { items: articles, status }
+}
+
+export function usePublishedArticles() {
+  const { items, status } = usePublishedContent()
+  return { articles: items.filter(item => item.content_type !== 'page'), status }
 }
 
 export function ArticleBrowser() {
