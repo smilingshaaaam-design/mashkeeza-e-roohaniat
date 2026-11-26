@@ -63,32 +63,45 @@ export function RelatedTopics({ slug, visible = true }: { slug?: string; visible
   // parchment use burnt ink instead, while honouring explicit custom colours.
   const ink = topics.color.toLowerCase() === '#e5bd70' ? '#63391e' : topics.color
   return (
-    <section dir="rtl" aria-label={topics.heading} className="ancient-related-topics">
-      <div className="ancient-related-heading"><span aria-hidden="true">❦</span><h2>{topics.heading}</h2><span aria-hidden="true">❦</span></div>
-      <div className="ancient-related-list" style={{ color: ink, fontSize: topics.size }}>
-        {topics.tags.map((tag, index) => tag.slug ? (
-          <a key={tag.word} dir="auto" href={'/read/' + tag.slug} title={tag.title}
-            className="ancient-related-slip" data-edge={index % 3}>{tag.word}</a>
-        ) : (
-          <span key={tag.word} dir="auto" className="ancient-related-slip" data-edge={index % 3}>{tag.word}</span>
-        ))}
+    <section dir="rtl" aria-label={topics.heading} className="ancient-related-topics horizontal-topics-scroll">
+      <svg className="topics-scroll-roller topics-scroll-roller-right" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <image href="/magical-scroll/top-roller.png" width="100" height="100" preserveAspectRatio="none" transform="rotate(90 50 50)" />
+      </svg>
+      <div className="topics-scroll-paper">
+        <div className="ancient-related-heading"><span aria-hidden="true">❦</span><h2>{topics.heading}</h2><span aria-hidden="true">❦</span></div>
+        <div className="ancient-related-list" style={{ color: ink, fontSize: topics.size }}>
+          {topics.tags.map(tag => tag.slug ? (
+            <a key={tag.word} dir="auto" href={'/read/' + tag.slug} title={tag.title}
+              className="ancient-related-inscription">{tag.word}</a>
+          ) : (
+            <span key={tag.word} dir="auto" className="ancient-related-inscription">{tag.word}</span>
+          ))}
+        </div>
       </div>
+      <svg className="topics-scroll-roller topics-scroll-roller-left" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <image href="/magical-scroll/top-roller.png" width="100" height="100" preserveAspectRatio="none" transform="rotate(-90 50 50)" />
+      </svg>
       <style jsx global>{`
-        .ancient-related-topics{position:relative;z-index:10;isolation:isolate;max-width:54rem;margin:1rem auto 1.5rem;padding:clamp(1.1rem,4vw,2.35rem);font-family:'Noto Nastaliq Urdu',serif;filter:drop-shadow(0 7px 8px #0009);animation:relatedPaperAppear .5s ease-out both}
-        .ancient-related-topics::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at 10% 12%,#78401b55,transparent 24%),radial-gradient(ellipse at 96% 85%,#63320f66,transparent 29%),linear-gradient(90deg,#7d421a35,transparent 15%,transparent 86%,#7d421a45),url('/images/deewan/paper-surface.webp') center/cover,#e6c591;clip-path:polygon(0.5% 4%,4% 2%,7% 3.5%,10% 0.8%,15% 2%,19% 1%,24% 3%,29% 1.4%,34% 2%,38% 0.5%,42% 2%,48% 1%,54% 2.8%,60% 0.4%,66% 2.3%,72% 1%,76% 3%,81% .8%,86% 2.4%,92% 1%,97% 3%,99% 0.9%,98.4% 12%,100% 18%,98.5% 26%,99.7% 36%,98.5% 44%,100% 55%,98.7% 64%,99.8% 75%,98.6% 85%,100% 95%,96% 98%,92% 96%,87% 99%,82% 97%,76% 99%,71% 97%,66% 99.5%,60% 97%,54% 99%,49% 97%,43% 100%,38% 97.5%,32% 99%,27% 97%,21% 99%,16% 96.8%,11% 99%,6% 97%,1% 99%,2% 89%,0 81%,1.8% 71%,0.4% 61%,2% 51%,0 42%,1.5% 31%,0 22%,1.8% 13%)}
-        .ancient-related-heading{display:flex;justify-content:center;align-items:center;gap:.7em;color:#733c20;margin-bottom:.9rem;text-align:center}
-        .ancient-related-heading h2{font-size:clamp(17px,2.8vw,25px);line-height:2.4;font-weight:700;color:#6d321a;margin:0}
-        .ancient-related-heading span{font-size:1.35rem;color:#9a662e}
-        .ancient-related-list{display:flex;flex-wrap:wrap;justify-content:center;gap:.55rem .65rem}
-        .ancient-related-slip{display:inline-block;position:relative;isolation:isolate;max-width:100%;overflow-wrap:anywhere;line-height:2.35;padding:.3em .85em .48em;text-align:center;font-weight:600;color:inherit;text-shadow:0 1px #fff2;filter:drop-shadow(1px 2px 1px #66330b55)}
-        .ancient-related-slip::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at 0 100%,#83502180,transparent 36%),linear-gradient(135deg,#f1d9a5,#d0a76a 62%,#b98549);clip-path:polygon(1% 9%,12% 3%,22% 8%,38% 1%,52% 7%,67% 2%,82% 8%,98% 1%,96% 22%,100% 44%,96% 67%,99% 91%,86% 98%,74% 91%,62% 99%,45% 92%,30% 99%,15% 93%,1% 98%,4% 72%,0 48%,3% 25%)}
-        .ancient-related-slip[data-edge="1"]::before{clip-path:polygon(0 4%,17% 10%,29% 1%,48% 6%,66% 0,83% 7%,100% 4%,97% 30%,100% 56%,96% 80%,99% 98%,81% 92%,64% 99%,49% 94%,34% 100%,19% 94%,0 97%,3% 68%,0 40%,3% 19%)}
-        .ancient-related-slip[data-edge="2"]::before{clip-path:polygon(2% 2%,14% 7%,32% 0,47% 8%,62% 3%,77% 9%,97% 1%,100% 24%,96% 51%,100% 74%,98% 98%,83% 94%,68% 100%,51% 94%,36% 98%,20% 91%,1% 98%,4% 75%,0 47%,3% 22%)}
-        a.ancient-related-slip{text-decoration:underline;text-decoration-color:currentColor;text-underline-offset:.25em}
-        a.ancient-related-slip:hover{filter:drop-shadow(1px 2px 2px #66330b88) brightness(1.08)}
-        a.ancient-related-slip:focus-visible{outline:2px solid #793b20;outline-offset:3px}
-        @keyframes relatedPaperAppear{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
-        @media(prefers-reduced-motion:reduce){.ancient-related-topics{animation:none}}
+        .horizontal-topics-scroll{--roller-width:clamp(26px,7vw,76px);position:relative;z-index:10;isolation:isolate;width:min(100%,52rem);margin:1.2rem auto 1.8rem;padding:12px calc(var(--roller-width)*.72);font-family:var(--font-nastaliq),'Noto Nastaliq Urdu',serif;filter:drop-shadow(0 5px 6px #150b0670);animation:relatedScrollAppear .5s ease-out both}
+        .topics-scroll-paper{position:relative;isolation:isolate;min-height:108px;padding:clamp(1rem,2.8vw,1.8rem) clamp(.8rem,3vw,2.1rem) clamp(1.2rem,3vw,1.9rem);text-align:center}
+        .topics-scroll-paper::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(90deg,#58301265 0%,#ab7c4130 4%,transparent 12%,transparent 88%,#ab7c4130 96%,#58301265 100%),radial-gradient(ellipse at 30% 0%,#8b5c3220,transparent 35%),url('/images/deewan/paper-surface.webp') center/100% 100% no-repeat,#e3c99a;clip-path:polygon(0 2%,4% 1.5%,8% 2.5%,12% .6%,17% 1.6%,22% .4%,27% 1.5%,32% .7%,37% 1.8%,42% .4%,47% 1.5%,52% .6%,57% 1.9%,62% .6%,67% 1.5%,72% .3%,77% 1.6%,82% .5%,87% 1.8%,92% .6%,96% 1.6%,100% 2%,100% 98%,96% 98.5%,92% 97.5%,87% 99.2%,82% 98.1%,77% 99.4%,72% 98.4%,67% 99.5%,62% 98.1%,57% 99.4%,52% 98.3%,47% 99.5%,42% 98.2%,37% 99.3%,32% 98.4%,27% 99.7%,22% 98.5%,17% 99.5%,12% 98.1%,8% 99.2%,4% 98.4%,0 98%)}
+        .topics-scroll-paper::after{content:"";position:absolute;inset:8px 11px;z-index:-1;border-block:1px solid #835a3355;pointer-events:none}
+        .topics-scroll-roller{position:absolute;top:0;bottom:0;height:100%;width:var(--roller-width);z-index:2;pointer-events:none;filter:drop-shadow(1px 2px 2px #30150570);overflow:visible}
+        .topics-scroll-roller-right{right:0}
+        .topics-scroll-roller-left{left:0}
+        .ancient-related-heading{display:flex;justify-content:center;align-items:center;gap:.7em;color:#68252b;margin:0 auto .65rem;text-align:center}
+        .ancient-related-heading h2{font-size:clamp(18px,2.7vw,26px);line-height:2.15;font-weight:700;color:#68252b;margin:0}
+        .ancient-related-heading span{font-size:1rem;color:#8e622d;display:flex;align-items:center;gap:.25em;flex:1;max-width:3.5em}
+        .ancient-related-heading span:first-child::before,.ancient-related-heading span:last-child::after{content:"";height:1px;background:linear-gradient(90deg,transparent,#9b6c36,transparent);flex:1}
+        .ancient-related-list{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:.38em .9em;line-height:2.3}
+        .ancient-related-inscription{display:inline-block;position:relative;max-width:100%;overflow-wrap:anywhere;padding:.08em .45em .25em;color:inherit;font-weight:500;text-shadow:0 .3px .3px #4c280b33;background:transparent}
+        .ancient-related-inscription::after{content:"";position:absolute;left:9%;right:9%;bottom:0;height:1px;background:linear-gradient(90deg,transparent,#855c3445,transparent)}
+        a.ancient-related-inscription{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor}
+        a.ancient-related-inscription:hover{color:#68252b;text-decoration:underline;text-underline-offset:.24em}
+        a.ancient-related-inscription:focus-visible{outline:2px solid #793b20;outline-offset:2px}
+        @keyframes relatedScrollAppear{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+        @media(max-width:480px){.horizontal-topics-scroll{--roller-width:clamp(20px,7vw,33px);padding-block:8px}.topics-scroll-paper{padding-inline:.55rem}.ancient-related-list{gap:.24em .48em}.ancient-related-heading{gap:.35em}}
+        @media(prefers-reduced-motion:reduce){.horizontal-topics-scroll{animation:none}}
       `}</style>
     </section>
   )
