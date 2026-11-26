@@ -33,6 +33,28 @@ function topicDestination(item: NavItem) {
   return item.href + '/section'
 }
 
+// A single physical reading order for the entire book.
+function bookWritingItems(items: NavItem[], entries: Entry[] | null): NavItem[] {
+  const flatten = (children: NavItem[]): NavItem[] => children.filter(item => item.visible !== false).flatMap(item => [
+    ...(isBookWriting(item) ? [item] : []),
+    ...flatten(item.children ?? []),
+  ])
+  return [...new Map(flatten(items).filter(item => {
+    const entry = entries?.find(value => articleId(item.href) ? value.id === articleId(item.href) : value.slug === pageSlug(item.href))
+    return entry?.include_in_book !== false && entry?.include_in_book !== 0 && entry?.include_in_book !== '0'
+  }).map(item => [item.href, item])).values()]
+}
+function bookReadingOrder(topics: NavItem[], entries: Entry[] | null, contentsRoot: string): string[] {
+  return [contentsRoot + '/contents', ...topics.flatMap(section => [
+    topicDestination(section),
+    ...bookWritingItems(section.children ?? [], entries).map(item => section.href + '/read/' + encodeURIComponent(item.id)),
+  ])]
+}
+function adjacentBookLocation(order: string[], location: string, delta: number): string | undefined {
+  const index = order.indexOf(location)
+  return index < 0 ? undefined : order[index + delta]
+}
+
 // Only top-level menu headings are printed in the central contents.
 type BookIndexEntry = { id: string; label: string; href: string }
 function bookIndexEntries(items: NavItem[]): BookIndexEntry[] {
@@ -351,6 +373,10 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
   }, [entries, attempt])
   const entry = card && entries?.find(item => item.include_in_book !== false && item.include_in_book !== 0 && item.include_in_book !== '0' && (articleId(card.href) ? item.id === articleId(card.href) : item.slug === pageSlug(card.href)))
 
+  const readingOrder = bookReadingOrder(topics, entries, topic.href)
+  const readingLocation = mainIndex ? topic.href + '/contents' : card ? hash : topic.href + '/section'
+  const nextLocation = adjacentBookLocation(readingOrder, readingLocation, 1)
+
   useLayoutEffect(() => {
     const node = paper.current
     if (!node) { setPage(0); setCount(1); return }
@@ -363,8 +389,8 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       if (entry || !card) measuredSpreads.current.set(mainIndex ? 'contents' : hash, Math.max(1, Math.ceil(pages / 2)))
       if ((entry || !card) && lastPage.current === hash) {
         measuredPage.current = 2 * Math.floor((pages - 1) / 2)
+        // Keep the final spread selected through late font/image pagination.
         setPage(measuredPage.current)
-        lastPage.current = null
       } else setPage(old => Math.min(old, 2 * Math.floor((pages - 1) / 2)))
     }
     measuredPage.current = 0
@@ -411,21 +437,14 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     let position = measuredSpreads.current.get('contents') ?? 1
     const currentLength = entry?.body?.replace(/<[^>]*>/g, '').length ?? 0
     const perSpread = currentLength > 0 ? Math.max(180, currentLength / Math.max(1, Math.ceil(count / 2))) : 1000
-    function visibleWritings(items: NavItem[]): NavItem[] {
-      return items.filter(item => item.visible !== false).flatMap(item => [
-        ...(isBookWriting(item) ? [item] : []),
-        ...visibleWritings(item.children ?? []),
-      ])
-    }
-    for (const section of topics) {
+     for (const section of topics) {
       const sectionHash = section.href + '/section'
       if (normalized === section.href || normalized === sectionHash) return position + spread
       position += measuredSpreads.current.get(sectionHash) ?? 1
-      const writings = [...new Map(visibleWritings(section.children ?? []).map(item => [item.href,item])).values()]
+      const writings = bookWritingItems(section.children ?? [], entries)
       for (const item of writings) {
         const published = entries?.find(value => articleId(item.href) ? value.id === articleId(item.href) : value.slug === pageSlug(item.href))
-        if (entries && (!published || published.include_in_book === false || published.include_in_book === 0 || published.include_in_book === '0')) continue
-        const writingHash = section.href + '/read/' + encodeURIComponent(item.id)
+         const writingHash = section.href + '/read/' + encodeURIComponent(item.id)
         if (normalized === writingHash) return position + spread
         const textLength = published?.body?.replace(/<[^>]*>/g, '').length ?? 0
         position += measuredSpreads.current.get(writingHash) ?? Math.max(1, Math.ceil(textLength / perSpread))
@@ -465,11 +484,12 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     if (target) window.location.hash = target
   }
 
-  function open(i: number, fromEnd = false) {
-    const next = articles[i]
-    const target = next ? topic.href + '/read/' + encodeURIComponent(next.id) : topic.href + '/section'
+  function openAdjacent(target: string, fromEnd: boolean) {
+    stopTurn.current?.()
     rememberSheet(fromEnd)
     lastPage.current = fromEnd ? target : null
+    measuredPage.current = 0
+    setStage('contents')
     window.location.hash = target
   }
   useEffect(() => {
@@ -487,23 +507,27 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
       }
       return
     }
-    if (delta < 0 && !card && page === 0) {
-      rememberSheet(true)
-      if (!mainIndex) {
-        window.location.hash = topic.href + '/contents'
-        return
-      }
-      if (hash !== topic.href) window.location.hash = topic.href
-      setStage('returning')
-      return
-    }
     const next = page + 2 * delta
     if (next >= 0 && next < count) {
+      stopTurn.current?.()
+      lastPage.current = null
       rememberSheet(delta < 0)
       measuredPage.current = next
       setPage(next)
-    } else if (!mainIndex && current + delta >= -1 && current + delta < articles.length) {
-      open(current + delta, delta < 0)
+      return
+    }
+    const target = adjacentBookLocation(readingOrder, readingLocation, delta)
+    if (target) {
+      openAdjacent(target, delta < 0)
+      return
+    }
+    // Only the very first spread leads back to the dedication.
+    if (delta < 0 && mainIndex && page === 0) {
+      stopTurn.current?.()
+      lastPage.current = null
+      rememberSheet(true)
+      if (hash !== topic.href) window.location.hash = topic.href
+      setStage('returning')
     }
   }
   // The breadcrumb is the reader's current location, not a history log.
@@ -605,7 +629,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     {(!intro || stage === 'returning' || stage === 'dedication') && <div className="deewan-controls">
       <button onClick={() => turn(-1)}>پچھلا صفحہ</button>
       {card && <span aria-live="polite">{page + 1}–{Math.min(page + 2, count)} / {count}</span>}
-      <button disabled={!intro && (mainIndex || current + 1 >= articles.length) && page + 2 >= count} onClick={() => turn(1)}>اگلا صفحہ</button>
+      <button disabled={!intro && !nextLocation && page + 2 >= count} onClick={() => turn(1)}>اگلا صفحہ</button>
     </div>}
   </section>
   {!intro && entry && <div className="book-related-topics" key={entry.id}><RelatedTopics slug={entry.slug} /></div>}
