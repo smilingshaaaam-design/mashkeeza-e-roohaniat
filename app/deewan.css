@@ -515,3 +515,8 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 
 /* Keep the original hardcover present under the first moving leaf, rather than mounting it after the cover turn. */
 .deewan-book[data-opening="opening"]::before{mask-image:none;animation:none;visibility:visible}
+
+/* The stationary binding must not be masked or revealed at the end of the opening. */
+.deewan-book[data-opening="opening"]::before{mask:none!important;-webkit-mask:none!important;animation:none!important;visibility:visible!important;opacity:1!important}
+/* Preload the original spread while the closed cover is displayed. */
+.deewan-book[data-opening="cover"]::before{visibility:visible!important;opacity:0!important;animation:none!important;mask:none!important;-webkit-mask:none!important}
