@@ -516,3 +516,10 @@ div:has(> .relative .deewan-book) > .deewan-home-main { margin-top:clamp(-76px,-
 [data-opening="opening"] .book-stack-right{animation:book-stack-reveal 1.8s linear both}
 @keyframes book-stack-reveal{0%,45%{opacity:0}100%{opacity:1}}
 @media(prefers-reduced-motion:reduce){.book-variable-stacks i{transition:none;animation:none!important}}
+
+/* Keep article leaf geometry identical before and after contour pagination. */
+.deewan-book .book-panel:has(.printed-text){width:36.8%;top:7.5%;bottom:15.5%}
+.deewan-book .book-panel[data-side="right"]:has(.printed-text){right:8.7%;bottom:8%}
+.deewan-book .book-panel[data-side="left"]:has(.printed-text){left:8.7%}
+.deewan-book .book-panel[data-side="right"]:has(.printed-text)>.deewan-viewport{height:91.124260355%}
+.deewan-book .printed-text .book-article-heading{margin-block:0 .22em;transition:none!important;animation:none!important;overflow-anchor:none}
