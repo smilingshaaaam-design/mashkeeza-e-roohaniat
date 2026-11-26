@@ -28,8 +28,8 @@ function articleId(href: string) {
 function isBookWriting(item: NavItem) { return Boolean(pageSlug(item.href) || articleId(item.href)) }
 
 function topicDestination(item: NavItem) {
-  const pages = (item.children ?? []).filter(child => child.visible !== false && isBookWriting(child))
-  return pages.length === 1 ? item.href + '/read/' + encodeURIComponent(pages[0].id) : item.href + '/section'
+  // Even a single writing must be chosen from its heading's submenu page.
+  return item.href + '/section'
 }
 
 // Only top-level menu headings are printed in the central contents.
@@ -192,7 +192,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     document.addEventListener('click', restart)
     return () => document.removeEventListener('click', restart)
   }, [topic.href])
-  const mainIndex = hash === topic.href + '/contents'
+  const mainIndex = hash === topic.href + '/contents' || (hash === topic.href && (stage === 'title' || stage === 'contents'))
   const arrivalStarted = useRef(0)
   const earlyTap = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   useLayoutEffect(() => {
@@ -206,7 +206,7 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     if (remaining > 0) earlyTap.current = setTimeout(() => setStage('opening'), remaining)
     else setStage('opening')
   }
-  const intro = (stage === 'cover' || stage === 'opening' || stage === 'dedication' || stage === 'returning' || stage === 'closing' || stage === 'closed') && !card && !mainIndex
+  const intro = (stage === 'cover' || stage === 'opening' || stage === 'dedication' || stage === 'returning' || stage === 'closing' || stage === 'closed') && !card && !mainIndex && hash === topic.href
   const indexItems = cards
   const completeIndex = bookIndexEntries(menuItems)
   const indexSignature = completeIndex.map(item => item.id + ':' + item.label + ':' + item.href).join('|')
@@ -380,7 +380,11 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
     }
     if (delta < 0 && !card && page === 0) {
       rememberSheet(true)
-      if (mainIndex) window.location.hash = topic.href
+      if (!mainIndex) {
+        window.location.hash = topic.href + '/contents'
+        return
+      }
+      if (hash !== topic.href) window.location.hash = topic.href
       setStage('returning')
       return
     }
@@ -440,21 +444,19 @@ export function ManuscriptBook({ topic, cards, topics, menuItems, hash, navigati
         {entry && isMagicalScrollEnabled(entry.use_magical_scroll) && <a href={card.href}>متحرک طومار میں پڑھیں</a>}
         {entry ? <>{entry.excerpt && <p>{entry.excerpt}</p>}<ArticleRichBody body={entry.body} /></> :
           failed ? <button onClick={() => setAttempt(v => v + 1)}>دوبارہ کوشش کریں</button> :
-          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{!mainIndex && hash !== topic.href + '/section' && <nav className="topic-title-page book-full-title-index" aria-label="مرکزی فہرست" style={{display:'block'}}>
-      <h2>مرکزی فہرست</h2>
-      <CompleteBookIndex items={completeIndex} compact onSelect={selectHeading} />
-    </nav>}
-      {!mainIndex && <h2>{topic.label}</h2>}
+          <p role="status">{entries ? 'یہ تحریر دستیاب نہیں ہے۔' : 'تحریر لوڈ ہو رہی ہے…'}</p>}</> : <>{mainIndex ? <h2>مرکزی فہرست</h2> : <h2>{topic.label}</h2>}
       {!mainIndex && topic.id === 'contact' && <p>سوال یا معلومات کے لیے درج ذیل ذرائع سے رابطہ کریں۔</p>}
-      <h3>{mainIndex ? 'مرکزی فہرست' : 'فہرست'}</h3>
-      {mainIndex ? <CompleteBookIndex items={completeIndex} onSelect={selectHeading} /> : indexItems.length ? <ol>{indexItems.map(item => {
+      {!mainIndex && <h3>فہرست</h3>}
+      {mainIndex ? <CompleteBookIndex items={completeIndex} compact onSelect={selectHeading} /> : indexItems.length ? <ol>{indexItems.map(item => {
         const internal = isBookWriting(item)
         return <li key={item.id}><a className="deewan-plaque" href={internal ? topic.href + '/read/' + encodeURIComponent(item.id) : item.href}
           target={!internal && item.openInNewTab ? '_blank' : undefined} rel={!internal && item.openInNewTab ? 'noopener noreferrer' : undefined}
           onClick={event => {
             if (!internal || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+            event.preventDefault()
             lastPage.current = null
             rememberSheet(false, Math.max(1, Math.ceil((count - page) / 2)) + articles.indexOf(item))
+            window.location.hash = topic.href + '/read/' + encodeURIComponent(item.id)
           }}>{item.label}</a></li>
       })}</ol> : <p>اس موضوع سے ابھی کوئی تحریر منسلک نہیں ہے۔</p>}</>}
         </div>
