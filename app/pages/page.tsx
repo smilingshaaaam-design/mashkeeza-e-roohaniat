@@ -61,7 +61,7 @@ function PublishedPageContent() {
   }, [slug]);
 
   return (
-    <main dir="rtl" className="mx-auto min-h-[60vh] max-w-5xl px-5 py-12 text-amber-100 sm:px-10">
+    <main dir="rtl" className={`mx-auto min-h-[60vh] py-12 text-amber-100 ${page && isPremiumParchment(page.body) ? "premium-reader-shell" : "max-w-5xl px-5 sm:px-10"}`}>
       {page && isPremiumParchment(page.body) ? <PremiumParchment key={page.id} item={page} /> : page && isMagicalScrollEnabled(page.use_magical_scroll) ? (
         <MagicalScroll key={page.id} article={page} />
       ) : (
