@@ -7,6 +7,8 @@ import {
   type ArticleAppearance,
 } from './article-background'
 import { ArticleRichBody } from './article-rich-body'
+import { PremiumParchment } from './premium-parchment'
+import { isPremiumParchment } from './premium-parchment-settings'
 import { RelatedTopics } from './related-topics'
 import { MagicalScroll, isMagicalScrollEnabled } from './magical-scroll'
 
@@ -66,7 +68,7 @@ export function ArticleBrowser() {
   if (!hash.startsWith('#article-')) return null
   if (!selected) return <p role="status" className="relative z-20 p-6 text-center text-amber-100">{status === 'loading' ? 'مضمون لوڈ ہو رہا ہے…' : 'مضمون دستیاب نہیں ہے۔'}</p>
   return <section dir="rtl" aria-label={selected.title} className="relative z-20 mx-auto w-full max-w-5xl px-4 py-5">
-    {isMagicalScrollEnabled(selected.use_magical_scroll) ? <MagicalScroll key={selected.id} article={selected} /> : (
+    {isPremiumParchment(selected.body) ? <PremiumParchment key={selected.id} item={selected} /> : isMagicalScrollEnabled(selected.use_magical_scroll) ? <MagicalScroll key={selected.id} article={selected} /> : (
                 <article
                   className="relative isolate min-h-[320px] overflow-hidden rounded-xl"
                   style={articleBackgroundStyle(selected)}
@@ -97,6 +99,6 @@ export function ArticleBrowser() {
                   </div>
                 </article>
     )}
-    {!isMagicalScrollEnabled(selected.use_magical_scroll) && <RelatedTopics key={selected.id} slug={selected.slug} />}
+    {(isPremiumParchment(selected.body) || !isMagicalScrollEnabled(selected.use_magical_scroll)) && <RelatedTopics key={selected.id} slug={selected.slug} />}
   </section>
 }

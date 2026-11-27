@@ -3,6 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArticleRichBody } from "@/components/article-rich-body";
+import { PremiumParchment } from "@/components/premium-parchment";
+import { isPremiumParchment } from "@/components/premium-parchment-settings";
 import { RelatedTopics } from "@/components/related-topics";
 import { MagicalScroll, isMagicalScrollEnabled } from "@/components/magical-scroll";
 import { articleBackgroundStyle, articleOverlayOpacity, type ArticleAppearance } from "@/components/article-background";
@@ -60,7 +62,7 @@ function PublishedPageContent() {
 
   return (
     <main dir="rtl" className="mx-auto min-h-[60vh] max-w-5xl px-5 py-12 text-amber-100 sm:px-10">
-      {page && isMagicalScrollEnabled(page.use_magical_scroll) ? (
+      {page && isPremiumParchment(page.body) ? <PremiumParchment key={page.id} item={page} /> : page && isMagicalScrollEnabled(page.use_magical_scroll) ? (
         <MagicalScroll key={page.id} article={page} />
       ) : (
       <article className="relative isolate overflow-hidden rounded-2xl border border-amber-700/50 p-6 shadow-2xl sm:p-12" style={page ? articleBackgroundStyle(page) : { backgroundColor: '#0000008c' }}>
@@ -78,7 +80,7 @@ function PublishedPageContent() {
         </div>
       </article>
       )}
-      {page && !isMagicalScrollEnabled(page.use_magical_scroll) && <RelatedTopics key={page.id} slug={page.slug} />}
+      {page && (isPremiumParchment(page.body) || !isMagicalScrollEnabled(page.use_magical_scroll)) && <RelatedTopics key={page.id} slug={page.slug} />}
       <Link className="mt-8 inline-block text-amber-300 underline" href="/">صفحۂ اول</Link>
     </main>
   );
