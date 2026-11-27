@@ -21,3 +21,10 @@
 .premium-sheet[data-art] .premium-middle::before,.premium-sheet[data-art] .premium-middle::after{content:"";position:absolute;top:50%;transform:translateY(-50%);width:6.5cqw;height:14cqw;pointer-events:none;background-image:var(--premium-image);background-size:100cqw auto;background-repeat:no-repeat;mask-image:linear-gradient(transparent,#000 17%,#000 83%,transparent)}
 .premium-sheet[data-art] .premium-middle::before{left:-9.765625cqw;background-position:left center}
 .premium-sheet[data-art] .premium-middle::after{right:-9.765625cqw;background-position:right center}
+
+.premium-sheet[data-art] .premium-bottom{position:relative;isolation:isolate}
+.premium-sheet[data-art] .premium-bottom::before{content:"";position:absolute;left:91.21%;top:54.29%;width:2.344cqw;height:3.42cqw;background-image:var(--premium-image);background-size:100cqw auto;background-position:-91.21cqw -126.07cqw;background-repeat:no-repeat;mask-image:radial-gradient(ellipse at 50% 65%,#000 38%,transparent 77%);transform-origin:50% 94%;animation:premium-flame-dance 1.37s ease-in-out infinite alternate;pointer-events:none}
+.premium-sheet[data-art] .premium-bottom::after{content:"";position:absolute;left:87.4%;top:46%;width:10cqw;height:12cqw;border-radius:50%;background:radial-gradient(ellipse at 50% 45%,#fff5b4 0%,#ffb52e80 23%,#ff820020 47%,transparent 71%);mix-blend-mode:screen;opacity:.24;animation:premium-diya-glow 2.13s ease-in-out infinite alternate;pointer-events:none}
+@keyframes premium-flame-dance{0%{transform:scale(.94,.88) skewX(-5deg);filter:brightness(.91)}19%{transform:scale(1.09,1.14) skewX(7deg);filter:brightness(1.17)}39%{transform:scale(.88,.96) skewX(-4deg);filter:brightness(1.04)}57%{transform:scale(1.02,1.19) skewX(4deg);filter:brightness(1.23)}78%{transform:scale(1.07,.91) skewX(-6deg);filter:brightness(.96)}100%{transform:scale(.97,1.06) skewX(3deg);filter:brightness(1.1)}}
+@keyframes premium-diya-glow{0%,100%{opacity:.16}23%{opacity:.38}47%{opacity:.22}67%{opacity:.33}83%{opacity:.19}}
+@media(prefers-reduced-motion:reduce){.premium-sheet[data-art] .premium-bottom::before,.premium-sheet[data-art] .premium-bottom::after{animation:none;opacity:0}}
