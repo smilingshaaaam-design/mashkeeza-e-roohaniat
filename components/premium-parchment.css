@@ -45,3 +45,17 @@
 }
 @keyframes premium-diya-glow{0%,100%{opacity:.42;transform:translate(-50%,-50%) scale(.97)}19%{opacity:.26;transform:translate(-50%,-50%) scale(.92)}37%{opacity:.67;transform:translate(-50%,-50%) scale(1.04)}52%{opacity:.38;transform:translate(-50%,-50%) scale(.96)}72%{opacity:.57;transform:translate(-50%,-50%) scale(1.02)}86%{opacity:.31;transform:translate(-50%,-50%) scale(.94)}}
 @media(prefers-reduced-motion:reduce){.premium-sheet[data-art] .premium-bottom::before,.premium-sheet[data-art] .premium-bottom::after{display:none;animation:none}}
+
+/* Exact glass positions in the approved 1024 x 1536 artwork. */
+.premium-sheet[data-art] .premium-top{position:relative;isolation:isolate}
+.premium-lantern{position:absolute;top:31%;left:var(--lx);width:10.7421875cqw;height:10.7421875cqw;pointer-events:none;isolation:isolate}
+.premium-lantern-left{--lx:9.765625%;--sx:-9.765625cqw;--cx:52%;--glass:polygon(40% 42%,44% 34%,52% 28%,60% 35%,66% 43%,67% 67%,65% 78%,58% 84%,45% 84%,39% 78%)}
+.premium-lantern-right{--lx:78.80859375%;--sx:-78.80859375cqw;--cx:50%;--glass:polygon(38% 42%,43% 34%,50% 28%,58% 35%,65% 43%,65% 67%,63% 78%,56% 84%,43% 84%,37% 78%)}
+.premium-lantern-dark{position:absolute;inset:0;background-image:var(--premium-image);background-size:100cqw auto;background-position:var(--sx) -15.13671875cqw;background-repeat:no-repeat;filter:brightness(.26) saturate(.8);mask-image:radial-gradient(ellipse at var(--cx) 57%,#000 0%,#000 32%,rgba(0,0,0,.92) 50%,transparent 77%)}
+.premium-lantern-chamber{position:absolute;inset:0;clip-path:var(--glass);overflow:hidden}
+.premium-lantern-halo{position:absolute;left:var(--cx);top:59%;width:52%;height:62%;transform:translate(-50%,-50%);background:radial-gradient(ellipse,rgba(255,215,110,.75),rgba(255,147,25,.38) 37%,transparent 73%);mix-blend-mode:screen;animation:premium-lantern-glow 2.13s ease-in-out infinite alternate}
+.premium-lantern-fire{position:absolute;left:calc(var(--cx) - 8%);bottom:26%;width:16%;height:29%;background:radial-gradient(ellipse at 50% 72%,#fffde0 0%,#fff2a1 27%,#ffc440 50%,#f98b16 73%,transparent 85%);border-radius:68% 32% 55% 45% / 78% 66% 34% 22%;filter:drop-shadow(0 0 .30cqw #ffd166);transform-origin:50% 95%;animation:premium-lantern-live 1.37s ease-in-out infinite alternate}
+.premium-lantern-right .premium-lantern-fire{animation-delay:-.71s}.premium-lantern-right .premium-lantern-halo{animation-delay:-1.19s}
+@keyframes premium-lantern-live{0%{transform:scale(.91,.85) skewX(-5deg);opacity:.84}19%{transform:scale(1.05,1.12) skewX(7deg);opacity:1}39%{transform:scale(.87,.94) skewX(-4deg);opacity:.92}57%{transform:scale(1.02,1.17) skewX(4deg);opacity:1}78%{transform:scale(1.07,.91) skewX(-6deg);opacity:.87}100%{transform:scale(.97,1.06) skewX(3deg);opacity:.96}}
+@keyframes premium-lantern-glow{0%,100%{opacity:.42}23%{opacity:.79}47%{opacity:.5}67%{opacity:.71}83%{opacity:.45}}
+@media(prefers-reduced-motion:reduce){.premium-lantern-fire,.premium-lantern-halo{animation:none}}

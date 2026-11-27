@@ -19,7 +19,7 @@ export function PremiumParchment({ item }: {item: Item}) {
   }, [])
   return <article className="premium-sheet" lang="ur" dir="rtl" data-art={image ? '' : undefined}
     style={image ? {'--premium-image': 'url("' + image + '")'} as CSSProperties : undefined}>
-    <div className="premium-cap premium-top" aria-hidden="true"/>
+    <div className="premium-cap premium-top" aria-hidden="true">{image && <><div className="premium-lantern premium-lantern-left" aria-hidden="true"><div className="premium-lantern-dark"></div><div className="premium-lantern-chamber"><div className="premium-lantern-halo"></div><div className="premium-lantern-fire"></div></div></div><div className="premium-lantern premium-lantern-right" aria-hidden="true"><div className="premium-lantern-dark"></div><div className="premium-lantern-chamber"><div className="premium-lantern-halo"></div><div className="premium-lantern-fire"></div></div></div></>}</div>
     <div className="premium-middle">
       <div className="premium-fallback-brand">مشکیزہ روحانیت</div>
       <h1 className="premium-title">{item.title}</h1>
