@@ -5,5 +5,5 @@ export function isPremiumParchment(body?: string | null) {
   return typeof body === 'string' && body.startsWith(RICH_PREFIX + PREMIUM_MARKER)
 }
 export function premiumImage(item: ArticleAppearance & {body?: string | null}) {
-  return isPremiumParchment(item.body) ? '/images/mashkeeza-premium-parchment.webp' : ''
+  return isPremiumParchment(item.body) ? '/images/mashkeeza-premium-refined-frame.svg' : ''
 }
