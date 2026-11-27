@@ -29,23 +29,6 @@
 @keyframes premium-diya-glow{0%,100%{opacity:.16}23%{opacity:.38}47%{opacity:.22}67%{opacity:.33}83%{opacity:.19}}
 @media(prefers-reduced-motion:reduce){.premium-sheet[data-art] .premium-bottom::before,.premium-sheet[data-art] .premium-bottom::after{animation:none;opacity:0}}
 
-/* The original lower-right lamp: only the flame crop and its local glow move. */
-.premium-sheet[data-art] .premium-bottom{position:relative;overflow:hidden}
-.premium-sheet[data-art] .premium-bottom::before,.premium-sheet[data-art] .premium-bottom::after{content:"";position:absolute;pointer-events:none;left:92.28515625%;}
-.premium-sheet[data-art] .premium-bottom::before{top:66%;width:15cqw;height:17cqw;transform:translate(-50%,-50%);background:radial-gradient(ellipse at 50% 42%,rgba(255,217,102,.47),rgba(255,148,32,.20) 36%,rgba(255,104,12,.07) 58%,transparent 73%);mix-blend-mode:screen;opacity:.5;animation:premium-diya-glow 2.77s ease-in-out infinite;}
-.premium-sheet[data-art] .premium-bottom::after{bottom:39.17910448%;width:4.296875cqw;height:3.80859375cqw;transform:translateX(-50%);background-image:var(--premium-image);background-repeat:no-repeat;background-size:100cqw 150cqw;background-position:-90.13672cqw -125.68359cqw;mask-image:linear-gradient(to bottom,transparent,#000 15%,#000 89%,transparent),linear-gradient(to right,transparent,#000 22%,#000 78%,transparent);mask-composite:intersect;animation:premium-diya-flame 2.37s ease-in-out infinite;}
-@keyframes premium-diya-flame{
-  0%,100%{background-size:100cqw 150cqw;background-position:-90.13672cqw -125.68359cqw;filter:brightness(1)}
-  14%{background-size:104cqw 132cqw;background-position:-93.89648cqw -110.14453cqw;filter:brightness(.94)}
-  29%{background-size:97cqw 163.5cqw;background-position:-87.24121cqw -137.33789cqw;filter:brightness(1.09)}
-  43%{background-size:106cqw 142.5cqw;background-position:-95.75195cqw -119.20898cqw;filter:brightness(.99)}
-  57%{background-size:97cqw 169.5cqw;background-position:-87.32910cqw -142.51758cqw;filter:brightness(1.08)}
-  76%{background-size:102cqw 139.5cqw;background-position:-91.875cqw -116.61914cqw;filter:brightness(.95)}
-  89%{background-size:99cqw 157.5cqw;background-position:-89.30176cqw -132.15820cqw;filter:brightness(1.04)}
-}
-@keyframes premium-diya-glow{0%,100%{opacity:.42;transform:translate(-50%,-50%) scale(.97)}19%{opacity:.26;transform:translate(-50%,-50%) scale(.92)}37%{opacity:.67;transform:translate(-50%,-50%) scale(1.04)}52%{opacity:.38;transform:translate(-50%,-50%) scale(.96)}72%{opacity:.57;transform:translate(-50%,-50%) scale(1.02)}86%{opacity:.31;transform:translate(-50%,-50%) scale(.94)}}
-@media(prefers-reduced-motion:reduce){.premium-sheet[data-art] .premium-bottom::before,.premium-sheet[data-art] .premium-bottom::after{display:none;animation:none}}
-
 /* Copy the original diya flame into both lanterns at their verified glass centers. */
 .premium-sheet[data-art] .premium-top{position:relative;isolation:isolate}
 .premium-lantern{position:absolute;top:31%;left:var(--lx);width:10.7421875cqw;height:10.7421875cqw;pointer-events:none;isolation:isolate}
