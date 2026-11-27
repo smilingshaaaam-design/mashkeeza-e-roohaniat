@@ -55,3 +55,11 @@
  .premium-reader-shell .premium-middle{font-size:clamp(42px,4.7cqw,65px);line-height:2.35}
  .premium-reader-shell .premium-title{font-size:clamp(55px,6.1cqw,84px)}
 }
+
+/* Full-width opaque reading surface; keep the artwork's original aspect ratios. */
+.premium-reader-shell{width:100%;max-width:none!important;min-height:100vh;padding:0!important;background:#102744}
+.premium-reader-shell .premium-sheet{width:100%;max-width:none}
+body:has(.premium-reader-shell){background:#102744!important}
+body:has(.premium-reader-shell) #hero-stage{visibility:hidden}
+body:has(.premium-reader-shell) .deewan-home-main{background:#102744}
+body:has(.premium-reader-shell) .premium-reader-shell{isolation:isolate}
